@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "99232858415",
+    "project_id": "kitchenmanagment-f969c",
+    "storage_bucket": "kitchenmanagment-f969c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:99232858415:android:18af85c696a8d2b782e1da",
+        "android_client_info": {
+          "package_name": "com.ramadan.kitchen.app.ramadan_kitchen_management"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANN8kH5ZBLbJ5X0vW8VslJW9l09NuUGyY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

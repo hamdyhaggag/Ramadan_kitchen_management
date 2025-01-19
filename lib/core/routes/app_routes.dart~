@@ -1,0 +1,7 @@
+abstract class AppRoutes {
+  static const String splash = 'splashView';
+  static const String onBoarding = 'onBoardingView';
+  static const String loginOrRegister = 'loginOrRegisterView';
+  static const String login = 'loginView';
+  static const String register = 'registerView';
+}

@@ -1,0 +1,13 @@
+name: water_drop_nav_bar
+description: A custom water drop navigation bar widget for Flutter apps.
+version: 0.0.1
+
+environment:
+  sdk: ">=2.17.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+# If the widget uses any additional packages, list them here. Example:
+#   some_package: ^1.2.3
