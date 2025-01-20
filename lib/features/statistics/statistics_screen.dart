@@ -7,7 +7,6 @@ class StatisticsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Statistics')),
       body: Column(
         children: [
           Text('Distribution Progress'),
@@ -22,12 +21,6 @@ class StatisticsScreen extends StatelessWidget {
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Generate statistics report
-        },
-        child: Icon(Icons.picture_as_pdf),
       ),
     );
   }

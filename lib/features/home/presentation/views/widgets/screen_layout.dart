@@ -7,10 +7,10 @@ import '../../../../../core/constants/constatnts.dart';
 import '../../../../../core/routes/app_routes.dart';
 import '../../../../../core/services/firebase_auth_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../../../views/daily_expenses/daily_expenses.dart';
-import '../../../../../views/manage_cases/manage_cases.dart';
-import '../../../../../views/reports/reports.dart';
-import '../../../../../views/statistics/statistics_screen.dart';
+import '../../../../daily_expenses/daily_expenses.dart';
+import '../../../../manage_cases/manage_cases.dart';
+import '../../../../reports/reports.dart';
+import '../../../../statistics/statistics_screen.dart';
 
 class ScreenLayout extends StatefulWidget {
   const ScreenLayout({super.key});
@@ -40,12 +40,17 @@ class _ScreenLayoutState extends State<ScreenLayout> {
                 child: IconButton(
                   icon: const Icon(Icons.logout),
                   onPressed: () async {
-                    //
                     await FirebaseAuthService().signOut();
                     log(FirebaseAuthService().isLoggedIn().toString());
-                    Prefs.removeData(key: kUserData);
+
+                    await Prefs.removeData(key: kUserData);
                     log(Prefs.getString(kUserData).toString());
-                    Navigator.pushReplacementNamed(context, AppRoutes.layout);
+
+                    if (!FirebaseAuthService().isLoggedIn()) {
+                      Navigator.pushReplacementNamed(context, AppRoutes.login);
+                    } else {
+                      log('Logout failed!');
+                    }
                   },
                 ),
               ),
@@ -103,6 +108,8 @@ class _ScreenLayoutState extends State<ScreenLayout> {
                 'assets/icons/home.svg',
                 width: 28,
                 height: 28,
+                colorFilter:
+                    ColorFilter.mode(AppColors.greyColor, BlendMode.srcIn),
               ),
               activeIcon: SvgPicture.asset(
                 'assets/icons/home.svg',
@@ -115,6 +122,8 @@ class _ScreenLayoutState extends State<ScreenLayout> {
           BottomNavigationBarItem(
               icon: SvgPicture.asset(
                 'assets/icons/wallet.svg',
+                colorFilter:
+                    ColorFilter.mode(AppColors.greyColor, BlendMode.srcIn),
                 width: 28,
                 height: 28,
               ),
@@ -129,6 +138,8 @@ class _ScreenLayoutState extends State<ScreenLayout> {
           BottomNavigationBarItem(
               icon: SvgPicture.asset(
                 'assets/icons/analysis.svg',
+                colorFilter:
+                    ColorFilter.mode(AppColors.greyColor, BlendMode.srcIn),
                 width: 28,
                 height: 28,
               ),
@@ -143,6 +154,8 @@ class _ScreenLayoutState extends State<ScreenLayout> {
           BottomNavigationBarItem(
               icon: SvgPicture.asset(
                 'assets/icons/report.svg',
+                colorFilter:
+                    ColorFilter.mode(AppColors.greyColor, BlendMode.srcIn),
                 width: 28,
                 height: 28,
               ),

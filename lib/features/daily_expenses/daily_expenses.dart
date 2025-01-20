@@ -44,7 +44,6 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Daily Expenses')),
       body: ListView.builder(
         itemCount: expenses.length,
         itemBuilder: (context, index) {
@@ -69,12 +68,6 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
             ),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Add expense logic
-        },
-        child: Icon(Icons.add),
       ),
     );
   }

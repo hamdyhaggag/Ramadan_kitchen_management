@@ -8,12 +8,12 @@ import 'package:ramadan_kitchen_management/features/on_boarding/presentation/vie
 import 'package:ramadan_kitchen_management/features/splash/presentation/views/splash_view.dart';
 import '../../features/auth/presentation/views/forget_password_view.dart';
 import '../../features/auth/presentation/views/login_view.dart';
+import '../../features/daily_expenses/daily_expenses.dart';
 import '../../features/home/presentation/views/home_view.dart';
+import '../../features/manage_cases/manage_cases.dart';
 import '../../features/on_boarding/presentation/views/login_or_register_view.dart';
-import '../../views/daily_expenses/daily_expenses.dart';
-import '../../views/manage_cases/manage_cases.dart';
-import '../../views/reports/reports.dart';
-import '../../views/statistics/statistics_screen.dart';
+import '../../features/reports/reports.dart';
+import '../../features/statistics/statistics_screen.dart';
 
 Route<dynamic> onGenerateRoutes(RouteSettings settings) {
   switch (settings.name) {

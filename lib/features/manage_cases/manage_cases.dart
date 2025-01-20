@@ -39,7 +39,6 @@ class ManageCasesScreenState extends State<ManageCasesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Manage Cases')),
       body: ListView.builder(
         itemCount: cases.length,
         itemBuilder: (context, index) {
@@ -64,12 +63,6 @@ class ManageCasesScreenState extends State<ManageCasesScreen> {
             ),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Add case logic
-        },
-        child: Icon(Icons.add),
       ),
     );
   }
