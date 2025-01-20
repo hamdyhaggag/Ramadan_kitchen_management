@@ -18,8 +18,7 @@ class AlreadyHaveAnAccount extends StatelessWidget {
         children: [
           TextSpan(
             text: AppTexts.alreadyHaveAnAccount,
-            style:
-                AppStyles.DINRegular16.copyWith(color: AppColors.greyColor),
+            style: AppStyles.dinRegular16.copyWith(color: AppColors.greyColor),
           ),
           TextSpan(
             recognizer: TapGestureRecognizer()
@@ -27,7 +26,7 @@ class AlreadyHaveAnAccount extends StatelessWidget {
                 Navigator.pushReplacementNamed(context, AppRoutes.login);
               },
             text: AppTexts.login,
-            style: AppStyles.DINRegular16.copyWith(
+            style: AppStyles.dinRegular16.copyWith(
               color: AppColors.primaryColor,
             ),
           ),

@@ -25,7 +25,7 @@ class OnBoardingPageViewItem extends StatelessWidget {
           ),
           Text(
             onBoardingModel.title,
-            style: AppStyles.DINBold24,
+            style: AppStyles.dinBold24,
             textAlign: TextAlign.center,
           ),
           const SizedBox(
@@ -35,7 +35,7 @@ class OnBoardingPageViewItem extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12.0),
             child: Text(
               onBoardingModel.subtitle,
-              style: AppStyles.DINRegular16,
+              style: AppStyles.dinRegular16,
               textAlign: TextAlign.center,
             ),
           ),

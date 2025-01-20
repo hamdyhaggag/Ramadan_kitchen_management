@@ -9,7 +9,7 @@ void showSnackBar(BuildContext context, String text) {
       duration: const Duration(seconds: 2),
       content: Text(
         text,
-        style: AppStyles.DINRegular14.copyWith(
+        style: AppStyles.dinRegular14.copyWith(
           color: AppColors.whiteColor,
         ),
       ),

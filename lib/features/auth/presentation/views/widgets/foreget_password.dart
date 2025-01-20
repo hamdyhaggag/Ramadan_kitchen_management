@@ -17,15 +17,13 @@ class ForgetPassword extends StatelessWidget {
       child: Align(
         alignment: Alignment.centerRight,
         child: GestureDetector(
-          onTap: () 
-          {
+          onTap: () {
             Navigator.pushNamed(context, AppRoutes.forgetPassword);
           },
           child: Text(
             textAlign: TextAlign.start,
             AppTexts.forgetPassword,
-            style:
-                AppStyles.DINRegular16.copyWith(color: AppColors.greyColor),
+            style: AppStyles.dinRegular16.copyWith(color: AppColors.greyColor),
           ),
         ),
       ),

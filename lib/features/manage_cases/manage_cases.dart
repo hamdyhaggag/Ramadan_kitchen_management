@@ -1,12 +1,8 @@
-import 'dart:io';
-
-import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
-import 'package:ramadan_kitchen_management/features/manage_cases/widget/list.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import 'data/services/file_utils.dart';
+import 'data/services/storage_utils.dart';
 
 class ManageCasesScreen extends StatefulWidget {
   const ManageCasesScreen({super.key});
@@ -110,148 +106,18 @@ class ManageCasesScreenState extends State<ManageCasesScreen> {
   }
 
   Future<void> loadData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    names = prefs.getStringList('distributionNames') ?? BagData.names;
-    List<String>? checkboxStringValues =
-        prefs.getStringList('distributionCheckboxValues');
-    if (checkboxStringValues != null) {
-      checkboxValues =
-          checkboxStringValues.map((value) => value == 'true').toList();
-    } else {
-      checkboxValues = List.generate(names.length, (index) => false);
-    }
-    serialNumbers = (prefs.getStringList('distributionSerialNumbers') ??
-            BagData.serialNumbers.map((e) => e.toString()))
-        .map(int.parse)
-        .toList();
+    names = await StorageUtils.loadNames();
+    checkboxValues = await StorageUtils.loadCheckboxValues(names.length);
+    serialNumbers =
+        await StorageUtils.loadSerialNumbers([/* default serials */]);
     setState(() {});
   }
 
-  Future<void> saveData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('distributionNames', names);
-    List<String> checkboxStringValues =
-        checkboxValues.map((value) => value.toString()).toList();
-    await prefs.setStringList(
-        'distributionCheckboxValues', checkboxStringValues);
-    await prefs.setStringList('distributionSerialNumbers',
-        serialNumbers.map((e) => e.toString()).toList());
-  }
+  Future<void> saveData() async =>
+      StorageUtils.saveData(names, checkboxValues, serialNumbers);
 
-  Future<String> getFilePath() async {
-    final directory = await getExternalStorageDirectory();
-    String currentDate =
-        DateTime.now().toString().split(' ')[0].replaceAll('-', '_');
-    return '${directory?.path}/IftarReport_$currentDate.xlsx';
-  }
-
-  Future<void> exportToExcel() async {
-    var excel = Excel.createExcel();
-    var sheet = excel['Sheet1'];
-
-    // Add headers for additional data
-    sheet.appendRow([
-      'عدد الأفراد المتبقي',
-      'نسبة الإكتمال',
-      'عدد الشنط',
-      'إجمالي عدد الأفراد'
-    ]);
-
-    // Add data for the additional rows
-    sheet.appendRow([
-      '${calculateTotalIndividuals() - calculateTotalCheckedIndividuals()}',
-      '${(calculateProgress() * 100).toStringAsFixed(2)}%',
-      '${calculateTotalSerialNumbers()}',
-      '${calculateTotalIndividuals()}'
-    ]);
-
-    // Add headers for existing data
-    sheet.appendRow(['رقم الشنطة', 'الإسم', 'جاهز']);
-
-    // Add existing data rows
-    for (int i = 0; i < names.length; i++) {
-      sheet.appendRow([
-        serialNumbers[i],
-        names[i],
-        checkboxValues[i] ? 'تم التوزيع' : 'لم يتم التوزيع'
-      ]);
-    }
-
-    File file = File(await getFilePath());
-    await file.writeAsBytes(excel.encode()!);
-
-    String filePath = file.path;
-    Fluttertoast.showToast(
-      msg: 'تم الحفظ في $filePath',
-      toastLength: Toast.LENGTH_LONG,
-      gravity: ToastGravity.BOTTOM,
-    );
-  }
-
-  void filterUncheckedRows() {
-    List<String> uncheckedNames = [];
-    List<bool> uncheckedCheckboxValues = [];
-    List<int> uncheckedSerialNumbers = [];
-
-    for (int i = 0; i < names.length; i++) {
-      if (!checkboxValues[i]) {
-        uncheckedNames.add(names[i]);
-        uncheckedCheckboxValues.add(checkboxValues[i]);
-        uncheckedSerialNumbers.add(serialNumbers[i]);
-      }
-    }
-
-    setState(() {
-      names = uncheckedNames;
-      checkboxValues = uncheckedCheckboxValues;
-      serialNumbers = uncheckedSerialNumbers;
-    });
-    saveData();
-  }
-
-  int countActiveCheckboxes() {
-    int count = 0;
-    for (bool value in checkboxValues) {
-      if (value) {
-        count++;
-      }
-    }
-    return count;
-  }
-
-  double calculateProgress() {
-    int totalIndividuals = calculateTotalIndividuals();
-    int totalCheckedIndividuals = calculateTotalCheckedIndividuals();
-    if (totalIndividuals == 0) {
-      return 0.0; // Avoid division by zero
-    }
-    return totalCheckedIndividuals / totalIndividuals;
-  }
-
-  int calculateTotalIndividuals() {
-    return numberOfIndividuals.reduce((value, element) => value + element);
-  }
-
-  int calculateTotalSerialNumbers() {
-    int totalSerialNumbers = 0;
-    for (int i = 0; i < checkboxValues.length; i++) {
-      if (!checkboxValues[i]) {
-        // If the checkbox is not checked, increment the total serial numbers count
-        totalSerialNumbers++;
-      }
-    }
-    return totalSerialNumbers;
-  }
-
-  int calculateTotalCheckedIndividuals() {
-    int totalChecked = 0;
-    for (int i = 0; i < checkboxValues.length; i++) {
-      if (checkboxValues[i]) {
-        totalChecked += numberOfIndividuals[i];
-      }
-    }
-    return totalChecked;
-  }
+  Future<void> exportData() async => FileUtils.exportToExcel(
+      names, checkboxValues, serialNumbers, numberOfIndividuals);
 
   @override
   Widget build(BuildContext context) {
@@ -269,9 +135,10 @@ class ManageCasesScreenState extends State<ManageCasesScreen> {
           actions: [
             IconButton(
               onPressed: () {
-                exportToExcel();
+                FileUtils.exportToExcel(
+                    names, checkboxValues, serialNumbers, numberOfIndividuals);
               },
-              icon: const Icon(Icons.import_export, color: Colors.white),
+              icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
             ),
           ],
         ),
@@ -473,7 +340,7 @@ class ManageCasesScreenState extends State<ManageCasesScreen> {
                                     ),
                                     TextSpan(
                                       text:
-                                          '${calculateTotalIndividuals() - calculateTotalCheckedIndividuals()}',
+                                          '${FileUtils.calculateTotalIndividuals(numberOfIndividuals) - FileUtils.calculateTotalCheckedIndividuals(checkboxValues, numberOfIndividuals)}',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontFamily: 'DIN',
@@ -500,7 +367,7 @@ class ManageCasesScreenState extends State<ManageCasesScreen> {
                                   children: [
                                     TextSpan(
                                       text:
-                                          '${(calculateProgress() * 100).toStringAsFixed(2)}%',
+                                          '${(FileUtils.calculateProgress(checkboxValues, numberOfIndividuals) * 100).toStringAsFixed(2)}%',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontFamily: 'DIN',
@@ -527,7 +394,7 @@ class ManageCasesScreenState extends State<ManageCasesScreen> {
                                   children: [
                                     TextSpan(
                                       text:
-                                          '${calculateTotalCheckedIndividuals()}',
+                                          '${FileUtils.calculateTotalCheckedIndividuals(checkboxValues, numberOfIndividuals)}',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontFamily: 'DIN',
@@ -560,7 +427,8 @@ class ManageCasesScreenState extends State<ManageCasesScreen> {
                                   ),
                                   children: [
                                     TextSpan(
-                                      text: '${calculateTotalSerialNumbers()}',
+                                      text:
+                                          '${FileUtils.calculateTotalSerialNumbers(checkboxValues)}',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontFamily: 'DIN',
@@ -586,7 +454,8 @@ class ManageCasesScreenState extends State<ManageCasesScreen> {
                                   ),
                                   children: [
                                     TextSpan(
-                                      text: '${calculateTotalIndividuals()}',
+                                      text:
+                                          '${FileUtils.calculateTotalIndividuals(numberOfIndividuals)}',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontFamily: 'DIN',
@@ -610,7 +479,8 @@ class ManageCasesScreenState extends State<ManageCasesScreen> {
                     left: 0,
                     right: 0,
                     child: LinearProgressIndicator(
-                      value: calculateProgress(),
+                      value: FileUtils.calculateProgress(
+                          checkboxValues, numberOfIndividuals),
                       backgroundColor: Colors.grey[300],
                       valueColor: const AlwaysStoppedAnimation<Color>(
                           AppColors.primaryColor),

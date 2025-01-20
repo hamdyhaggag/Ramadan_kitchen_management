@@ -22,7 +22,7 @@ class VerifyViewBody extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: Text(
                 AppTexts.reEnterRamzThatWeSent,
-                style: AppStyles.DINRegular16.copyWith(
+                style: AppStyles.dinRegular16.copyWith(
                   color: AppColors.blackColor,
                 ),
               ),

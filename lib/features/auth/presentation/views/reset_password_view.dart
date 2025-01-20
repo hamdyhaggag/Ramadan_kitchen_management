@@ -17,7 +17,7 @@ class ResetPasswordView extends StatelessWidget {
         surfaceTintColor: AppColors.whiteColor,
         title: const Text(
           AppTexts.newPassword,
-          style: AppStyles.DINBold20,
+          style: AppStyles.dinBold20,
         ),
         leading: IconButton(
           icon: const Icon(

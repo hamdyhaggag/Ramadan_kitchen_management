@@ -17,7 +17,7 @@ class VerifyView extends StatelessWidget {
         surfaceTintColor: AppColors.whiteColor,
         title: const Text(
           AppTexts.verifyYourRamz,
-          style: AppStyles.DINBold20,
+          style: AppStyles.dinBold20,
         ),
         leading: IconButton(
           icon: const Icon(

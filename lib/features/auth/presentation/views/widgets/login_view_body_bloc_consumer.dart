@@ -49,7 +49,7 @@ class LoginViewBodyBlocConsumer extends StatelessWidget {
 
   Widget _buildCustomLoadingOverlay(BuildContext context) {
     return Container(
-      color: Colors.black.withOpacity(0.6), // Semi-transparent overlay
+      color: Colors.black.withValues(alpha: 0.6),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
