@@ -72,7 +72,7 @@ class _ScreenLayoutState extends State<ScreenLayout> {
   Widget _getAppBarTitle() {
     TextStyle defaultStyle = const TextStyle(
       fontSize: 18,
-      fontFamily: 'Cairo',
+      fontFamily: 'DIN',
       fontWeight: FontWeight.w600,
       color: Color(0xFF2A2A2A),
     );
@@ -93,7 +93,7 @@ class _ScreenLayoutState extends State<ScreenLayout> {
     return Text(
       title,
       style: TextStyle(
-        fontFamily: 'Cairo',
+        fontFamily: 'DIN',
         fontSize: 18,
         fontWeight: FontWeight.w300,
       ),

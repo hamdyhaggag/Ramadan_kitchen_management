@@ -34,8 +34,8 @@ class GeneralButton extends StatelessWidget {
         onPressed: onPressed,
         child: Text(
           text,
-          style: AppStyles.cairoRegular16
-              .copyWith(color: textColor, fontWeight: FontWeight.w900),
+          style: AppStyles.DINRegular16.copyWith(
+              color: textColor, fontWeight: FontWeight.w900),
         ),
       ),
     );

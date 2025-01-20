@@ -23,7 +23,7 @@ class ForgetPasswordViewBody extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: Text(
                 AppTexts.doNotWorry,
-                style: AppStyles.cairoRegular16.copyWith(
+                style: AppStyles.DINRegular16.copyWith(
                   color: AppColors.blackColor,
                 ),
               ),

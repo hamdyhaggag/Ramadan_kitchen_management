@@ -24,7 +24,7 @@ class CustomTextFormField extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextFormField(
         textAlign: TextAlign.right,
-        style: AppStyles.cairoRegular16.copyWith(color: Colors.black),
+        style: AppStyles.DINRegular16.copyWith(color: Colors.black),
         cursorColor: AppColors.primaryColor,
         keyboardType: textInputType,
         controller: controller,
@@ -37,11 +37,11 @@ class CustomTextFormField extends StatelessWidget {
             },
         onSaved: onSaved,
         decoration: InputDecoration(
-          errorStyle: AppStyles.cairoRegular14.copyWith(color: Colors.red),
+          errorStyle: AppStyles.DINRegular14.copyWith(color: Colors.red),
           hintText: hitnText,
-          floatingLabelStyle: AppStyles.cairoRegular16,
+          floatingLabelStyle: AppStyles.DINRegular16,
           hintStyle:
-              AppStyles.cairoRegular16.copyWith(color: AppColors.greyColor),
+              AppStyles.DINRegular16.copyWith(color: AppColors.greyColor),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: const BorderSide(color: AppColors.primaryColor),

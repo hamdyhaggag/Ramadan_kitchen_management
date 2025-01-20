@@ -29,7 +29,7 @@ class _PasswordFieldState extends State<PasswordField> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextFormField(
         textAlign: TextAlign.right,
-        style: AppStyles.cairoRegular16.copyWith(color: Colors.black),
+        style: AppStyles.DINRegular16.copyWith(color: Colors.black),
         cursorColor: AppColors.primaryColor,
         obscureText: isPasswordVisible,
         keyboardType: widget.textInputType,
@@ -42,7 +42,7 @@ class _PasswordFieldState extends State<PasswordField> {
         },
         onSaved: widget.onSaved,
         decoration: InputDecoration(
-          errorStyle: AppStyles.cairoRegular14.copyWith(color: Colors.red),
+          errorStyle: AppStyles.DINRegular14.copyWith(color: Colors.red),
           suffixIcon: IconButton(
             onPressed: () {
               isPasswordVisible = !isPasswordVisible;
@@ -59,9 +59,9 @@ class _PasswordFieldState extends State<PasswordField> {
                   ),
           ),
           hintText: widget.hintText,
-          floatingLabelStyle: AppStyles.cairoRegular16,
+          floatingLabelStyle: AppStyles.DINRegular16,
           hintStyle:
-              AppStyles.cairoRegular16.copyWith(color: AppColors.greyColor),
+              AppStyles.DINRegular16.copyWith(color: AppColors.greyColor),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: const BorderSide(color: AppColors.primaryColor),

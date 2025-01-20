@@ -25,7 +25,7 @@ class RegisterView extends StatelessWidget {
           surfaceTintColor: AppColors.whiteColor,
           title: const Text(
             AppTexts.newAccount,
-            style: AppStyles.cairoBold20,
+            style: AppStyles.DINBold20,
           ),
           leading: IconButton(
             icon: const Icon(

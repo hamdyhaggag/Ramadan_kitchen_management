@@ -25,7 +25,7 @@ class ForgetPassword extends StatelessWidget {
             textAlign: TextAlign.start,
             AppTexts.forgetPassword,
             style:
-                AppStyles.cairoRegular16.copyWith(color: AppColors.greyColor),
+                AppStyles.DINRegular16.copyWith(color: AppColors.greyColor),
           ),
         ),
       ),

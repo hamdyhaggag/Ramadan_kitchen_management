@@ -39,23 +39,23 @@ class _TermsAncConditionsState extends State<TermsAncConditions> {
               children: [
                 TextSpan(
                   text: AppTexts.fromCreatinganAccount,
-                  style: AppStyles.cairoRegular16.copyWith(
+                  style: AppStyles.DINRegular16.copyWith(
                     color: AppColors.blackColor,
                   ),
                 ),
                 TextSpan(
                   text: AppTexts.youAreAccept,
-                  style: AppStyles.cairoRegular16.copyWith(
+                  style: AppStyles.DINRegular16.copyWith(
                     color: AppColors.blackColor,
                   ),
                 ),
                 const TextSpan(
                   text: AppTexts.termsAndConditions,
-                  style: AppStyles.cairoRegular16,
+                  style: AppStyles.DINRegular16,
                 ),
                 TextSpan(
                   text: AppTexts.privacyPolicy,
-                  style: AppStyles.cairoRegular16.copyWith(
+                  style: AppStyles.DINRegular16.copyWith(
                     color: AppColors.blackColor,
                   ),
                 ),

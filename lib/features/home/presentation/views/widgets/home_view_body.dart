@@ -16,15 +16,15 @@ class HomeViewBody extends StatelessWidget {
         children: [
           Text(
             getCurrentUser().name,
-            style: AppStyles.cairoBold24.copyWith(color: AppColors.blackColor),
+            style: AppStyles.DINBold24.copyWith(color: AppColors.blackColor),
           ),
           Text(
             getCurrentUser().email,
-            style: AppStyles.cairoBold24.copyWith(color: AppColors.blackColor),
+            style: AppStyles.DINBold24.copyWith(color: AppColors.blackColor),
           ),
           Text(
             getCurrentUser().phoneNumber,
-            style: AppStyles.cairoBold24.copyWith(color: AppColors.blackColor),
+            style: AppStyles.DINBold24.copyWith(color: AppColors.blackColor),
           ),
         ],
       ),

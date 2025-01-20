@@ -18,8 +18,7 @@ class DoNotHaveAnAccount extends StatelessWidget {
         children: [
           TextSpan(
             text: AppTexts.doNotHaveAnAccount,
-            style:
-                AppStyles.cairoRegular16.copyWith(color: AppColors.greyColor),
+            style: AppStyles.DINRegular16.copyWith(color: AppColors.greyColor),
           ),
           TextSpan(
             recognizer: TapGestureRecognizer()
@@ -27,7 +26,7 @@ class DoNotHaveAnAccount extends StatelessWidget {
                 Navigator.pushReplacementNamed(context, AppRoutes.register);
               },
             text: AppTexts.register,
-            style: AppStyles.cairoRegular16.copyWith(
+            style: AppStyles.DINRegular16.copyWith(
               color: AppColors.primaryColor,
             ),
           ),

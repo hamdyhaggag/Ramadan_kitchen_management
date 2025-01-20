@@ -33,9 +33,9 @@ class EmailField extends StatelessWidget {
         onSaved: onSaved,
         decoration: InputDecoration(
           hintText: hitnText,
-          floatingLabelStyle: AppStyles.cairoRegular16,
+          floatingLabelStyle: AppStyles.DINRegular16,
           hintStyle:
-              AppStyles.cairoRegular16.copyWith(color: AppColors.greyColor),
+              AppStyles.DINRegular16.copyWith(color: AppColors.greyColor),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: const BorderSide(color: AppColors.primaryColor),

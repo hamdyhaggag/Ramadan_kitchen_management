@@ -15,12 +15,12 @@ class TopLoginOrRegisterSection extends StatelessWidget {
       children: [
         Text(
           AppTexts.letsGo,
-          style: AppStyles.cairoBold32,
+          style: AppStyles.DINBold32,
         ),
         SizedBox(height: 15),
         Text(
           AppTexts.pickOnefromTheOptions,
-          style: AppStyles.cairoRegular16,
+          style: AppStyles.DINRegular16,
         )
       ],
     );
