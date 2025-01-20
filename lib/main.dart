@@ -26,6 +26,7 @@ class KitchenApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(
+        fontFamily: 'Cairo',
         scaffoldBackgroundColor: Colors.white,
         appBarTheme: const AppBarTheme(
           backgroundColor: AppColors.whiteColor,

@@ -21,7 +21,7 @@ class RegisterViewBodyBlocConsumer extends StatelessWidget {
         if (state is RegisterCubitSuccess) {
           Navigator.pushNamedAndRemoveUntil(
             context,
-            AppRoutes.home,
+            AppRoutes.layout,
             (route) => false,
           );
         }

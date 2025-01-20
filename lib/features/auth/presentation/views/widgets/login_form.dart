@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ramadan_kitchen_management/features/auth/presentation/manager/login_cubit/login_cubit.dart';
-
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/app_texts.dart';
 import '../../../../../core/widgets/general_button.dart';
 import '../../../../../core/widgets/custom_text_form_field.dart';
 import '../../../../../core/widgets/password_field.dart';
+import '../../manager/login_cubit/login_cubit.dart';
 import 'foreget_password.dart';
 
 class LoginForm extends StatefulWidget {
@@ -69,9 +68,9 @@ class _LoginFormState extends State<LoginForm> {
                 if (formKey.currentState!.validate()) {
                   formKey.currentState!.save();
                   context.read<LoginCubit>().login(
-                    email: emailController.text,
-                    password: passwordController.text,
-                  );
+                        email: emailController.text,
+                        password: passwordController.text,
+                      );
                 } else {
                   autoValidateMode = AutovalidateMode.always;
                   setState(() {});

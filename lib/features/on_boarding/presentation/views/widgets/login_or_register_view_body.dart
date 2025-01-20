@@ -20,7 +20,6 @@ class LoginOrRegisterViewBody extends StatelessWidget {
           SizedBox(height: MediaQuery.of(context).size.height * .05),
           Image.asset(
             AppAssets.imagesSplash,
-            color: AppColors.primaryColor,
           ),
           SizedBox(height: MediaQuery.of(context).size.height * .1),
 

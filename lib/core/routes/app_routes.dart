@@ -8,4 +8,9 @@ abstract class AppRoutes {
   static const String verify = 'verifyView';
   static const String resetPassword = 'resetPasswordView';
   static const String home = 'homeView';
+  static const String manageCases = 'manageCasesView';
+  static const String dailyExpenses = 'dailyExpensesView';
+  static const String statistics = 'statisticsView';
+  static const String reports = 'reportsView';
+  static const String layout = 'ScreenLayout';
 }

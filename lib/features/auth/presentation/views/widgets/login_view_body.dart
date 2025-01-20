@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_texts.dart';
 
 import '../../../../../core/utils/app_assets.dart';
-import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/app_styles.dart';
 import 'do_not_have_an_account.dart';
 import 'login_form.dart';
@@ -19,7 +18,6 @@ class LoginViewBody extends StatelessWidget {
           SizedBox(height: MediaQuery.of(context).size.height * .1),
           Image.asset(
             AppAssets.imagesSplash,
-            color: AppColors.primaryColor,
             height: MediaQuery.of(context).size.height * .3,
           ),
           const SizedBox(height: 16),

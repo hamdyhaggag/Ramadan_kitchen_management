@@ -21,7 +21,7 @@ class LoginViewBodyBlocConsumer extends StatelessWidget {
         if (state is LoginCubitSuccess) {
           Navigator.pushNamedAndRemoveUntil(
             context,
-            AppRoutes.home,
+            AppRoutes.layout,
             (route) => false,
           );
         }
