@@ -31,15 +31,58 @@ class LoginViewBodyBlocConsumer extends StatelessWidget {
       },
       builder: (context, state) {
         return SafeArea(
-          child: ModalProgressHUD(
-            inAsyncCall: state is LoginCubitLoading,
-            progressIndicator: const CircularProgressIndicator(
-              color: AppColors.primaryColor,
-            ),
-            child: const LoginViewBody(),
+          child: Stack(
+            children: [
+              ModalProgressHUD(
+                inAsyncCall: state is LoginCubitLoading,
+                progressIndicator: const SizedBox(), // Placeholder
+                child: const LoginViewBody(),
+              ),
+              if (state is LoginCubitLoading)
+                _buildCustomLoadingOverlay(context),
+            ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildCustomLoadingOverlay(BuildContext context) {
+    return Container(
+      color: Colors.black.withOpacity(0.6), // Semi-transparent overlay
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(seconds: 1),
+              curve: Curves.easeInOut,
+              height: 80,
+              width: 80,
+              child: CircularProgressIndicator(
+                strokeWidth: 5,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.whiteColor),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'جار تسجيل الدخول...',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.whiteColor,
+                shadows: [
+                  Shadow(
+                    blurRadius: 10.0,
+                    color: Colors.black38,
+                    offset: Offset(2, 2),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
