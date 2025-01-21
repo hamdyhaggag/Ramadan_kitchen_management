@@ -21,9 +21,14 @@ class ScreenLayout extends StatefulWidget {
 
 class _ScreenLayoutState extends State<ScreenLayout> {
   final List<Widget> _screens = [
-    const ManageCasesScreen(),
+    ManageCasesScreen(),
     const DailyExpensesScreen(),
-    const StatisticsScreen(),
+    StatisticsScreen(
+      names: ["أحمد علي", "محمد محمود", "سارة عبد الله"],
+      checkboxValues: [true, false, true],
+      serialNumbers: [1, 2, 3],
+      numberOfIndividuals: [4, 3, 5],
+    ),
     ReportsScreen(),
   ];
 

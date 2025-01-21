@@ -47,7 +47,7 @@ Route<dynamic> onGenerateRoutes(RouteSettings settings) {
       );
     case AppRoutes.manageCases:
       return MaterialPageRoute(
-        builder: (context) => const ManageCasesScreen(),
+        builder: (context) => ManageCasesScreen(),
       );
     case AppRoutes.dailyExpenses:
       return MaterialPageRoute(
@@ -55,7 +55,12 @@ Route<dynamic> onGenerateRoutes(RouteSettings settings) {
       );
     case AppRoutes.statistics:
       return MaterialPageRoute(
-        builder: (context) => const StatisticsScreen(),
+        builder: (context) => const StatisticsScreen(
+          names: ["أحمد علي", "محمد محمود", "سارة عبد الله"],
+          checkboxValues: [true, false, true],
+          serialNumbers: [1, 2, 3],
+          numberOfIndividuals: [4, 3, 5],
+        ),
       );
     case AppRoutes.reports:
       return MaterialPageRoute(
