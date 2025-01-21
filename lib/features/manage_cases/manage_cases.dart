@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import '../../core/widgets/general_button.dart';
@@ -15,6 +14,13 @@ class ManageCasesScreen extends StatefulWidget {
 
 class _ManageCasesScreenState extends State<ManageCasesScreen> {
   List<Map<String, dynamic>> casesData = [];
+  String? selectedFilter;
+  bool? selectedFilterValue;
+
+  final Map<String, String> filterOptions = {
+    "جاهزة": "جاهزة",
+    "هنا؟": "هنا؟",
+  };
 
   @override
   void initState() {
@@ -58,6 +64,15 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
     Prefs.setString('casesData', jsonEncode(casesData));
   }
 
+  List<Map<String, dynamic>> get filteredCases {
+    if (selectedFilter == null || selectedFilterValue == null) {
+      return casesData;
+    }
+    return casesData.where((caseItem) {
+      return caseItem[selectedFilter] == selectedFilterValue;
+    }).toList();
+  }
+
   void _navigateToManageDetails() async {
     final updatedCases = await Navigator.push(
       context,
@@ -81,9 +96,48 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "جدول الحالات",
-              style: Theme.of(context).textTheme.titleLarge,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    "جدول الحالات",
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+                DropdownButton<String?>(
+                  value: selectedFilter,
+                  hint: const Text("اختر نوع الفلتر"),
+                  items: filterOptions.entries.map((entry) {
+                    return DropdownMenuItem(
+                      value: entry.key,
+                      child: Text(entry.value),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedFilter = value;
+                      selectedFilterValue =
+                          null; // Reset value when filter changes
+                    });
+                  },
+                ),
+                const SizedBox(width: 16),
+                if (selectedFilter != null)
+                  DropdownButton<bool?>(
+                    value: selectedFilterValue,
+                    hint: const Text("اختر القيمة"),
+                    items: const [
+                      DropdownMenuItem(value: null, child: Text("الكل")),
+                      DropdownMenuItem(value: true, child: Text("نعم")),
+                      DropdownMenuItem(value: false, child: Text("لا")),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        selectedFilterValue = value;
+                      });
+                    },
+                  ),
+              ],
             ),
             const SizedBox(height: 16),
             Expanded(
@@ -99,7 +153,7 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
                     DataColumn(label: Text("جاهزة")),
                     DataColumn(label: Text("هنا؟")),
                   ],
-                  rows: casesData.map((caseItem) {
+                  rows: filteredCases.map((caseItem) {
                     return DataRow(
                       cells: [
                         DataCell(Text(caseItem["الرقم"].toString())),
@@ -149,9 +203,10 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
             GestureDetector(
               onTap: _navigateToManageDetails,
               child: GeneralButton(
-                  text: 'إدارة الحالات',
-                  backgroundColor: AppColors.primaryColor,
-                  textColor: AppColors.whiteColor),
+                text: 'إدارة الحالات',
+                backgroundColor: AppColors.primaryColor,
+                textColor: AppColors.whiteColor,
+              ),
             ),
           ],
         ),
