@@ -106,20 +106,37 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
                         DataCell(Text(caseItem["الاسم"])),
                         DataCell(Text(caseItem["عدد الأفراد"].toString())),
                         DataCell(
-                          Icon(
-                            caseItem["جاهزة"]
-                                ? Icons.check_circle
-                                : Icons.cancel,
-                            color:
-                                caseItem["جاهزة"] ? Colors.green : Colors.red,
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                caseItem["جاهزة"] = !caseItem["جاهزة"];
+                                saveCasesData();
+                              });
+                            },
+                            child: Icon(
+                              caseItem["جاهزة"]
+                                  ? Icons.check_circle
+                                  : Icons.cancel,
+                              color:
+                                  caseItem["جاهزة"] ? Colors.green : Colors.red,
+                            ),
                           ),
                         ),
                         DataCell(
-                          Icon(
-                            caseItem["هنا؟"]
-                                ? Icons.check_circle
-                                : Icons.cancel,
-                            color: caseItem["هنا؟"] ? Colors.green : Colors.red,
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                caseItem["هنا؟"] = !caseItem["هنا؟"];
+                                saveCasesData();
+                              });
+                            },
+                            child: Icon(
+                              caseItem["هنا؟"]
+                                  ? Icons.check_circle
+                                  : Icons.cancel,
+                              color:
+                                  caseItem["هنا؟"] ? Colors.green : Colors.red,
+                            ),
                           ),
                         ),
                       ],
