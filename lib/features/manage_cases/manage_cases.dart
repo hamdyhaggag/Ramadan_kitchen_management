@@ -107,17 +107,22 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
                 DropdownButton<String?>(
                   value: selectedFilter,
                   hint: const Text("اختر نوع الفلتر"),
-                  items: filterOptions.entries.map((entry) {
-                    return DropdownMenuItem(
-                      value: entry.key,
-                      child: Text(entry.value),
-                    );
-                  }).toList(),
+                  items: [
+                    DropdownMenuItem(
+                      value: null,
+                      child: Text("الغاء الفلتر"),
+                    ),
+                    ...filterOptions.entries.map((entry) {
+                      return DropdownMenuItem(
+                        value: entry.key,
+                        child: Text(entry.value),
+                      );
+                    }),
+                  ],
                   onChanged: (value) {
                     setState(() {
                       selectedFilter = value;
-                      selectedFilterValue =
-                          null; // Reset value when filter changes
+                      selectedFilterValue = null;
                     });
                   },
                 ),
