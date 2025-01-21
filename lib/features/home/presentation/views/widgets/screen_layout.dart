@@ -23,8 +23,6 @@ class ScreenLayout extends StatefulWidget {
 class _ScreenLayoutState extends State<ScreenLayout> {
   final List<Widget> _screens = [
     ManageCasesScreen(),
-    const DailyExpensesScreen(),
-    // StatisticsScreen will be populated with dynamic data from casesData
     Builder(
       builder: (context) {
         final casesData = Prefs.getString('casesData');
@@ -71,6 +69,7 @@ class _ScreenLayoutState extends State<ScreenLayout> {
         );
       },
     ),
+    const DailyExpensesScreen(),
     ReportsScreen(),
   ];
 
@@ -128,9 +127,10 @@ class _ScreenLayoutState extends State<ScreenLayout> {
       case 0:
         return _buildTitle('الرئيسية', defaultStyle);
       case 1:
-        return _buildTitle('المصاريف', defaultStyle);
-      case 2:
         return _buildTitle('الإحصائيات', defaultStyle);
+      case 2:
+        return _buildTitle('المصاريف', defaultStyle);
+
       default:
         return _buildTitle('التقارير', defaultStyle);
     }
@@ -168,22 +168,6 @@ class _ScreenLayoutState extends State<ScreenLayout> {
               label: 'الرئيسية'),
           BottomNavigationBarItem(
               icon: SvgPicture.asset(
-                'assets/icons/wallet.svg',
-                colorFilter:
-                    ColorFilter.mode(AppColors.greyColor, BlendMode.srcIn),
-                width: 28,
-                height: 28,
-              ),
-              activeIcon: SvgPicture.asset(
-                'assets/icons/wallet.svg',
-                colorFilter: const ColorFilter.mode(
-                    AppColors.primaryColor, BlendMode.srcIn),
-                width: 28,
-                height: 28,
-              ),
-              label: 'المصاريف'),
-          BottomNavigationBarItem(
-              icon: SvgPicture.asset(
                 'assets/icons/analysis.svg',
                 colorFilter:
                     ColorFilter.mode(AppColors.greyColor, BlendMode.srcIn),
@@ -198,6 +182,22 @@ class _ScreenLayoutState extends State<ScreenLayout> {
                 height: 28,
               ),
               label: 'الإحصائيات'),
+          BottomNavigationBarItem(
+              icon: SvgPicture.asset(
+                'assets/icons/wallet.svg',
+                colorFilter:
+                    ColorFilter.mode(AppColors.greyColor, BlendMode.srcIn),
+                width: 28,
+                height: 28,
+              ),
+              activeIcon: SvgPicture.asset(
+                'assets/icons/wallet.svg',
+                colorFilter: const ColorFilter.mode(
+                    AppColors.primaryColor, BlendMode.srcIn),
+                width: 28,
+                height: 28,
+              ),
+              label: 'المصاريف'),
           BottomNavigationBarItem(
               icon: SvgPicture.asset(
                 'assets/icons/report.svg',
