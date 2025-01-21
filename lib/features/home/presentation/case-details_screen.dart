@@ -1,5 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-
+import '../../../core/cache/prefs.dart';
 import '../../../core/utils/app_colors.dart';
 import '../../../core/widgets/general_button.dart';
 
@@ -19,7 +20,21 @@ class _ManageCaseDetailsScreenState extends State<ManageCaseDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    casesData = List.from(widget.casesData);
+    _loadCasesData();
+  }
+
+  void _loadCasesData() {
+    final savedData = Prefs.getString('casesData');
+    if (savedData.isNotEmpty) {
+      casesData = List<Map<String, dynamic>>.from(jsonDecode(savedData));
+    } else {
+      casesData = List.from(widget.casesData);
+    }
+  }
+
+  void _saveCasesData() {
+    final jsonString = jsonEncode(casesData);
+    Prefs.setString('casesData', jsonString);
   }
 
   void _addNewCase() {
@@ -32,6 +47,7 @@ class _ManageCaseDetailsScreenState extends State<ManageCaseDetailsScreen> {
         "هنا؟": false,
       });
     });
+    _saveCasesData();
   }
 
   void _editCase(int index) {
@@ -67,6 +83,7 @@ class _ManageCaseDetailsScreenState extends State<ManageCaseDetailsScreen> {
                   casesData[index]["عدد الأفراد"] =
                       int.tryParse(membersController.text) ?? 1;
                 });
+                _saveCasesData();
                 Navigator.pop(context);
               },
               child: const Text("حفظ"),
@@ -85,13 +102,14 @@ class _ManageCaseDetailsScreenState extends State<ManageCaseDetailsScreen> {
     setState(() {
       casesData.removeAt(index);
     });
+    _saveCasesData();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('إدارة القيم'),
+        title: const Text('إدارة الحالات'),
       ),
       body: Column(
         children: [
@@ -139,6 +157,7 @@ class _ManageCaseDetailsScreenState extends State<ManageCaseDetailsScreen> {
                 const EdgeInsets.only(bottom: 16.0, left: 16.0, right: 16.0),
             child: GestureDetector(
               onTap: () {
+                _saveCasesData();
                 Navigator.pop(context, casesData);
               },
               child: GeneralButton(
