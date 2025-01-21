@@ -33,14 +33,19 @@ class _ManageCaseDetailsScreenState extends State<ManageCaseDetailsScreen> {
   }
 
   void _saveCasesData() {
-    final jsonString = jsonEncode(casesData);
-    Prefs.setString('casesData', jsonString);
+    Prefs.setString('casesData', jsonEncode(casesData));
   }
 
   void _addNewCase() {
     setState(() {
+      int newId = casesData.isEmpty
+          ? 1
+          : casesData
+                  .map((e) => e["الرقم"] as int)
+                  .reduce((a, b) => a > b ? a : b) +
+              1;
       casesData.add({
-        "الرقم": casesData.length + 1,
+        "الرقم": newId,
         "الاسم": "اسم جديد",
         "عدد الأفراد": 1,
         "جاهزة": false,
@@ -51,6 +56,8 @@ class _ManageCaseDetailsScreenState extends State<ManageCaseDetailsScreen> {
   }
 
   void _editCase(int index) {
+    TextEditingController numberController =
+        TextEditingController(text: casesData[index]["الرقم"].toString());
     TextEditingController nameController =
         TextEditingController(text: casesData[index]["الاسم"]);
     TextEditingController membersController =
@@ -65,6 +72,11 @@ class _ManageCaseDetailsScreenState extends State<ManageCaseDetailsScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
+                controller: numberController,
+                decoration: const InputDecoration(labelText: "الرقم"),
+                keyboardType: TextInputType.number,
+              ),
+              TextField(
                 controller: nameController,
                 decoration: const InputDecoration(labelText: "الاسم"),
               ),
@@ -78,7 +90,17 @@ class _ManageCaseDetailsScreenState extends State<ManageCaseDetailsScreen> {
           actions: [
             TextButton(
               onPressed: () {
+                int newNumber = int.tryParse(numberController.text) ?? -1;
+                if (newNumber <= 0 ||
+                    casesData.any((e) =>
+                        e["الرقم"] == newNumber && e != casesData[index])) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("رقم غير صالح أو مكرر!")),
+                  );
+                  return;
+                }
                 setState(() {
+                  casesData[index]["الرقم"] = newNumber;
                   casesData[index]["الاسم"] = nameController.text;
                   casesData[index]["عدد الأفراد"] =
                       int.tryParse(membersController.text) ?? 1;
@@ -101,6 +123,9 @@ class _ManageCaseDetailsScreenState extends State<ManageCaseDetailsScreen> {
   void _deleteCase(int index) {
     setState(() {
       casesData.removeAt(index);
+      for (int i = 0; i < casesData.length; i++) {
+        casesData[i]["الرقم"] = i + 1;
+      }
     });
     _saveCasesData();
   }
