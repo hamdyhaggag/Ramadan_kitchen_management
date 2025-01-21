@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -23,11 +24,52 @@ class _ScreenLayoutState extends State<ScreenLayout> {
   final List<Widget> _screens = [
     ManageCasesScreen(),
     const DailyExpensesScreen(),
-    StatisticsScreen(
-      names: ["أحمد علي", "محمد محمود", "سارة عبد الله"],
-      checkboxValues: [true, false, true],
-      serialNumbers: [1, 2, 3],
-      numberOfIndividuals: [4, 3, 5],
+    // StatisticsScreen will be populated with dynamic data from casesData
+    Builder(
+      builder: (context) {
+        final casesData = Prefs.getString('casesData');
+        final data = casesData.isNotEmpty
+            ? List<Map<String, dynamic>>.from(jsonDecode(casesData))
+            : [
+                {
+                  "الرقم": 1,
+                  "الاسم": "أحمد علي",
+                  "عدد الأفراد": 4,
+                  "جاهزة": true,
+                  "هنا؟": true,
+                },
+                {
+                  "الرقم": 2,
+                  "الاسم": "محمد محمود",
+                  "عدد الأفراد": 3,
+                  "جاهزة": false,
+                  "هنا؟": false,
+                },
+                {
+                  "الرقم": 3,
+                  "الاسم": "سارة عبد الله",
+                  "عدد الأفراد": 80,
+                  "جاهزة": true,
+                  "هنا؟": false,
+                },
+              ];
+
+        final names =
+            data.map((caseItem) => caseItem["الاسم"] as String).toList();
+        final checkboxValues =
+            data.map((caseItem) => caseItem["جاهزة"] as bool).toList();
+        final serialNumbers =
+            data.map((caseItem) => caseItem["الرقم"] as int).toList();
+        final numberOfIndividuals =
+            data.map((caseItem) => caseItem["عدد الأفراد"] as int).toList();
+
+        return StatisticsScreen(
+          names: names,
+          checkboxValues: checkboxValues,
+          serialNumbers: serialNumbers,
+          numberOfIndividuals: numberOfIndividuals,
+        );
+      },
     ),
     ReportsScreen(),
   ];

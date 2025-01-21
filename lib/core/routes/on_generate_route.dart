@@ -14,6 +14,9 @@ import '../../features/manage_cases/manage_cases.dart';
 import '../../features/on_boarding/presentation/views/login_or_register_view.dart';
 import '../../features/reports/reports.dart';
 import '../../features/statistics/statistics_screen.dart';
+import 'dart:convert';
+
+import '../cache/prefs.dart';
 
 Route<dynamic> onGenerateRoutes(RouteSettings settings) {
   switch (settings.name) {
@@ -53,19 +56,59 @@ Route<dynamic> onGenerateRoutes(RouteSettings settings) {
       return MaterialPageRoute(
         builder: (context) => const DailyExpensesScreen(),
       );
+    // Inside the onGenerateRoute function
     case AppRoutes.statistics:
+      // Retrieve casesData from Prefs
+      final cachedCases = Prefs.getString('casesData');
+      final data = cachedCases.isNotEmpty
+          ? List<Map<String, dynamic>>.from(jsonDecode(cachedCases))
+          : [
+              {
+                "الرقم": 1,
+                "الاسم": "أحمد علي",
+                "عدد الأفراد": 4,
+                "جاهزة": true,
+                "هنا؟": true,
+              },
+              {
+                "الرقم": 2,
+                "الاسم": "محمد محمود",
+                "عدد الأفراد": 3,
+                "جاهزة": false,
+                "هنا؟": false,
+              },
+              {
+                "الرقم": 3,
+                "الاسم": "سارة عبد الله",
+                "عدد الأفراد": 5,
+                "جاهزة": true,
+                "هنا؟": false,
+              },
+            ];
+
+      final names =
+          data.map((caseItem) => caseItem["الاسم"] as String).toList();
+      final checkboxValues =
+          data.map((caseItem) => caseItem["جاهزة"] as bool).toList();
+      final serialNumbers =
+          data.map((caseItem) => caseItem["الرقم"] as int).toList();
+      final numberOfIndividuals =
+          data.map((caseItem) => caseItem["عدد الأفراد"] as int).toList();
+
       return MaterialPageRoute(
-        builder: (context) => const StatisticsScreen(
-          names: ["أحمد علي", "محمد محمود", "سارة عبد الله"],
-          checkboxValues: [true, false, true],
-          serialNumbers: [1, 2, 3],
-          numberOfIndividuals: [4, 3, 5],
+        builder: (context) => StatisticsScreen(
+          names: names,
+          checkboxValues: checkboxValues,
+          serialNumbers: serialNumbers,
+          numberOfIndividuals: numberOfIndividuals,
         ),
       );
+
     case AppRoutes.reports:
       return MaterialPageRoute(
         builder: (context) => ReportsScreen(),
       );
+
     case AppRoutes.layout:
       return MaterialPageRoute(
         builder: (context) => ScreenLayout(),

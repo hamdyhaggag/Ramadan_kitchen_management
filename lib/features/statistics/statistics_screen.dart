@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 
 class StatisticsScreen extends StatelessWidget {
   final List<String> names;
@@ -25,55 +26,122 @@ class StatisticsScreen extends StatelessWidget {
         calculateProgress(checkboxValues, numberOfIndividuals) * 100;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('الإحصائيات'),
-        centerTitle: true,
-      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 30),
+              _buildPieChart(totalCheckedIndividuals, totalUndistributed),
+              const SizedBox(height: 45),
+              _buildStatisticsCard(
+                  context, 'إجمالي عدد الأفراد', totalIndividuals),
+              _buildStatisticsCard(
+                context,
+                'نسبة الإكتمال',
+                double.parse(progressPercentage.toStringAsFixed(2)),
+                percentage: true,
+              ),
+              _buildStatisticsCard(
+                context,
+                'عدد الشنط المتبقية',
+                calculateTotalSerialNumbers(checkboxValues),
+              ),
+              _buildStatisticsCard(
+                context,
+                'عدد الأفراد المتبقي',
+                totalUndistributed,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildSectionTitle(BuildContext context, String title) {
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: AppColors.primaryColor,
+          ),
+    );
+  }
+
+  Widget _buildPieChart(int totalChecked, int totalUndistributed) {
+    return Container(
+      height: 250,
+      padding: const EdgeInsets.all(8.0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        color: Colors.grey[200],
+      ),
+      child: PieChart(
+        PieChartData(
+          sections: [
+            PieChartSectionData(
+              value: totalChecked.toDouble(),
+              title: 'تم التوزيع\n$totalChecked',
+              color: AppColors.primaryColor,
+              radius: 100,
+              titleStyle: const TextStyle(
+                  color: AppColors.whiteColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold),
+            ),
+            PieChartSectionData(
+              value: totalUndistributed.toDouble(),
+              title: 'لم يتم التوزيع\n$totalUndistributed',
+              color: Colors.grey[350],
+              radius: 100,
+              titleStyle:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+          ],
+          centerSpaceRadius: 60,
+          borderData: FlBorderData(show: false),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatisticsCard(BuildContext context, String title, dynamic value,
+      {bool percentage = false}) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.2),
+            spreadRadius: 2,
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'إحصائيات التوزيع',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: PieChart(
-                PieChartData(
-                  sections: [
-                    PieChartSectionData(
-                      value: totalCheckedIndividuals.toDouble(),
-                      title: 'تم التوزيع',
-                      color: Colors.green,
-                    ),
-                    PieChartSectionData(
-                      value: totalUndistributed.toDouble(),
-                      title: 'لم يتم التوزيع',
-                      color: Colors.red,
-                    ),
-                  ],
-                  centerSpaceRadius: 50,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'إجمالي عدد الأفراد: $totalIndividuals',
-              style: const TextStyle(fontSize: 16),
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             Text(
-              'نسبة الإكتمال: ${progressPercentage.toStringAsFixed(2)}%',
-              style: const TextStyle(fontSize: 16),
-            ),
-            Text(
-              'عدد الشنط المتبقية: ${calculateTotalSerialNumbers(checkboxValues)}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            Text(
-              'عدد الأفراد المتبقي: $totalUndistributed',
-              style: const TextStyle(fontSize: 16),
+              percentage ? '$value%' : '$value',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: percentage ? AppColors.primaryColor : Colors.black,
+                  ),
             ),
           ],
         ),
@@ -81,7 +149,6 @@ class StatisticsScreen extends StatelessWidget {
     );
   }
 
-  // Utility methods for calculations
   int calculateTotalIndividuals(List<int> numberOfIndividuals) =>
       numberOfIndividuals.reduce((value, element) => value + element);
 

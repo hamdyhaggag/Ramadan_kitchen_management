@@ -51,7 +51,7 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
         {
           "الرقم": 3,
           "الاسم": "سارة عبد الله",
-          "عدد الأفراد": 5,
+          "عدد الأفراد": 8,
           "جاهزة": true,
           "هنا؟": false
         },
