@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
+import '../../core/widgets/general_button.dart';
 import '../home/presentation/case-details_screen.dart';
 
 class ManageCasesScreen extends StatefulWidget {
@@ -104,12 +105,12 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _navigateToManageDetails,
-              child: const Text(
-                'إدارة القيم',
-                style: TextStyle(color: AppColors.primaryColor),
-              ),
+            GestureDetector(
+              onTap: _navigateToManageDetails,
+              child: GeneralButton(
+                  text: 'إدارة الحالات',
+                  backgroundColor: AppColors.primaryColor,
+                  textColor: AppColors.whiteColor),
             ),
           ],
         ),

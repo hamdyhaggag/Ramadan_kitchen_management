@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/utils/app_colors.dart';
+import '../../../core/widgets/general_button.dart';
 
 class ManageCaseDetailsScreen extends StatefulWidget {
   final List<Map<String, dynamic>> casesData;
@@ -125,24 +126,25 @@ class _ManageCaseDetailsScreenState extends State<ManageCaseDetailsScreen> {
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: ElevatedButton(
-              onPressed: _addNewCase,
-              child: const Text(
-                "إضافة حالة جديدة",
-                style: TextStyle(color: AppColors.primaryColor),
-              ),
+            child: GestureDetector(
+              onTap: _addNewCase,
+              child: GeneralButton(
+                  text: 'إضافة حالة جديدة',
+                  backgroundColor: AppColors.primaryColor,
+                  textColor: AppColors.whiteColor),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ElevatedButton(
-              onPressed: () {
+            padding:
+                const EdgeInsets.only(bottom: 16.0, left: 16.0, right: 16.0),
+            child: GestureDetector(
+              onTap: () {
                 Navigator.pop(context, casesData);
               },
-              child: const Text(
-                "حفظ التعديلات",
-                style: TextStyle(color: AppColors.primaryColor),
-              ),
+              child: GeneralButton(
+                  text: 'حفظ التعديلات',
+                  backgroundColor: AppColors.secondaryColor,
+                  textColor: AppColors.whiteColor),
             ),
           ),
         ],
