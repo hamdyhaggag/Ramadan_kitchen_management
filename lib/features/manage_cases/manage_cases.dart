@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import '../../core/widgets/general_button.dart';
+import '../../core/cache/prefs.dart';
 import '../home/presentation/case-details_screen.dart';
 
 class ManageCasesScreen extends StatefulWidget {
@@ -11,29 +14,49 @@ class ManageCasesScreen extends StatefulWidget {
 }
 
 class _ManageCasesScreenState extends State<ManageCasesScreen> {
-  List<Map<String, dynamic>> casesData = [
-    {
-      "الرقم": 1,
-      "الاسم": "أحمد علي",
-      "عدد الأفراد": 4,
-      "جاهزة": true,
-      "هنا؟": true
-    },
-    {
-      "الرقم": 2,
-      "الاسم": "محمد محمود",
-      "عدد الأفراد": 3,
-      "جاهزة": false,
-      "هنا؟": false
-    },
-    {
-      "الرقم": 3,
-      "الاسم": "سارة عبد الله",
-      "عدد الأفراد": 5,
-      "جاهزة": true,
-      "هنا؟": false
-    },
-  ];
+  List<Map<String, dynamic>> casesData = [];
+
+  @override
+  void initState() {
+    super.initState();
+    loadCasesData();
+  }
+
+  void loadCasesData() {
+    final cachedCases = Prefs.getString('casesData');
+    if (cachedCases.isNotEmpty) {
+      casesData = List<Map<String, dynamic>>.from(jsonDecode(cachedCases));
+    } else {
+      casesData = [
+        {
+          "الرقم": 1,
+          "الاسم": "أحمد علي",
+          "عدد الأفراد": 4,
+          "جاهزة": true,
+          "هنا؟": true
+        },
+        {
+          "الرقم": 2,
+          "الاسم": "محمد محمود",
+          "عدد الأفراد": 3,
+          "جاهزة": false,
+          "هنا؟": false
+        },
+        {
+          "الرقم": 3,
+          "الاسم": "سارة عبد الله",
+          "عدد الأفراد": 5,
+          "جاهزة": true,
+          "هنا؟": false
+        },
+      ];
+      saveCasesData();
+    }
+  }
+
+  void saveCasesData() {
+    Prefs.setString('casesData', jsonEncode(casesData));
+  }
 
   void _navigateToManageDetails() async {
     final updatedCases = await Navigator.push(
@@ -45,6 +68,7 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
     if (updatedCases != null) {
       setState(() {
         casesData = updatedCases;
+        saveCasesData();
       });
     }
   }
