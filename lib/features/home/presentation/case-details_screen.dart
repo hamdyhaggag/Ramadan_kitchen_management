@@ -67,6 +67,7 @@ class _ManageCaseDetailsScreenState extends State<ManageCaseDetailsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
+          backgroundColor: AppColors.whiteColor,
           title: const Text("تعديل الحالة"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -142,9 +143,22 @@ class _ManageCaseDetailsScreenState extends State<ManageCaseDetailsScreen> {
             child: ListView.builder(
               itemCount: casesData.length,
               itemBuilder: (context, index) {
-                return Card(
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
                   margin:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withValues(alpha: 0.2),
+                        spreadRadius: 2,
+                        blurRadius: 5,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
                   child: ListTile(
                     title: Text(casesData[index]["الاسم"]),
                     subtitle:
