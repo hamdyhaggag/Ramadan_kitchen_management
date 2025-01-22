@@ -107,15 +107,45 @@ class AddExpenseScreenState extends State<AddExpenseScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextField(
+                cursorColor: AppColors.primaryColor,
                 controller: _quantityController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'الكمية'),
+                decoration: InputDecoration(
+                  labelText: 'الكمية',
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: AppColors.primaryColor,
+                      width: 2.0,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: Colors.grey,
+                      width: 1.0,
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 10),
               TextField(
+                cursorColor: AppColors.primaryColor,
                 controller: _unitPriceController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'سعر الوحدة'),
+                decoration: InputDecoration(
+                  labelText: 'سعر الوحدة',
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: AppColors.primaryColor,
+                      width: 2.0,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: Colors.grey,
+                      width: 1.0,
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 10),
               DropdownButton<String>(
