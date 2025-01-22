@@ -34,15 +34,23 @@ String formatTimeString(String timeString) {
   }
 }
 
-class ReportsScreen extends StatelessWidget {
+class ReportsScreen extends StatefulWidget {
   final ExpenseService _expenseService = ExpenseService();
 
   ReportsScreen({super.key});
 
   @override
+  ReportsScreenState createState() => ReportsScreenState();
+}
+
+class ReportsScreenState extends State<ReportsScreen> {
+  bool _isAscending =
+      true; // State to toggle between ascending and descending order
+
+  @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-      future: _expenseService.loadExpenses(),
+      future: widget._expenseService.loadExpenses(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -50,9 +58,18 @@ class ReportsScreen extends StatelessWidget {
           );
         }
 
-        final groupedExpenses = _expenseService.getGroupedExpensesByDate();
+        final groupedExpenses =
+            widget._expenseService.getGroupedExpensesByDate();
 
-        if (groupedExpenses.isEmpty) {
+        // Sort the expenses based on date
+        final sortedGroupedExpenses = Map.fromEntries(
+          groupedExpenses.entries.toList()
+            ..sort((a, b) => _isAscending
+                ? DateTime.parse(a.key).compareTo(DateTime.parse(b.key))
+                : DateTime.parse(b.key).compareTo(DateTime.parse(a.key))),
+        );
+
+        if (sortedGroupedExpenses.isEmpty) {
           return const Scaffold(
             body: Center(
               child: Text(
@@ -64,14 +81,30 @@ class ReportsScreen extends StatelessWidget {
         }
 
         return Scaffold(
+          appBar: AppBar(
+            title: const Text('التقارير اليومية'),
+            actions: [
+              IconButton(
+                icon: Icon(
+                  _isAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isAscending = !_isAscending; // Toggle sort order
+                  });
+                },
+              ),
+            ],
+          ),
           body: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: ListView.builder(
-              itemCount: groupedExpenses.length,
+              itemCount: sortedGroupedExpenses.length,
               itemBuilder: (context, index) {
-                final date = groupedExpenses.keys.elementAt(index);
-                final dailyExpenses = groupedExpenses[date]!;
+                final date = sortedGroupedExpenses.keys.elementAt(index);
+                final dailyExpenses = sortedGroupedExpenses[date]!;
 
+                // Calculate total amount for the date
                 double totalAmount = 0.0;
                 for (var expense in dailyExpenses) {
                   totalAmount += expense['amount'] ?? 0.0;
@@ -106,20 +139,27 @@ class ReportsScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        // Add total amount to the right of the row
-                        Text(
-                          '${totalAmount.toStringAsFixed(2)} ج.م',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primaryColor,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              '${dailyExpenses.length} مصروفات',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${totalAmount.toStringAsFixed(2)} ج.م',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primaryColor,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                    subtitle: Text(
-                      '${dailyExpenses.length} مصروفات',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                     onTap: () {
                       showModalBottomSheet(

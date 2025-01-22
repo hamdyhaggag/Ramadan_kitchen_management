@@ -101,10 +101,12 @@ class _ScreenLayoutState extends State<ScreenLayout> {
                 ),
               ),
             ])
-          : AppBar(
-              title: _getAppBarTitle(),
-              centerTitle: true,
-            ),
+          : _currentIndex == 3
+              ? null
+              : AppBar(
+                  title: _getAppBarTitle(),
+                  centerTitle: true,
+                ),
       body: SafeArea(
         child: IndexedStack(
           index: _currentIndex,
