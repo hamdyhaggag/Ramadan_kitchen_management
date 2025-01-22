@@ -17,6 +17,7 @@ class DailyExpensesScreen extends StatefulWidget {
 
 class DailyExpensesScreenState extends State<DailyExpensesScreen> {
   List<Map<String, dynamic>> expenses = [];
+  DateTime? selectedDate;
 
   double get totalExpenses {
     return expenses.fold(0, (sum, item) => sum + item['amount']);
@@ -32,6 +33,14 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
       );
     }
     return categories;
+  }
+
+  List<Map<String, dynamic>> get filteredExpenses {
+    if (selectedDate == null) return expenses;
+    return expenses
+        .where((expense) =>
+            expense['date'] == selectedDate!.toIso8601String().split('T')[0])
+        .toList();
   }
 
   void addExpense(String date, double amount, String description) {
@@ -54,11 +63,24 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
         expenses.add({
           'date': result['date'],
           'amount': result['amount'],
-          'description':
-              result['product'], // Assuming product name as description
+          'description': result['product'],
         });
       });
-      saveExpenses(); // Save the updated list
+      saveExpenses();
+    }
+  }
+
+  Future<void> pickDate() async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+    );
+    if (pickedDate != null) {
+      setState(() {
+        selectedDate = pickedDate;
+      });
     }
   }
 
@@ -122,12 +144,13 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
   }
 
   Widget _buildExpenseList() {
+    final displayExpenses = filteredExpenses;
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: expenses.length,
+      itemCount: displayExpenses.length,
       itemBuilder: (context, index) {
-        final expense = expenses[index];
+        final expense = displayExpenses[index];
         return Dismissible(
           key: Key(expense['description'] + expense['date']),
           direction: DismissDirection.endToStart,
@@ -168,7 +191,7 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.2),
+                  color: Colors.grey.withAlpha(50),
                   spreadRadius: 2,
                   blurRadius: 5,
                   offset: const Offset(0, 3),
@@ -218,10 +241,38 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
               const SizedBox(height: 10),
               _buildPieChart(),
               const SizedBox(height: 20),
-              Text(
-                'المصروفات:',
-                style: Theme.of(context).textTheme.titleLarge,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'المصروفات:',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.calendar_today),
+                    onPressed: pickDate,
+                  ),
+                ],
               ),
+              if (selectedDate != null)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          selectedDate = null;
+                        });
+                      },
+                      child: const Text(
+                        'إزالة الفلتر',
+                        style: TextStyle(
+                            color: AppColors.blackColor,
+                            fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
               const SizedBox(height: 10),
               _buildExpenseList(),
               const SizedBox(height: 20),
