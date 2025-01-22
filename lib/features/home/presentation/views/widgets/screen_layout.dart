@@ -199,7 +199,7 @@ class _ScreenLayoutState extends State<ScreenLayout> {
                 width: 28,
                 height: 28,
               ),
-              label: 'المصاريف'),
+              label: 'المصروفات'),
           BottomNavigationBarItem(
               icon: SvgPicture.asset(
                 'assets/icons/report.svg',
