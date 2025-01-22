@@ -65,7 +65,7 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
   Widget _buildPieChart() {
     final categoryData = categoryExpenses;
     return SizedBox(
-      height: 200,
+      height: 280,
       child: Stack(
         children: [
           PieChart(
@@ -83,7 +83,7 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
           ),
           Center(
             child: Text(
-              'الإجمالي: ${totalExpenses.toStringAsFixed(2)} ',
+              'الإجمالي: ${totalExpenses.toStringAsFixed(0)} ',
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -108,6 +108,7 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
       SnackBar(
         content: Text('تم حذف المصروف: ${removedExpense['description']}'),
         action: SnackBarAction(
+          disabledTextColor: AppColors.whiteColor,
           label: 'تراجع',
           onPressed: () {
             setState(() {
