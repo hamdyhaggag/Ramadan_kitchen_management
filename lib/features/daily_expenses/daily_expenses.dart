@@ -237,11 +237,15 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'الإحصائيات:',
-                style: Theme.of(context).textTheme.titleLarge,
+              Center(
+                child: Text(
+                  selectedDate != null
+                      ? 'مصاريف يوم ${selectedDate!.toIso8601String().split('T')[0]}'
+                      : '',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 20),
               _buildPieChart(),
               const SizedBox(height: 20),
               Row(

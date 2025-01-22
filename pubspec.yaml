@@ -50,6 +50,7 @@ dependencies:
   path_provider: ^2.0.3
   excel: ^2.0.4
   fluttertoast: ^8.2.4
+
   flutter_localizations:
     sdk: flutter
 dev_dependencies:
