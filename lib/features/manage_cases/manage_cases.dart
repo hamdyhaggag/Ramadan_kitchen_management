@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import '../../core/widgets/general_button.dart';
 import '../../core/cache/prefs.dart';
-import '../home/presentation/case-details_screen.dart';
+import 'case-details_screen.dart';
 
 class ManageCasesScreen extends StatefulWidget {
   const ManageCasesScreen({super.key});

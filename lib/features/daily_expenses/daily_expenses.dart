@@ -36,7 +36,10 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
   }
 
   List<Map<String, dynamic>> get filteredExpenses {
-    if (selectedDate == null) return expenses;
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    if (selectedDate == null) {
+      return expenses.where((expense) => expense['date'] == today).toList();
+    }
     return expenses
         .where((expense) =>
             expense['date'] == selectedDate!.toIso8601String().split('T')[0])
@@ -85,7 +88,15 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
   }
 
   Widget _buildPieChart() {
-    final categoryData = categoryExpenses;
+    final categoryData = {};
+    for (var expense in filteredExpenses) {
+      categoryData.update(
+        expense['description'],
+        (existingValue) => existingValue + expense['amount'],
+        ifAbsent: () => expense['amount'],
+      );
+    }
+
     return SizedBox(
       height: 280,
       child: Stack(
@@ -105,7 +116,7 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
           ),
           Center(
             child: Text(
-              'الإجمالي: ${totalExpenses.toStringAsFixed(0)} ',
+              'الإجمالي لليوم: ${filteredExpenses.fold(0.0, (sum, item) => sum + item['amount']).toStringAsFixed(0)} ',
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -145,6 +156,14 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
 
   Widget _buildExpenseList() {
     final displayExpenses = filteredExpenses;
+    if (displayExpenses.isEmpty) {
+      return const Center(
+        child: Text(
+          'لا توجد مصروفات لهذا اليوم',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+      );
+    }
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -183,34 +202,18 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
           onDismissed: (direction) {
             _removeExpense(index);
           },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withAlpha(50),
-                  spreadRadius: 2,
-                  blurRadius: 5,
-                  offset: const Offset(0, 3),
-                ),
-              ],
+          child: ListTile(
+            title: Text(
+              expense['description'],
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            child: ListTile(
-              title: Text(
-                expense['description'],
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: Text('التاريخ: ${expense['date']}'),
-              trailing: Text(
-                '${expense['amount']} ج.م',
-                style: const TextStyle(
-                  color: Colors.green,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+            subtitle: Text('التاريخ: ${expense['date']}'),
+            trailing: Text(
+              '${expense['amount']} ج.م',
+              style: const TextStyle(
+                color: Colors.green,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
               ),
             ),
           ),

@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../../../core/cache/prefs.dart';
-import '../../../core/utils/app_colors.dart';
-import '../../../core/widgets/general_button.dart';
+import '../../core/cache/prefs.dart';
+import '../../core/utils/app_colors.dart';
+import '../../core/widgets/general_button.dart';
 
 class ManageCaseDetailsScreen extends StatefulWidget {
   final List<Map<String, dynamic>> casesData;
