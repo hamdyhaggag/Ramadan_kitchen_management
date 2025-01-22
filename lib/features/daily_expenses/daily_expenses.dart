@@ -46,11 +46,19 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddExpenseScreen(),
+        builder: (context) => const AddExpenseScreen(),
       ),
     );
     if (result != null) {
-      addExpense(result['date'], result['amount'], result['description']);
+      setState(() {
+        expenses.add({
+          'date': result['date'],
+          'amount': result['amount'],
+          'description':
+              result['product'], // Assuming product name as description
+        });
+      });
+      saveExpenses(); // Save the updated list
     }
   }
 
@@ -66,9 +74,9 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
                 return PieChartSectionData(
                   value: entry.value,
                   title: entry.key,
-                  color: Colors.primaries[
+                  color: AppColors.customColors[
                       categoryData.keys.toList().indexOf(entry.key) %
-                          Colors.primaries.length],
+                          AppColors.customColors.length],
                 );
               }).toList(),
             ),

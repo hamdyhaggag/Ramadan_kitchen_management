@@ -6,4 +6,10 @@ abstract class AppColors {
   static const Color whiteColor = Colors.white;
   static const Color blackColor = Colors.black;
   static Color greyColor = Colors.grey;
+  static const customColors = [
+    Color(0xFF6200EA),
+    Color(0xFF03DAC5),
+    Color(0xFFBB86FC),
+    Color(0xFF3700B3),
+  ];
 }
