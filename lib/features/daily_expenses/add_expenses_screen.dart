@@ -13,17 +13,58 @@ class AddExpenseScreenState extends State<AddExpenseScreen> {
   final TextEditingController amountController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _unitPriceController = TextEditingController();
-  String _selectedCategory = 'خضروات';
+  String _selectedCategory = 'قسم البقالة';
   String? _selectedProduct;
   String _selectedUnitType = 'كيلوجرام'; // Default value
   DateTime _selectedDate = DateTime.now();
 
   final Map<String, List<String>> _categoryProducts = {
-    'خضروات': ['طماطم', 'خيار', 'بطاطس'],
-    'فاكهة': ['تفاح', 'برتقال', 'موز'],
-    'غاز': ['أسطوانة صغيرة', 'أسطوانة كبيرة'],
-    'أسماك': ['بلطي', 'بوري', 'ماكريل'],
-    'فراخ': ['دجاجة كاملة', 'صدور', 'أجنحة'],
+    'قسم البقالة': [
+      'رز  ',
+      'مكرونة  ',
+      'شعرية',
+      'زيت  ',
+      'سمن  ',
+      'سكر',
+      'ملح',
+    ],
+    'قسم الخضروات': [
+      'بسلة',
+      'طماطم',
+      'بطاطس',
+      'جزر',
+      'بصل',
+      'ثوم',
+      'خضرة سلطة',
+    ],
+    'قسم الفواكه': [
+      'برتقال',
+      'موز',
+      'تمر',
+    ],
+    'قسم الأسماك': [
+      'بلطي',
+      'بوري',
+      'ماكاريل',
+    ],
+    'قسم اللحوم': [
+      'الفراخ ',
+      'اللحم',
+      'الكبدة',
+    ],
+    'قسم المواد الإضافية': [
+      'بهارات',
+      'طرشي',
+      'طحينة',
+    ],
+    'قسم الأدوات والمستلزمات': [
+      'فويل',
+      'فوم',
+      'أكياس',
+    ],
+    'قسم الوقود ': [
+      'غاز',
+    ],
   };
 
   void _saveExpense() {
