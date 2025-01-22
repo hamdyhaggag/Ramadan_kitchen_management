@@ -6,6 +6,7 @@ import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/core/widgets/general_button.dart';
 
 import '../../core/cache/prefs.dart';
+import '../reports/reports.dart';
 import 'add_expenses_Screen.dart';
 
 class DailyExpensesScreen extends StatefulWidget {
@@ -16,6 +17,8 @@ class DailyExpensesScreen extends StatefulWidget {
 }
 
 class DailyExpensesScreenState extends State<DailyExpensesScreen> {
+  final ExpenseService expenseService = ExpenseService();
+
   List<Map<String, dynamic>> expenses = [];
   DateTime? selectedDate;
 
@@ -48,6 +51,12 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
 
   void addExpense(String date, double amount, String description) {
     setState(() {
+      expenseService.addExpense({
+        'date': date,
+        'amount': amount,
+        'description': description,
+      });
+      setState(() {});
       expenses
           .add({'date': date, 'amount': amount, 'description': description});
     });
@@ -225,6 +234,8 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
   @override
   void initState() {
     super.initState();
+    expenseService.loadExpenses();
+
     loadExpenses();
   }
 

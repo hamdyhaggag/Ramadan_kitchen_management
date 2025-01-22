@@ -1,351 +1,162 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../core/cache/prefs.dart';
 
-class ReportsScreen extends StatefulWidget {
-  const ReportsScreen({super.key});
-
-  @override
-  ReportsScreenState createState() => ReportsScreenState();
+String formatDateString(String dateString) {
+  try {
+    final parsedDate = DateTime.parse(dateString);
+    return DateFormat('EEEE, MMM d, yyyy', 'ar').format(parsedDate);
+  } catch (e) {
+    return 'تاريخ غير صالح';
+  }
 }
 
-class ReportsScreenState extends State<ReportsScreen> {
-  // Category Data
-  final Map<String, List<String>> categories = {
-    'قسم البقالة': ['رز أو مكرونة', 'زيت أو سمن', 'شعرية', 'سكر', 'ملح'],
-    'قسم الخضروات': [
-      'بسلة',
-      'طماطم',
-      'بطاطس',
-      'جزر',
-      'بصل',
-      'ثوم',
-      'خضرة سلطة'
-    ],
-    'قسم الفواكه': ['تمر', 'برتقال', 'موز'],
-    'قسم اللحوم': [
-      'الأسماك (بلطي، بوري، ماكاريل)',
-      'الفراخ (بالعدد)',
-      'اللحم',
-      'الكبدة'
-    ],
-    'قسم المواد الإضافية': ['بهارات', 'طرشي', 'طحينة'],
-    'قسم الأدوات والمستلزمات': ['فويل', 'فوم', 'أكياس'],
-    'قسم الوقود والطاقة': ['غاز'],
-  };
-
-  List<Product> products = [];
-  double totalCost = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
+String formatTimeString(String timeString) {
+  try {
+    final parsedTime = DateTime.parse(timeString);
+    return DateFormat('h:mm a', 'ar').format(parsedTime);
+  } catch (e) {
+    return 'وقت غير صالح';
   }
+}
 
-  void _addProduct(String productName) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AddProductDialog(
-          productName: productName,
-          onProductAdded: (quantity, unitPrice, unitType) {
-            setState(() {
-              products.add(Product(
-                name: productName,
-                quantity: quantity,
-                unitPrice: unitPrice,
-                unitType: unitType,
-              ));
-              _calculateTotalCost();
-            });
-          },
-        );
-      },
-    );
-  }
+class ReportsScreen extends StatelessWidget {
+  final ExpenseService _expenseService = ExpenseService();
 
-  void _calculateTotalCost() {
-    totalCost = products.fold(0.0, (sum, product) => sum + product.partialCost);
-    setState(() {});
-  }
-
-  void _resetFields() {
-    setState(() {
-      products.clear();
-      totalCost = 0.0;
-    });
-    Prefs.removeData(key: 'productList');
-    Prefs.removeData(key: 'totalCost');
-  }
-
-  void _saveData() {
-    final productList = products.map((product) => product.toJson()).toList();
-    Prefs.setString('productList', jsonEncode(productList));
-    Prefs.setString('totalCost', totalCost.toString());
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم حفظ البيانات بنجاح!')),
-    );
-  }
-
-  void _loadData() {
-    final productListString = Prefs.getString('productList') ?? '';
-    final totalCostString = Prefs.getString('totalCost') ?? '0.0';
-
-    if (productListString.isNotEmpty) {
-      final List<dynamic> cachedList = jsonDecode(productListString);
-      products = cachedList.map((data) => Product.fromJson(data)).toList();
-    }
-    totalCost = double.tryParse(totalCostString) ?? 0.0;
-
-    setState(() {});
-  }
+  ReportsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Column(
-        children: [
-          // Categories Section
-          Expanded(
-            flex: 2,
+    return FutureBuilder(
+      future: _expenseService.loadExpenses(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final groupedExpenses = _expenseService.getGroupedExpensesByDate();
+
+        if (groupedExpenses.isEmpty) {
+          return const Center(
+            child: Text(
+              'لا توجد مصروفات مسجلة',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+          );
+        }
+
+        return Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(16.0),
             child: ListView.builder(
-              itemCount: categories.length,
+              itemCount: groupedExpenses.length,
               itemBuilder: (context, index) {
-                final category = categories.keys.elementAt(index);
-                return CategorySection(
-                  categoryName: category,
-                  products: categories[category]!,
-                  onAddProduct: _addProduct,
+                final date = groupedExpenses.keys.elementAt(index);
+                final dailyExpenses = groupedExpenses[date]!;
+
+                return Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 6,
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  shadowColor: Colors.black.withValues(alpha: 0.1),
+                  child: ExpansionTile(
+                    tilePadding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    title: Text(
+                      formatDateString(date),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.teal[700],
+                      ),
+                    ),
+                    subtitle: Text(
+                      '${dailyExpenses.length} مصروفات',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                    children: dailyExpenses.map((expense) {
+                      return ListTile(
+                        title: Text(
+                          expense['description'],
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'المبلغ: ${expense['amount']} ج.م',
+                          style:
+                              TextStyle(fontSize: 13, color: Colors.grey[700]),
+                        ),
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.teal[50],
+                          child: Icon(
+                            Icons.attach_money,
+                            color: Colors.teal[400],
+                          ),
+                        ),
+                        trailing: Text(
+                          formatTimeString(expense['time'] ?? ''),
+                          style:
+                              TextStyle(fontSize: 13, color: Colors.grey[500]),
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 );
               },
             ),
           ),
-          const Divider(),
-          // Receipt Section
-          Expanded(
-            flex: 3,
-            child: Container(
-              color: Colors.grey.shade200,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Text(
-                      'الإيصال',
-                      textAlign: TextAlign.center,
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: products.length,
-                      itemBuilder: (context, index) {
-                        final product = products[index];
-                        return ListTile(
-                          title: Text(product.name),
-                          subtitle: Text(
-                              '${product.quantity} ${product.unitType} × ${product.unitPrice.toStringAsFixed(2)} جنيه'),
-                          trailing: Text(
-                            '${product.partialCost.toStringAsFixed(2)} جنيه',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const Divider(),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 8.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'التكلفة الإجمالية:',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 18),
-                        ),
-                        Text(
-                          '${totalCost.toStringAsFixed(2)} جنيه',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 18),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const Divider(),
-          // Action Buttons
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildActionButton(
-                    'حساب التكلفة', Colors.green, _calculateTotalCost),
-                _buildActionButton('مسح الكميات', Colors.red, _resetFields),
-                _buildActionButton('حفظ', Colors.blue, _saveData),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  ElevatedButton _buildActionButton(
-      String label, Color color, VoidCallback onPressed) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(backgroundColor: color),
-      child: Text(label),
-    );
-  }
-}
-
-class CategorySection extends StatelessWidget {
-  final String categoryName;
-  final List<String> products;
-  final Function(String) onAddProduct;
-
-  const CategorySection({
-    super.key,
-    required this.categoryName,
-    required this.products,
-    required this.onAddProduct,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ExpansionTile(
-      title: Text(
-        categoryName,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-      ),
-      children: products.map((productName) {
-        return ListTile(
-          title: Text(productName),
-          trailing: IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => onAddProduct(productName),
-          ),
         );
-      }).toList(),
+      },
     );
   }
 }
 
-class Product {
-  final String name;
-  final int quantity;
-  final double unitPrice;
-  final String unitType;
+class ExpenseService {
+  static final ExpenseService _instance = ExpenseService._internal();
+  factory ExpenseService() => _instance;
+  ExpenseService._internal();
 
-  Product({
-    required this.name,
-    required this.quantity,
-    required this.unitPrice,
-    required this.unitType,
-  });
+  List<Map<String, dynamic>> expenses = [];
 
-  double get partialCost => quantity * unitPrice;
-
-  Map<String, dynamic> toJson() => {
-        'name': name,
-        'quantity': quantity,
-        'unitPrice': unitPrice,
-        'unitType': unitType,
-      };
-
-  factory Product.fromJson(Map<String, dynamic> json) {
-    return Product(
-      name: json['name'],
-      quantity: json['quantity'],
-      unitPrice: json['unitPrice'],
-      unitType: json['unitType'],
-    );
+  Future<void> loadExpenses() async {
+    final jsonString = Prefs.getString('expenses');
+    if (jsonString.isNotEmpty) {
+      expenses = List<Map<String, dynamic>>.from(jsonDecode(jsonString));
+    }
   }
-}
 
-class AddProductDialog extends StatefulWidget {
-  final String productName;
-  final Function(int, double, String) onProductAdded;
+  Future<void> saveExpenses() async {
+    final jsonString = jsonEncode(expenses);
+    await Prefs.setString('expenses', jsonString);
+  }
 
-  const AddProductDialog({
-    super.key,
-    required this.productName,
-    required this.onProductAdded,
-  });
+  void addExpense(Map<String, dynamic> expense) {
+    expenses.add(expense);
+    saveExpenses();
+  }
 
-  @override
-  AddProductDialogState createState() => AddProductDialogState();
-}
+  Map<String, List<Map<String, dynamic>>> getGroupedExpensesByDate() {
+    final Map<String, List<Map<String, dynamic>>> groupedExpenses = {};
 
-class AddProductDialogState extends State<AddProductDialog> {
-  final TextEditingController quantityController = TextEditingController();
-  final TextEditingController priceController = TextEditingController();
-  String selectedUnitType = 'كيلو جرام';
+    for (var expense in expenses) {
+      final date = expense['date'];
 
-  final List<String> unitTypes = ['كيلو جرام', 'لتر', 'قطعة'];
+      if (date != null) {
+        if (!groupedExpenses.containsKey(date)) {
+          groupedExpenses[date] = [];
+        }
+        groupedExpenses[date]!.add(expense);
+      }
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('إضافة ${widget.productName}'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: quantityController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'الكمية'),
-            ),
-            TextField(
-              controller: priceController,
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'سعر الوحدة'),
-            ),
-            DropdownButtonFormField(
-              value: selectedUnitType,
-              items: unitTypes
-                  .map((unit) => DropdownMenuItem(
-                        value: unit,
-                        child: Text(unit),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedUnitType = value as String;
-                });
-              },
-              decoration: const InputDecoration(labelText: 'نوع الوحدة'),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('إلغاء'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            final quantity = int.tryParse(quantityController.text) ?? 0;
-            final unitPrice = double.tryParse(priceController.text) ?? 0.0;
-            widget.onProductAdded(quantity, unitPrice, selectedUnitType);
-            Navigator.of(context).pop();
-          },
-          child: const Text('إضافة'),
-        ),
-      ],
-    );
+    var sortedKeys = groupedExpenses.keys.toList()
+      ..sort((a, b) =>
+          DateTime.parse(b).compareTo(DateTime.parse(a))); // Sort descending
+    return {for (var key in sortedKeys) key: groupedExpenses[key]!};
   }
 }
