@@ -2,7 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 
-class StatisticsScreen extends StatelessWidget {
+class StatisticsScreen extends StatefulWidget {
   final List<String> names;
   final List<bool> checkboxValues;
   final List<int> serialNumbers;
@@ -17,14 +17,35 @@ class StatisticsScreen extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    int totalIndividuals = calculateTotalIndividuals(numberOfIndividuals);
-    int totalCheckedIndividuals =
-        calculateTotalCheckedIndividuals(checkboxValues, numberOfIndividuals);
-    int totalUndistributed = totalIndividuals - totalCheckedIndividuals;
-    double progressPercentage =
-        calculateProgress(checkboxValues, numberOfIndividuals) * 100;
+  StatisticsScreenState createState() => StatisticsScreenState();
+}
 
+class StatisticsScreenState extends State<StatisticsScreen> {
+  late int totalIndividuals;
+  late int totalCheckedIndividuals;
+  late int totalUndistributed;
+  late double progressPercentage;
+
+  @override
+  void initState() {
+    super.initState();
+    _calculateStatistics();
+  }
+
+  void _calculateStatistics() {
+    totalIndividuals = _calculateTotalIndividuals(widget.numberOfIndividuals);
+    totalCheckedIndividuals = _calculateTotalCheckedIndividuals(
+        widget.checkboxValues, widget.numberOfIndividuals);
+    totalUndistributed = totalIndividuals - totalCheckedIndividuals;
+    progressPercentage = _calculateProgress(
+          widget.checkboxValues,
+          widget.numberOfIndividuals,
+        ) *
+        100;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -46,7 +67,7 @@ class StatisticsScreen extends StatelessWidget {
               _buildStatisticsCard(
                 context,
                 'عدد الشنط المتبقية',
-                calculateTotalSerialNumbers(checkboxValues),
+                _calculateTotalSerialNumbers(widget.checkboxValues),
               ),
               _buildStatisticsCard(
                 context,
@@ -149,13 +170,13 @@ class StatisticsScreen extends StatelessWidget {
     );
   }
 
-  int calculateTotalIndividuals(List<int> numberOfIndividuals) =>
+  int _calculateTotalIndividuals(List<int> numberOfIndividuals) =>
       numberOfIndividuals.reduce((value, element) => value + element);
 
-  int calculateTotalSerialNumbers(List<bool> checkboxValues) =>
+  int _calculateTotalSerialNumbers(List<bool> checkboxValues) =>
       checkboxValues.where((value) => !value).length;
 
-  int calculateTotalCheckedIndividuals(
+  int _calculateTotalCheckedIndividuals(
       List<bool> checkboxValues, List<int> numberOfIndividuals) {
     int totalChecked = 0;
     for (int i = 0; i < checkboxValues.length; i++) {
@@ -164,11 +185,11 @@ class StatisticsScreen extends StatelessWidget {
     return totalChecked;
   }
 
-  double calculateProgress(
+  double _calculateProgress(
       List<bool> checkboxValues, List<int> numberOfIndividuals) {
-    int totalIndividuals = calculateTotalIndividuals(numberOfIndividuals);
+    int totalIndividuals = _calculateTotalIndividuals(numberOfIndividuals);
     int totalChecked =
-        calculateTotalCheckedIndividuals(checkboxValues, numberOfIndividuals);
+        _calculateTotalCheckedIndividuals(checkboxValues, numberOfIndividuals);
     return totalIndividuals == 0 ? 0.0 : totalChecked / totalIndividuals;
   }
 }
