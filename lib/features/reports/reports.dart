@@ -1,7 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../core/cache/prefs.dart';
+import 'package:ramadan_kitchen_management/features/daily_expenses/services/expense_service.dart';
 
 String formatDateString(String dateString) {
   try {
@@ -14,6 +13,18 @@ String formatDateString(String dateString) {
 
 String formatTimeString(String timeString) {
   try {
+    if (timeString.isEmpty) return 'وقت غير صالح';
+
+    final now = DateTime.now();
+    final timeParts = timeString.split(':');
+
+    if (timeParts.length == 2) {
+      final hours = int.parse(timeParts[0]);
+      final minutes = int.parse(timeParts[1]);
+      final parsedTime = DateTime(now.year, now.month, now.day, hours, minutes);
+      return DateFormat('h:mm a', 'ar').format(parsedTime);
+    }
+
     final parsedTime = DateTime.parse(timeString);
     return DateFormat('h:mm a', 'ar').format(parsedTime);
   } catch (e) {
@@ -113,50 +124,5 @@ class ReportsScreen extends StatelessWidget {
         );
       },
     );
-  }
-}
-
-class ExpenseService {
-  static final ExpenseService _instance = ExpenseService._internal();
-  factory ExpenseService() => _instance;
-  ExpenseService._internal();
-
-  List<Map<String, dynamic>> expenses = [];
-
-  Future<void> loadExpenses() async {
-    final jsonString = Prefs.getString('expenses');
-    if (jsonString.isNotEmpty) {
-      expenses = List<Map<String, dynamic>>.from(jsonDecode(jsonString));
-    }
-  }
-
-  Future<void> saveExpenses() async {
-    final jsonString = jsonEncode(expenses);
-    await Prefs.setString('expenses', jsonString);
-  }
-
-  void addExpense(Map<String, dynamic> expense) {
-    expenses.add(expense);
-    saveExpenses();
-  }
-
-  Map<String, List<Map<String, dynamic>>> getGroupedExpensesByDate() {
-    final Map<String, List<Map<String, dynamic>>> groupedExpenses = {};
-
-    for (var expense in expenses) {
-      final date = expense['date'];
-
-      if (date != null) {
-        if (!groupedExpenses.containsKey(date)) {
-          groupedExpenses[date] = [];
-        }
-        groupedExpenses[date]!.add(expense);
-      }
-    }
-
-    var sortedKeys = groupedExpenses.keys.toList()
-      ..sort((a, b) =>
-          DateTime.parse(b).compareTo(DateTime.parse(a))); // Sort descending
-    return {for (var key in sortedKeys) key: groupedExpenses[key]!};
   }
 }

@@ -10,7 +10,7 @@ import '../../../../../core/services/firebase_auth_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../daily_expenses/daily_expenses.dart';
 import '../../../../manage_cases/manage_cases.dart';
-import '../../../../reports/reports.dart';
+import 'package:ramadan_kitchen_management/features/reports/reports.dart';
 import '../../../../statistics/statistics_screen.dart';
 
 class ScreenLayout extends StatefulWidget {
