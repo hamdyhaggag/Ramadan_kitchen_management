@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import '../../core/widgets/general_button.dart';
 import '../../core/cache/prefs.dart';
@@ -18,14 +19,26 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
   bool? selectedFilterValue;
 
   final Map<String, String> filterOptions = {
-    "جاهزة": "جاهزة",
-    "هنا؟": "هنا؟",
+    "جاهزة": "جاهزة للتوزيع",
+    "هنا؟": "الشنطة هنا؟",
   };
 
   @override
   void initState() {
     super.initState();
     loadCasesData();
+    // Lock orientation to landscape if tablet, else allow both
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    super.dispose();
   }
 
   void loadCasesData() {
@@ -101,36 +114,25 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text(
-            "تأكيد التغيير",
-            style: TextStyle(color: AppColors.blackColor),
-          ),
+          title: const Text("تأكيد التغيير",
+              style: TextStyle(color: AppColors.blackColor)),
           content: Text(
             "هل أنت متأكد أنك تريد تغيير حالة \"$field\" لـ \"$name\"؟",
-            style: TextStyle(color: AppColors.blackColor, fontSize: 16),
+            style: const TextStyle(color: AppColors.blackColor, fontSize: 16),
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                "إلغاء",
-                style: TextStyle(color: AppColors.blackColor, fontSize: 16),
-              ),
+              onPressed: () => Navigator.pop(context),
+              child: const Text("إلغاء",
+                  style: TextStyle(color: AppColors.blackColor)),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.pop(context);
                 onConfirm();
               },
-              child: const Text(
-                "تأكيد",
-                style: TextStyle(
-                    color: AppColors.primaryColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16),
-              ),
+              child: const Text("تأكيد",
+                  style: TextStyle(color: AppColors.primaryColor)),
             ),
           ],
         );
@@ -141,197 +143,271 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    "جدول الحالات",
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                ),
-                DropdownButton<String?>(
-                  value: selectedFilter,
-                  hint: const Text("اختر نوع الفلتر"),
-                  items: [
-                    DropdownMenuItem(
-                      value: null,
-                      child: const Text("إلغاء الفلتر"),
-                    ),
-                    ...filterOptions.entries.map((entry) {
-                      return DropdownMenuItem(
-                        value: entry.key,
-                        child: Text(entry.value),
-                      );
-                    }),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      selectedFilter = value;
-                      selectedFilterValue = null;
-                    });
-                  },
-                ),
-                const SizedBox(width: 16),
-                if (selectedFilter != null)
-                  DropdownButton<bool?>(
-                    value: selectedFilterValue,
-                    hint: const Text("اختر القيمة"),
-                    items: const [
-                      DropdownMenuItem(value: null, child: Text("الكل")),
-                      DropdownMenuItem(value: true, child: Text("نعم")),
-                      DropdownMenuItem(value: false, child: Text("لا")),
-                    ],
-                    onChanged: (value) {
-                      setState(() {
-                        selectedFilterValue = value;
-                      });
-                    },
-                  ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  headingRowColor:
-                      WidgetStateProperty.all(Colors.grey.shade200),
-                  columns: const [
-                    DataColumn(
-                        label: Text(
-                      "الرقم",
-                      style: TextStyle(
-                          color: AppColors.blackColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold),
-                    )),
-                    DataColumn(
-                        label: Text(
-                      "الاسم",
-                      style: TextStyle(
-                          color: AppColors.blackColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold),
-                    )),
-                    DataColumn(
-                        label: Text(
-                      "عدد الأفراد",
-                      style: TextStyle(
-                          color: AppColors.blackColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold),
-                    )),
-                    DataColumn(
-                        label: Text(
-                      "جاهزة للتوزيع",
-                      style: TextStyle(
-                          color: AppColors.blackColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold),
-                    )),
-                    DataColumn(
-                        label: Text(
-                      "هنا؟",
-                      style: TextStyle(
-                          color: AppColors.blackColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold),
-                    )),
-                  ],
-                  rows: filteredCases.map((caseItem) {
-                    // Find the original index in casesData
-                    final originalIndex = casesData.indexWhere(
-                        (item) => item["الرقم"] == caseItem["الرقم"]);
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: OrientationBuilder(
+            builder: (context, orientation) {
+              final bool isPortrait = orientation == Orientation.portrait;
 
-                    return DataRow(
-                      cells: [
-                        DataCell(
-                          Center(
-                            child: Text(
-                              caseItem["الرقم"].toString(),
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                          ),
-                        ),
-                        DataCell(
-                          Text(
-                            caseItem["الاسم"],
-                            style: const TextStyle(fontSize: 18),
-                          ),
-                        ),
-                        DataCell(
-                          Center(
-                            child: Text(
-                              caseItem["عدد الأفراد"].toString(),
-                              style: const TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.w700),
-                            ),
-                          ),
-                        ),
-                        DataCell(
-                          Center(
-                            child: GestureDetector(
-                              onTap: () => _showConfirmationDialog(
-                                caseItem["الاسم"],
-                                "جاهزة",
-                                caseItem["جاهزة"],
-                                () => _updateCaseState(
-                                    originalIndex, "جاهزة", !caseItem["جاهزة"]),
-                              ),
-                              child: Icon(
-                                caseItem["جاهزة"]
-                                    ? Icons.check_circle
-                                    : Icons.cancel,
-                                color: caseItem["جاهزة"]
-                                    ? Colors.green
-                                    : Colors.red,
-                              ),
-                            ),
-                          ),
-                        ),
-                        DataCell(
-                          Center(
-                            child: GestureDetector(
-                              onTap: () => _showConfirmationDialog(
-                                caseItem["الاسم"],
-                                "هنا؟",
-                                caseItem["هنا؟"],
-                                () => _updateCaseState(
-                                    originalIndex, "هنا؟", !caseItem["هنا؟"]),
-                              ),
-                              child: Icon(
-                                caseItem["هنا؟"]
-                                    ? Icons.check_circle
-                                    : Icons.cancel,
-                                color: caseItem["هنا؟"]
-                                    ? Colors.green
-                                    : Colors.red,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  }).toList(),
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // // Header Section
+                  // _buildHeaderSection(isPortrait),
+                  // const SizedBox(height: 16),
+
+                  // Filter Section
+                  _buildFilterSection(isPortrait),
+                  const SizedBox(height: 16),
+
+                  // Data Table Section
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: DataTable(
+                        headingRowColor:
+                            WidgetStateProperty.all(Colors.grey.shade200),
+                        dataRowMinHeight: 40,
+                        dataRowMaxHeight: 60,
+                        columnSpacing: isPortrait ? 20 : 40,
+                        columns: _buildDataColumns(isPortrait),
+                        rows: _buildDataRows(isPortrait),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Manage Cases Button
+                  _buildManageButton(isPortrait),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Widget _buildHeaderSection(bool isPortrait) {
+  //   return Row(
+  //     children: [
+  //       Expanded(
+  //         child: Text(
+  //           "جدول الحالات",
+  //           style: Theme.of(context).textTheme.titleLarge?.copyWith(
+  //                 fontSize: isPortrait ? 24 : 28,
+  //               ),
+  //         ),
+  //       ),
+  //       if (!isPortrait) const Spacer(),
+  //     ],
+  //   );
+  // }
+
+  Widget _buildFilterSection(bool isPortrait) {
+    return Wrap(
+      spacing: 16,
+      runSpacing: 16,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        SizedBox(
+          width: isPortrait ? double.infinity : 200,
+          child: DropdownButtonFormField<String?>(
+            value: selectedFilter,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                    color: AppColors.secondaryColor), // Default border
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide:
+                    BorderSide(color: AppColors.secondaryColor), // When enabled
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide:
+                    BorderSide(color: AppColors.secondaryColor), // When focused
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            icon: Icon(
+              Icons.arrow_drop_down,
+              color: AppColors.primaryColor, // Match dropdown arrow to border
+            ),
+            hint: const Text("اختر نوع الفلتر"),
+            items: [
+              DropdownMenuItem(
+                value: null,
+                child: Text(
+                  "إلغاء الفلتر",
+                  style: TextStyle(fontSize: isPortrait ? 14 : 16),
                 ),
               ),
+              ...filterOptions.entries.map((entry) {
+                return DropdownMenuItem(
+                  value: entry.key,
+                  child: Text(
+                    entry.value,
+                    style: TextStyle(fontSize: isPortrait ? 14 : 16),
+                  ),
+                );
+              }),
+            ],
+            onChanged: (value) => setState(() {
+              selectedFilter = value;
+              selectedFilterValue = null;
+            }),
+          ),
+        ),
+        if (selectedFilter != null)
+          SizedBox(
+            width: isPortrait ? double.infinity : 150,
+            child: DropdownButtonFormField<bool?>(
+              value: selectedFilterValue,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+              hint: const Text("اختر القيمة"),
+              items: const [
+                DropdownMenuItem(value: null, child: Text("الكل")),
+                DropdownMenuItem(value: true, child: Text("نعم")),
+                DropdownMenuItem(value: false, child: Text("لا")),
+              ],
+              onChanged: (value) => setState(() => selectedFilterValue = value),
             ),
-            const SizedBox(height: 16),
-            GestureDetector(
-              onTap: _navigateToManageDetails,
-              child: GeneralButton(
-                text: 'إدارة الحالات',
-                backgroundColor: AppColors.primaryColor,
-                textColor: AppColors.whiteColor,
+          ),
+      ],
+    );
+  }
+
+  List<DataColumn> _buildDataColumns(bool isPortrait) {
+    return [
+      DataColumn(
+        label: Text(
+          "الرقم",
+          style: TextStyle(
+            fontSize: isPortrait ? 16 : 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      DataColumn(
+        label: Text(
+          "الاسم",
+          style: TextStyle(
+            fontSize: isPortrait ? 16 : 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      DataColumn(
+        label: Text(
+          "عدد الأفراد",
+          style: TextStyle(
+            fontSize: isPortrait ? 16 : 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      DataColumn(
+        label: Text(
+          "جاهزة للتوزيع",
+          style: TextStyle(
+            fontSize: isPortrait ? 16 : 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      DataColumn(
+        label: Text(
+          "الشنطة هنا؟",
+          style: TextStyle(
+            fontSize: isPortrait ? 16 : 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ];
+  }
+
+  List<DataRow> _buildDataRows(bool isPortrait) {
+    return filteredCases.map((caseItem) {
+      final originalIndex =
+          casesData.indexWhere((item) => item["الرقم"] == caseItem["الرقم"]);
+
+      return DataRow(
+        cells: [
+          DataCell(Center(
+            child: Text(
+              caseItem["الرقم"].toString(),
+              style: TextStyle(fontSize: isPortrait ? 18 : 20),
+            ),
+          )),
+          DataCell(Text(
+            caseItem["الاسم"],
+            style: TextStyle(
+                fontWeight: FontWeight.w600, fontSize: isPortrait ? 18 : 20),
+          )),
+          DataCell(Center(
+            child: Text(
+              caseItem["عدد الأفراد"].toString(),
+              style: TextStyle(
+                fontSize: isPortrait ? 18 : 20,
+                fontWeight: FontWeight.w700,
               ),
             ),
-          ],
-        ),
+          )),
+          DataCell(Center(
+            child: IconButton(
+              iconSize: isPortrait ? 24 : 28,
+              icon: Icon(
+                caseItem["جاهزة"] ? Icons.check_circle : Icons.cancel,
+                color: caseItem["جاهزة"] ? Colors.green : Colors.red,
+              ),
+              onPressed: () => _showConfirmationDialog(
+                caseItem["الاسم"],
+                "جاهزة",
+                caseItem["جاهزة"],
+                () => _updateCaseState(
+                    originalIndex, "جاهزة", !caseItem["جاهزة"]),
+              ),
+            ),
+          )),
+          DataCell(Center(
+            child: IconButton(
+              iconSize: isPortrait ? 24 : 28,
+              icon: Icon(
+                caseItem["هنا؟"] ? Icons.check_circle : Icons.cancel,
+                color: caseItem["هنا؟"] ? Colors.green : Colors.red,
+              ),
+              onPressed: () => _showConfirmationDialog(
+                caseItem["الاسم"],
+                "هنا؟",
+                caseItem["هنا؟"],
+                () =>
+                    _updateCaseState(originalIndex, "هنا؟", !caseItem["هنا؟"]),
+              ),
+            ),
+          )),
+        ],
+      );
+    }).toList();
+  }
+
+  Widget _buildManageButton(bool isPortrait) {
+    return SizedBox(
+      width: isPortrait ? double.infinity : null,
+      child: GeneralButton(
+        text: 'إدارة الحالات',
+        backgroundColor: AppColors.primaryColor,
+        textColor: AppColors.whiteColor,
+        onPressed: _navigateToManageDetails,
       ),
     );
   }
