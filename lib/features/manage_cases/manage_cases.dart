@@ -88,6 +88,13 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
     }
   }
 
+  void _updateCaseState(int index, String field, bool newValue) {
+    setState(() {
+      casesData[index][field] = newValue;
+      saveCasesData();
+    });
+  }
+
   void _showConfirmationDialog(
       String name, String field, bool currentValue, VoidCallback onConfirm) {
     showDialog(
@@ -237,14 +244,17 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
                     )),
                   ],
                   rows: filteredCases.map((caseItem) {
+                    // Find the original index in casesData
+                    final originalIndex = casesData.indexWhere(
+                        (item) => item["الرقم"] == caseItem["الرقم"]);
+
                     return DataRow(
                       cells: [
                         DataCell(
                           Center(
                             child: Text(
                               caseItem["الرقم"].toString(),
-                              style: const TextStyle(
-                                  fontSize: 16), // Example font size
+                              style: const TextStyle(fontSize: 16),
                             ),
                           ),
                         ),
@@ -266,19 +276,13 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
                         DataCell(
                           Center(
                             child: GestureDetector(
-                              onTap: () {
-                                _showConfirmationDialog(
-                                  caseItem["الاسم"],
-                                  "جاهزة",
-                                  caseItem["جاهزة"],
-                                  () {
-                                    setState(() {
-                                      caseItem["جاهزة"] = !caseItem["جاهزة"];
-                                      saveCasesData();
-                                    });
-                                  },
-                                );
-                              },
+                              onTap: () => _showConfirmationDialog(
+                                caseItem["الاسم"],
+                                "جاهزة",
+                                caseItem["جاهزة"],
+                                () => _updateCaseState(
+                                    originalIndex, "جاهزة", !caseItem["جاهزة"]),
+                              ),
                               child: Icon(
                                 caseItem["جاهزة"]
                                     ? Icons.check_circle
@@ -293,19 +297,13 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
                         DataCell(
                           Center(
                             child: GestureDetector(
-                              onTap: () {
-                                _showConfirmationDialog(
-                                  caseItem["الاسم"],
-                                  "هنا؟",
-                                  caseItem["هنا؟"],
-                                  () {
-                                    setState(() {
-                                      caseItem["هنا؟"] = !caseItem["هنا؟"];
-                                      saveCasesData();
-                                    });
-                                  },
-                                );
-                              },
+                              onTap: () => _showConfirmationDialog(
+                                caseItem["الاسم"],
+                                "هنا؟",
+                                caseItem["هنا؟"],
+                                () => _updateCaseState(
+                                    originalIndex, "هنا؟", !caseItem["هنا؟"]),
+                              ),
                               child: Icon(
                                 caseItem["هنا؟"]
                                     ? Icons.check_circle
