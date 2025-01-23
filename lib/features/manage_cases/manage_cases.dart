@@ -239,54 +239,81 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
                   rows: filteredCases.map((caseItem) {
                     return DataRow(
                       cells: [
-                        DataCell(Text(caseItem["الرقم"].toString())),
-                        DataCell(Text(caseItem["الاسم"])),
-                        DataCell(Text(caseItem["عدد الأفراد"].toString())),
                         DataCell(
-                          GestureDetector(
-                            onTap: () {
-                              _showConfirmationDialog(
-                                caseItem["الاسم"],
-                                "جاهزة",
-                                caseItem["جاهزة"],
-                                () {
-                                  setState(() {
-                                    caseItem["جاهزة"] = !caseItem["جاهزة"];
-                                    saveCasesData();
-                                  });
-                                },
-                              );
-                            },
-                            child: Icon(
-                              caseItem["جاهزة"]
-                                  ? Icons.check_circle
-                                  : Icons.cancel,
-                              color:
-                                  caseItem["جاهزة"] ? Colors.green : Colors.red,
+                          Center(
+                            child: Text(
+                              caseItem["الرقم"].toString(),
+                              style: const TextStyle(
+                                  fontSize: 16), // Example font size
                             ),
                           ),
                         ),
                         DataCell(
-                          GestureDetector(
-                            onTap: () {
-                              _showConfirmationDialog(
-                                caseItem["الاسم"],
-                                "هنا؟",
-                                caseItem["هنا؟"],
-                                () {
-                                  setState(() {
-                                    caseItem["هنا؟"] = !caseItem["هنا؟"];
-                                    saveCasesData();
-                                  });
-                                },
-                              );
-                            },
-                            child: Icon(
-                              caseItem["هنا؟"]
-                                  ? Icons.check_circle
-                                  : Icons.cancel,
-                              color:
-                                  caseItem["هنا؟"] ? Colors.green : Colors.red,
+                          Text(
+                            caseItem["الاسم"],
+                            style: const TextStyle(fontSize: 18),
+                          ),
+                        ),
+                        DataCell(
+                          Center(
+                            child: Text(
+                              caseItem["عدد الأفراد"].toString(),
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Center(
+                            child: GestureDetector(
+                              onTap: () {
+                                _showConfirmationDialog(
+                                  caseItem["الاسم"],
+                                  "جاهزة",
+                                  caseItem["جاهزة"],
+                                  () {
+                                    setState(() {
+                                      caseItem["جاهزة"] = !caseItem["جاهزة"];
+                                      saveCasesData();
+                                    });
+                                  },
+                                );
+                              },
+                              child: Icon(
+                                caseItem["جاهزة"]
+                                    ? Icons.check_circle
+                                    : Icons.cancel,
+                                color: caseItem["جاهزة"]
+                                    ? Colors.green
+                                    : Colors.red,
+                              ),
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Center(
+                            child: GestureDetector(
+                              onTap: () {
+                                _showConfirmationDialog(
+                                  caseItem["الاسم"],
+                                  "هنا؟",
+                                  caseItem["هنا؟"],
+                                  () {
+                                    setState(() {
+                                      caseItem["هنا؟"] = !caseItem["هنا؟"];
+                                      saveCasesData();
+                                    });
+                                  },
+                                );
+                              },
+                              child: Icon(
+                                caseItem["هنا؟"]
+                                    ? Icons.check_circle
+                                    : Icons.cancel,
+                                color: caseItem["هنا؟"]
+                                    ? Colors.green
+                                    : Colors.red,
+                              ),
                             ),
                           ),
                         ),
