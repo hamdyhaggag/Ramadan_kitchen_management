@@ -28,29 +28,7 @@ class _ScreenLayoutState extends State<ScreenLayout> {
         final casesData = Prefs.getString('casesData');
         final data = casesData.isNotEmpty
             ? List<Map<String, dynamic>>.from(jsonDecode(casesData))
-            : [
-                {
-                  "الرقم": 1,
-                  "الاسم": "أحمد علي",
-                  "عدد الأفراد": 4,
-                  "جاهزة": true,
-                  "هنا؟": true,
-                },
-                {
-                  "الرقم": 2,
-                  "الاسم": "محمد محمود",
-                  "عدد الأفراد": 3,
-                  "جاهزة": false,
-                  "هنا؟": false,
-                },
-                {
-                  "الرقم": 3,
-                  "الاسم": "سارة عبد الله",
-                  "عدد الأفراد": 80,
-                  "جاهزة": true,
-                  "هنا؟": false,
-                },
-              ];
+            : [];
 
         final names =
             data.map((caseItem) => caseItem["الاسم"] as String).toList();

@@ -88,6 +88,49 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
     }
   }
 
+  void _showConfirmationDialog(
+      String name, String field, bool currentValue, VoidCallback onConfirm) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text(
+            "تأكيد التغيير",
+            style: TextStyle(color: AppColors.blackColor),
+          ),
+          content: Text(
+            "هل أنت متأكد أنك تريد تغيير حالة \"$field\" لـ \"$name\"؟",
+            style: TextStyle(color: AppColors.blackColor, fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                "إلغاء",
+                style: TextStyle(color: AppColors.blackColor, fontSize: 16),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                onConfirm();
+              },
+              child: const Text(
+                "تأكيد",
+                style: TextStyle(
+                    color: AppColors.primaryColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -110,7 +153,7 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
                   items: [
                     DropdownMenuItem(
                       value: null,
-                      child: Text("الغاء الفلتر"),
+                      child: const Text("إلغاء الفلتر"),
                     ),
                     ...filterOptions.entries.map((entry) {
                       return DropdownMenuItem(
@@ -152,11 +195,46 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
                   headingRowColor:
                       WidgetStateProperty.all(Colors.grey.shade200),
                   columns: const [
-                    DataColumn(label: Text("الرقم")),
-                    DataColumn(label: Text("الاسم")),
-                    DataColumn(label: Text("عدد الأفراد")),
-                    DataColumn(label: Text("جاهزة")),
-                    DataColumn(label: Text("هنا؟")),
+                    DataColumn(
+                        label: Text(
+                      "الرقم",
+                      style: TextStyle(
+                          color: AppColors.blackColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold),
+                    )),
+                    DataColumn(
+                        label: Text(
+                      "الاسم",
+                      style: TextStyle(
+                          color: AppColors.blackColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold),
+                    )),
+                    DataColumn(
+                        label: Text(
+                      "عدد الأفراد",
+                      style: TextStyle(
+                          color: AppColors.blackColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold),
+                    )),
+                    DataColumn(
+                        label: Text(
+                      "جاهزة للتوزيع",
+                      style: TextStyle(
+                          color: AppColors.blackColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold),
+                    )),
+                    DataColumn(
+                        label: Text(
+                      "هنا؟",
+                      style: TextStyle(
+                          color: AppColors.blackColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold),
+                    )),
                   ],
                   rows: filteredCases.map((caseItem) {
                     return DataRow(
@@ -167,10 +245,17 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
                         DataCell(
                           GestureDetector(
                             onTap: () {
-                              setState(() {
-                                caseItem["جاهزة"] = !caseItem["جاهزة"];
-                                saveCasesData();
-                              });
+                              _showConfirmationDialog(
+                                caseItem["الاسم"],
+                                "جاهزة",
+                                caseItem["جاهزة"],
+                                () {
+                                  setState(() {
+                                    caseItem["جاهزة"] = !caseItem["جاهزة"];
+                                    saveCasesData();
+                                  });
+                                },
+                              );
                             },
                             child: Icon(
                               caseItem["جاهزة"]
@@ -184,10 +269,17 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
                         DataCell(
                           GestureDetector(
                             onTap: () {
-                              setState(() {
-                                caseItem["هنا؟"] = !caseItem["هنا؟"];
-                                saveCasesData();
-                              });
+                              _showConfirmationDialog(
+                                caseItem["الاسم"],
+                                "هنا؟",
+                                caseItem["هنا؟"],
+                                () {
+                                  setState(() {
+                                    caseItem["هنا؟"] = !caseItem["هنا؟"];
+                                    saveCasesData();
+                                  });
+                                },
+                              );
                             },
                             child: Icon(
                               caseItem["هنا؟"]
