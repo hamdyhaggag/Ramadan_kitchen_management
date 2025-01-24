@@ -1,11 +1,13 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:ramadan_kitchen_management/core/routes/app_routes.dart';
 import 'core/cache/prefs.dart';
 import 'core/routes/on_generate_route.dart';
 import 'core/services/service_locator.dart';
 import 'core/utils/app_colors.dart';
+import 'features/manage_cases/logic/cases_cubit.dart';
 import 'firebase_options.dart';
 import 'generated/l10n.dart';
 
@@ -24,25 +26,30 @@ class KitchenApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: ThemeData(
-        fontFamily: 'DIN',
-        scaffoldBackgroundColor: Colors.white,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: AppColors.whiteColor,
-        ),
-      ),
-      debugShowCheckedModeBanner: false,
-      localizationsDelegates: const [
-        S.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => CasesCubit()),
       ],
-      locale: const Locale('ar'),
-      supportedLocales: S.delegate.supportedLocales,
-      onGenerateRoute: onGenerateRoutes,
-      initialRoute: AppRoutes.splash,
+      child: MaterialApp(
+        theme: ThemeData(
+          fontFamily: 'DIN',
+          scaffoldBackgroundColor: Colors.white,
+          appBarTheme: const AppBarTheme(
+            backgroundColor: AppColors.whiteColor,
+          ),
+        ),
+        debugShowCheckedModeBanner: false,
+        localizationsDelegates: const [
+          S.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        locale: const Locale('ar'),
+        supportedLocales: S.delegate.supportedLocales,
+        onGenerateRoute: onGenerateRoutes,
+        initialRoute: AppRoutes.splash,
+      ),
     );
   }
 }
