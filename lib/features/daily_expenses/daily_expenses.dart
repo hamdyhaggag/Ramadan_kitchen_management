@@ -250,12 +250,16 @@ class _ExpenseContentState extends State<_ExpenseContent> {
     return await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: AppColors.whiteColor,
         title: const Text('تأكيد الحذف'),
         content: const Text('هل أنت متأكد من حذف هذا المصروف؟'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('إلغاء')),
+              child: const Text(
+                'إلغاء',
+                style: TextStyle(color: AppColors.blackColor),
+              )),
           TextButton(
               onPressed: () => Navigator.pop(context, true),
               child: const Text('حذف', style: TextStyle(color: Colors.red))),

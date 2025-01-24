@@ -58,8 +58,8 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
     context.read<CasesCubit>().addCase({
       "الرقم": newNumber,
       "id": newNumber.toString(),
-      "الاسم": "اسم جديد",
-      "عدد الأفراد": 1,
+      "الاسم": "",
+      "عدد الأفراد": '',
       "جاهزة": false,
       "هنا؟": false,
     });
@@ -78,22 +78,48 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
       context: context,
       builder: (context) {
         return AlertDialog(
+          backgroundColor: AppColors.whiteColor,
           title: const Text("تعديل الحالة"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(labelText: "الاسم"),
+                cursorColor: AppColors.primaryColor,
+                decoration: InputDecoration(
+                  labelText: "الاسم",
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primaryColor),
+                  ),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primaryColor),
+                  ),
+                ),
               ),
               TextField(
                 controller: membersController,
-                decoration: const InputDecoration(labelText: "عدد الأفراد"),
+                cursorColor: AppColors.primaryColor,
                 keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: "عدد الأفراد",
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primaryColor),
+                  ),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primaryColor),
+                  ),
+                ),
               ),
             ],
           ),
           actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                "إلغاء",
+                style: TextStyle(color: AppColors.blackColor),
+              ),
+            ),
             TextButton(
               onPressed: () {
                 context.read<CasesCubit>().updateCase(
@@ -105,11 +131,10 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
                 );
                 Navigator.pop(context);
               },
-              child: const Text("حفظ"),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("إلغاء"),
+              child: const Text(
+                "حفظ",
+                style: TextStyle(color: AppColors.primaryColor),
+              ),
             ),
           ],
         );

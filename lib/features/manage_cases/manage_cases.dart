@@ -95,6 +95,7 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          backgroundColor: AppColors.whiteColor,
           title: const Text("تأكيد التغيير",
               style: TextStyle(color: AppColors.blackColor)),
           content: Text(
@@ -125,6 +126,7 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: AppColors.whiteColor,
         title: const Text("تأكيد إعادة التعيين",
             style: TextStyle(color: AppColors.blackColor)),
         content: const Text(
