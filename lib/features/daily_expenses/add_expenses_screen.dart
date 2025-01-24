@@ -101,17 +101,98 @@ class AddExpenseScreenState extends State<AddExpenseScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('إضافة مصروف')),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 0),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              ListTile(
+                title: const Text('التاريخ'),
+                subtitle: Text('${_selectedDate.toLocal()}'.split(' ')[0]),
+                onTap: () async {
+                  final DateTime? picked = await showDatePicker(
+                    context: context,
+                    initialDate: _selectedDate,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2101),
+                  );
+                  if (picked != null && picked != _selectedDate) {
+                    setState(() {
+                      _selectedDate = picked;
+                    });
+                  }
+                },
+              ),
+              DropdownButton<String>(
+                value: _selectedCategory,
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedCategory = newValue!;
+                    _selectedProduct =
+                        null; // Reset product when category changes
+                  });
+                },
+                items: _categoryProducts.keys
+                    .map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                elevation: 3,
+                isExpanded: true,
+              ),
+              const SizedBox(height: 10),
+              DropdownButton<String>(
+                value: _selectedProduct,
+                hint: const Text('اختر المنتج'),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedProduct = newValue!;
+                  });
+                },
+                items: _categoryProducts[_selectedCategory]!
+                    .map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                elevation: 3,
+                isExpanded: true,
+              ),
+              const SizedBox(height: 10),
+              if (_categoryProducts[_selectedCategory] != null)
+                DropdownButton<String>(
+                  value: _selectedUnitType,
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _selectedUnitType = newValue!;
+                    });
+                  },
+                  items: ['كيلوجرام', 'لتر', 'قطعة']
+                      .map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  elevation: 3,
+                  isExpanded: true,
+                ),
+              const SizedBox(height: 10),
               TextField(
                 cursorColor: AppColors.primaryColor,
                 controller: _quantityController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   labelText: 'الكمية',
+                  labelStyle: TextStyle(
+                    color: Colors.grey, // Default label color
+                  ),
+                  floatingLabelStyle: TextStyle(
+                    color: AppColors.primaryColor, // Label color when focused
+                  ),
                   focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(
                       color: AppColors.primaryColor,
@@ -133,6 +214,12 @@ class AddExpenseScreenState extends State<AddExpenseScreen> {
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   labelText: 'سعر الوحدة',
+                  labelStyle: TextStyle(
+                    color: Colors.grey, // Default label color
+                  ),
+                  floatingLabelStyle: TextStyle(
+                    color: AppColors.primaryColor, // Label color when focused
+                  ),
                   focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(
                       color: AppColors.primaryColor,
@@ -146,82 +233,6 @@ class AddExpenseScreenState extends State<AddExpenseScreen> {
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              DropdownButton<String>(
-                value: _selectedUnitType,
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedUnitType = newValue!;
-                  });
-                },
-                items: ['كيلوجرام', 'لتر', 'قطعة']
-                    .map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                elevation: 3,
-                isExpanded: true,
-              ),
-              const SizedBox(height: 10),
-              DropdownButton<String>(
-                value: _selectedCategory,
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedCategory = newValue!;
-                    _selectedProduct =
-                        null; // Reset product when category changes
-                  });
-                },
-                items: _categoryProducts.keys
-                    .map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                elevation: 3,
-                isExpanded: true,
-              ),
-              const SizedBox(height: 10),
-              if (_categoryProducts[_selectedCategory] != null)
-                DropdownButton<String>(
-                  value: _selectedProduct,
-                  hint: const Text('اختر المنتج'),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _selectedProduct = newValue!;
-                    });
-                  },
-                  items: _categoryProducts[_selectedCategory]!
-                      .map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                  elevation: 3,
-                  isExpanded: true,
-                ),
-              const SizedBox(height: 10),
-              ListTile(
-                title: const Text('التاريخ'),
-                subtitle: Text('${_selectedDate.toLocal()}'.split(' ')[0]),
-                onTap: () async {
-                  final DateTime? picked = await showDatePicker(
-                    context: context,
-                    initialDate: _selectedDate,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2101),
-                  );
-                  if (picked != null && picked != _selectedDate) {
-                    setState(() {
-                      _selectedDate = picked;
-                    });
-                  }
-                },
               ),
               const SizedBox(height: 20),
               GestureDetector(
