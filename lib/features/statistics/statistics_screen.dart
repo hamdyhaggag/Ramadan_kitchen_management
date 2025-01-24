@@ -1,26 +1,43 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
+import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_cubit.dart';
+import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_state.dart';
 
-class StatisticsScreen extends StatefulWidget {
-  final List<String> names;
-  final List<bool> checkboxValues;
-  final List<int> serialNumbers;
-  final List<int> numberOfIndividuals;
-
-  const StatisticsScreen({
-    super.key,
-    required this.names,
-    required this.checkboxValues,
-    required this.serialNumbers,
-    required this.numberOfIndividuals,
-  });
+class StatisticsScreen extends StatelessWidget {
+  const StatisticsScreen({super.key});
 
   @override
-  StatisticsScreenState createState() => StatisticsScreenState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: BlocBuilder<CasesCubit, CasesState>(
+        builder: (context, state) {
+          if (state is CasesLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (state is CasesError) {
+            return Center(child: Text(state.message));
+          }
+          if (state is CasesLoaded) {
+            return _StatisticsContent(cases: state.cases);
+          }
+          return const Center(child: Text('No statistics available'));
+        },
+      ),
+    );
+  }
 }
 
-class StatisticsScreenState extends State<StatisticsScreen> {
+class _StatisticsContent extends StatefulWidget {
+  final List<Map<String, dynamic>> cases;
+  const _StatisticsContent({required this.cases});
+
+  @override
+  State<_StatisticsContent> createState() => _StatisticsContentState();
+}
+
+class _StatisticsContentState extends State<_StatisticsContent> {
   late int totalIndividuals;
   late int totalCheckedIndividuals;
   late int totalUndistributed;
@@ -33,65 +50,50 @@ class StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   void _calculateStatistics() {
-    totalIndividuals = _calculateTotalIndividuals(widget.numberOfIndividuals);
-    totalCheckedIndividuals = _calculateTotalCheckedIndividuals(
-        widget.checkboxValues, widget.numberOfIndividuals);
+    totalIndividuals = widget.cases
+        .map((e) => e['عدد الأفراد'] as int)
+        .fold(0, (prev, current) => prev + current);
+
+    totalCheckedIndividuals = widget.cases
+        .where((e) => e['جاهزة'] == true)
+        .map((e) => e['عدد الأفراد'] as int)
+        .fold(0, (prev, current) => prev + current);
+
     totalUndistributed = totalIndividuals - totalCheckedIndividuals;
-    progressPercentage = _calculateProgress(
-          widget.checkboxValues,
-          widget.numberOfIndividuals,
-        ) *
-        100;
+    progressPercentage = totalIndividuals > 0
+        ? (totalCheckedIndividuals / totalIndividuals) * 100
+        : 0.0;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 30),
-              _buildPieChart(totalCheckedIndividuals, totalUndistributed),
-              const SizedBox(height: 45),
-              _buildStatisticsCard(
-                  context, 'إجمالي عدد الأفراد', totalIndividuals),
-              _buildStatisticsCard(
-                context,
-                'نسبة الإكتمال',
-                double.parse(progressPercentage.toStringAsFixed(2)),
-                percentage: true,
-              ),
-              _buildStatisticsCard(
-                context,
-                'عدد الشنط المتبقية',
-                _calculateTotalSerialNumbers(widget.checkboxValues),
-              ),
-              _buildStatisticsCard(
-                context,
-                'عدد الأفراد المتبقي',
-                totalUndistributed,
-              ),
-            ],
-          ),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 30),
+            _buildPieChart(),
+            const SizedBox(height: 45),
+            _buildStatisticsCard('إجمالي عدد الأفراد', totalIndividuals),
+            _buildStatisticsCard(
+              'نسبة الإكتمال',
+              progressPercentage,
+              percentage: true,
+            ),
+            _buildStatisticsCard(
+              'عدد الشنط المتبقية',
+              widget.cases.where((e) => e['جاهزة'] == false).length,
+            ),
+            _buildStatisticsCard('عدد الأفراد المتبقي', totalUndistributed),
+          ],
         ),
       ),
     );
   }
 
-  Widget buildSectionTitle(BuildContext context, String title) {
-    return Text(
-      title,
-      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: AppColors.primaryColor,
-          ),
-    );
-  }
-
-  Widget _buildPieChart(int totalChecked, int totalUndistributed) {
+  Widget _buildPieChart() {
     return Container(
       height: 250,
       padding: const EdgeInsets.all(8.0),
@@ -103,22 +105,25 @@ class StatisticsScreenState extends State<StatisticsScreen> {
         PieChartData(
           sections: [
             PieChartSectionData(
-              value: totalChecked.toDouble(),
-              title: 'تم التوزيع\n$totalChecked',
+              value: totalCheckedIndividuals.toDouble(),
+              title: 'تم التوزيع\n$totalCheckedIndividuals',
               color: AppColors.primaryColor,
               radius: 100,
               titleStyle: const TextStyle(
-                  color: AppColors.whiteColor,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold),
+                color: AppColors.whiteColor,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             PieChartSectionData(
               value: totalUndistributed.toDouble(),
               title: 'لم يتم التوزيع\n$totalUndistributed',
               color: Colors.grey[350],
               radius: 100,
-              titleStyle:
-                  const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              titleStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
           centerSpaceRadius: 60,
@@ -128,7 +133,7 @@ class StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  Widget _buildStatisticsCard(BuildContext context, String title, dynamic value,
+  Widget _buildStatisticsCard(String title, dynamic value,
       {bool percentage = false}) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -157,7 +162,7 @@ class StatisticsScreenState extends State<StatisticsScreen> {
                   ),
             ),
             Text(
-              percentage ? '$value%' : '$value',
+              percentage ? '${value.toStringAsFixed(2)}%' : '$value',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -168,28 +173,5 @@ class StatisticsScreenState extends State<StatisticsScreen> {
         ),
       ),
     );
-  }
-
-  int _calculateTotalIndividuals(List<int> numberOfIndividuals) =>
-      numberOfIndividuals.reduce((value, element) => value + element);
-
-  int _calculateTotalSerialNumbers(List<bool> checkboxValues) =>
-      checkboxValues.where((value) => !value).length;
-
-  int _calculateTotalCheckedIndividuals(
-      List<bool> checkboxValues, List<int> numberOfIndividuals) {
-    int totalChecked = 0;
-    for (int i = 0; i < checkboxValues.length; i++) {
-      if (checkboxValues[i]) totalChecked += numberOfIndividuals[i];
-    }
-    return totalChecked;
-  }
-
-  double _calculateProgress(
-      List<bool> checkboxValues, List<int> numberOfIndividuals) {
-    int totalIndividuals = _calculateTotalIndividuals(numberOfIndividuals);
-    int totalChecked =
-        _calculateTotalCheckedIndividuals(checkboxValues, numberOfIndividuals);
-    return totalIndividuals == 0 ? 0.0 : totalChecked / totalIndividuals;
   }
 }

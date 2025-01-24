@@ -64,26 +64,7 @@ class _ScreenLayoutState extends State<ScreenLayout> {
       case 0:
         return const ManageCasesScreen();
       case 1:
-        final cachedCases = Prefs.getString('casesData');
-        final data = cachedCases.isNotEmpty
-            ? List<Map<String, dynamic>>.from(jsonDecode(cachedCases))
-            : [];
-
-        final names =
-            data.map((caseItem) => caseItem["الاسم"] as String).toList();
-        final checkboxValues =
-            data.map((caseItem) => caseItem["جاهزة"] as bool).toList();
-        final serialNumbers =
-            data.map((caseItem) => caseItem["الرقم"] as int).toList();
-        final numberOfIndividuals =
-            data.map((caseItem) => caseItem["عدد الأفراد"] as int).toList();
-
-        return StatisticsScreen(
-          names: names,
-          checkboxValues: checkboxValues,
-          serialNumbers: serialNumbers,
-          numberOfIndividuals: numberOfIndividuals,
-        );
+        return StatisticsScreen();
       case 2:
         return const DailyExpensesScreen();
       case 3:
