@@ -15,7 +15,7 @@ class AddExpenseScreenState extends State<AddExpenseScreen> {
   final TextEditingController _unitPriceController = TextEditingController();
   String _selectedCategory = 'قسم البقالة';
   String? _selectedProduct;
-  String _selectedUnitType = 'كيلوجرام'; // Default value
+  String _selectedUnitType = 'كيلوجرام';
   DateTime _selectedDate = DateTime.now();
 
   final Map<String, List<String>> _categoryProducts = {
@@ -128,8 +128,7 @@ class AddExpenseScreenState extends State<AddExpenseScreen> {
                 onChanged: (String? newValue) {
                   setState(() {
                     _selectedCategory = newValue!;
-                    _selectedProduct =
-                        null; // Reset product when category changes
+                    _selectedProduct = null;
                   });
                 },
                 items: _categoryProducts.keys
@@ -188,10 +187,10 @@ class AddExpenseScreenState extends State<AddExpenseScreen> {
                 decoration: InputDecoration(
                   labelText: 'الكمية',
                   labelStyle: TextStyle(
-                    color: Colors.grey, // Default label color
+                    color: Colors.grey,
                   ),
                   floatingLabelStyle: TextStyle(
-                    color: AppColors.primaryColor, // Label color when focused
+                    color: AppColors.primaryColor,
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(
@@ -215,10 +214,10 @@ class AddExpenseScreenState extends State<AddExpenseScreen> {
                 decoration: InputDecoration(
                   labelText: 'سعر الوحدة',
                   labelStyle: TextStyle(
-                    color: Colors.grey, // Default label color
+                    color: Colors.grey,
                   ),
                   floatingLabelStyle: TextStyle(
-                    color: AppColors.primaryColor, // Label color when focused
+                    color: AppColors.primaryColor,
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(
