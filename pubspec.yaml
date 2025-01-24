@@ -50,6 +50,8 @@ dependencies:
   path_provider: ^2.0.3
   excel: ^2.0.4
   fluttertoast: ^8.2.4
+  connectivity_plus: ^6.1.2
+  internet_connection_checker: ^3.0.1
 
   flutter_localizations:
     sdk: flutter

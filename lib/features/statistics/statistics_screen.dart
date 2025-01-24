@@ -49,15 +49,28 @@ class _StatisticsContentState extends State<_StatisticsContent> {
     _calculateStatistics();
   }
 
-  void _calculateStatistics() {
-    totalIndividuals = widget.cases
-        .map((e) => e['عدد الأفراد'] as int)
-        .fold(0, (prev, current) => prev + current);
+  @override
+  void didUpdateWidget(covariant _StatisticsContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.cases != oldWidget.cases) {
+      _calculateStatistics();
+    }
+  }
 
-    totalCheckedIndividuals = widget.cases
-        .where((e) => e['جاهزة'] == true)
-        .map((e) => e['عدد الأفراد'] as int)
-        .fold(0, (prev, current) => prev + current);
+  void _calculateStatistics() {
+    totalIndividuals = widget.cases.fold(0, (sum, e) {
+      final individuals = e['عدد الأفراد'] is int ? e['عدد الأفراد'] as int : 0;
+      return sum + individuals;
+    });
+
+    totalCheckedIndividuals = widget.cases.fold(0, (sum, e) {
+      if (e['جاهزة'] == true) {
+        final individuals =
+            e['عدد الأفراد'] is int ? e['عدد الأفراد'] as int : 0;
+        return sum + individuals;
+      }
+      return sum;
+    });
 
     totalUndistributed = totalIndividuals - totalCheckedIndividuals;
     progressPercentage = totalIndividuals > 0
@@ -84,7 +97,7 @@ class _StatisticsContentState extends State<_StatisticsContent> {
             ),
             _buildStatisticsCard(
               'عدد الشنط المتبقية',
-              widget.cases.where((e) => e['جاهزة'] == false).length,
+              widget.cases.where((e) => e['جاهزة'] != true).length,
             ),
             _buildStatisticsCard('عدد الأفراد المتبقي', totalUndistributed),
           ],
