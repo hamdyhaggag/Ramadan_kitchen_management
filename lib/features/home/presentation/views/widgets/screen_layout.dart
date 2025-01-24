@@ -95,9 +95,9 @@ class _ScreenLayoutState extends State<ScreenLayout> {
 
   Widget _getAppBarTitle() {
     const defaultStyle = TextStyle(
-      fontSize: 18,
+      fontSize: 20,
       fontFamily: 'DIN',
-      fontWeight: FontWeight.w300,
+      fontWeight: FontWeight.w500,
     );
 
     switch (_currentIndex) {
@@ -183,9 +183,10 @@ class _ScreenLayoutState extends State<ScreenLayout> {
         ),
       ],
       showUnselectedLabels: true,
-      unselectedLabelStyle: const TextStyle(fontSize: 11),
+      unselectedLabelStyle: const TextStyle(fontSize: 16),
       unselectedItemColor: Colors.grey,
-      selectedLabelStyle: const TextStyle(fontSize: 11),
+      selectedLabelStyle:
+          const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
       selectedItemColor: AppColors.primaryColor,
       currentIndex: _currentIndex,
       onTap: (index) => setState(() => _currentIndex = index),
