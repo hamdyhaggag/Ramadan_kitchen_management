@@ -352,7 +352,7 @@ class _ManageCasesScreenState extends State<ManageCasesScreen> {
           DataCell(Text(
             caseItem["الاسم"],
             style: TextStyle(
-                fontWeight: FontWeight.w600, fontSize: isPortrait ? 18 : 20),
+                fontWeight: FontWeight.w600, fontSize: isPortrait ? 16 : 20),
           )),
           DataCell(Center(
             child: Text(
