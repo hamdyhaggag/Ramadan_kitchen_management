@@ -30,14 +30,30 @@ class CasesCubit extends Cubit<CasesState> {
     }
   }
 
+  Future<void> resetAllCases() async {
+    emit(CasesLoading());
+    try {
+      final batch = _firestore.batch();
+      for (var caseItem in _localCache) {
+        final docRef = _firestore.collection('cases').doc(caseItem['id']);
+        batch.update(docRef, {'جاهزة': false, 'هنا؟': false});
+        caseItem['جاهزة'] = false;
+        caseItem['هنا؟'] = false;
+      }
+      await batch.commit();
+      emit(CasesLoaded(List.from(_localCache)));
+    } catch (e) {
+      emit(CasesLoaded(List.from(_localCache)));
+      emit(CasesError('Failed to reset cases: $e'));
+    }
+  }
+
   Future<void> addCase(Map<String, dynamic> caseData) async {
     try {
       final docId = caseData['الرقم'].toString();
-
       final newCase = {...caseData, 'id': docId};
       _localCache = [..._localCache, newCase];
       emit(CasesLoaded(List.from(_localCache)));
-
       await _firestore.collection('cases').doc(docId).set(caseData);
     } catch (e) {
       _localCache.removeWhere((c) => c['id'] == caseData['الرقم'].toString());
@@ -53,7 +69,6 @@ class CasesCubit extends Cubit<CasesState> {
         _localCache[index] = {..._localCache[index], ...updates};
         emit(CasesLoaded(List.from(_localCache)));
       }
-
       await _firestore.collection('cases').doc(docId).update(updates);
     } catch (e) {
       emit(CasesLoaded(List.from(_localCache)));
@@ -69,7 +84,6 @@ class CasesCubit extends Cubit<CasesState> {
         _localCache[index][field] = newValue;
         emit(CasesLoaded(List.from(_localCache)));
       }
-
       await _firestore.collection('cases').doc(docId).update({field: newValue});
     } catch (e) {
       emit(CasesLoaded(List.from(_localCache)));
@@ -81,7 +95,6 @@ class CasesCubit extends Cubit<CasesState> {
     try {
       _localCache.removeWhere((c) => c['id'] == docId);
       emit(CasesLoaded(List.from(_localCache)));
-
       await _firestore.collection('cases').doc(docId).delete();
     } catch (e) {
       emit(CasesLoaded(List.from(_localCache)));

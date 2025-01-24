@@ -121,6 +121,35 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
     );
   }
 
+  void _showResetConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("تأكيد إعادة التعيين",
+            style: TextStyle(color: AppColors.blackColor)),
+        content: const Text(
+          "هل أنت متأكد من أنك تريد إعادة تعيين جميع الحالات لليوم الجديد؟",
+          style: TextStyle(color: AppColors.blackColor, fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("إلغاء",
+                style: TextStyle(color: AppColors.blackColor)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<CasesCubit>().resetAllCases();
+            },
+            child: const Text("تأكيد",
+                style: TextStyle(color: AppColors.primaryColor)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -149,7 +178,27 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _buildManageButton(isPortrait),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GeneralButton(
+                        text: 'بدء يوم جديد',
+                        backgroundColor: AppColors.secondaryColor,
+                        textColor: AppColors.whiteColor,
+                        onPressed: _showResetConfirmation,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: GeneralButton(
+                        text: 'إدارة الحالات',
+                        backgroundColor: AppColors.primaryColor,
+                        textColor: AppColors.whiteColor,
+                        onPressed: _navigateToManageDetails,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             );
           },
@@ -171,19 +220,19 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
             decoration: InputDecoration(
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: AppColors.secondaryColor),
+                borderSide: BorderSide(color: AppColors.greyColor),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: AppColors.secondaryColor),
+                borderSide: BorderSide(color: AppColors.greyColor),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: AppColors.secondaryColor),
+                borderSide: BorderSide(color: AppColors.greyColor),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12),
             ),
-            icon: Icon(Icons.arrow_drop_down, color: AppColors.primaryColor),
+            icon: Icon(Icons.arrow_drop_down, color: AppColors.greyColor),
             hint: const Text("اختر نوع الفلتر"),
             items: [
               DropdownMenuItem(
@@ -310,17 +359,5 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
         ],
       );
     }).toList();
-  }
-
-  Widget _buildManageButton(bool isPortrait) {
-    return SizedBox(
-      width: isPortrait ? double.infinity : null,
-      child: GeneralButton(
-        text: 'إدارة الحالات',
-        backgroundColor: AppColors.primaryColor,
-        textColor: AppColors.whiteColor,
-        onPressed: _navigateToManageDetails,
-      ),
-    );
   }
 }
