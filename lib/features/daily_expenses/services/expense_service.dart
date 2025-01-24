@@ -1,56 +1,51 @@
-import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
-import '../../../core/cache/prefs.dart';
+import '../model/expense_model.dart';
 
 class ExpenseService {
   static final ExpenseService _instance = ExpenseService._internal();
   factory ExpenseService() => _instance;
   ExpenseService._internal();
 
-  List<Map<String, dynamic>> expenses = [];
+  final CollectionReference _expensesCollection =
+      FirebaseFirestore.instance.collection('expenses');
 
-  Future<void> loadExpenses() async {
-    final jsonString = Prefs.getString('expenses');
-    if (jsonString.isNotEmpty) {
-      expenses = List<Map<String, dynamic>>.from(jsonDecode(jsonString));
-    }
+  Stream<List<Expense>> getExpensesStream() {
+    return _expensesCollection
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Expense.fromFirestore(doc)).toList());
   }
 
-  Future<void> saveExpenses() async {
-    final jsonString = jsonEncode(expenses);
-    await Prefs.setString('expenses', jsonString);
+  Future<String> addExpense(Expense expense) async {
+    final docRef = await _expensesCollection.add(expense.toFirestore());
+    return docRef.id;
   }
 
-  void addExpense(Map<String, dynamic> expense) {
-    expenses.add(expense);
-    saveExpenses();
+  Future<void> updateExpense(Expense expense) async {
+    await _expensesCollection.doc(expense.id).update(expense.toFirestore());
   }
 
-  Map<String, List<Map<String, dynamic>>> getGroupedExpensesByDate() {
-    final Map<String, List<Map<String, dynamic>>> groupedExpenses = {};
+  Future<void> deleteExpense(String expenseId) async {
+    await _expensesCollection.doc(expenseId).delete();
+  }
 
-    for (var expense in expenses) {
-      final date = expense['date'];
-      if (date != null) {
-        groupedExpenses.putIfAbsent(date, () => []).add(expense);
-      }
-    }
+  Map<String, List<Expense>> groupExpensesByDate(List<Expense> expenses) {
+    final grouped = groupBy(expenses, (e) => e.date);
+    return _sortGroupedExpenses(grouped);
+  }
 
-    final sortedKeys = groupedExpenses.keys.toList()
+  Map<String, List<Expense>> groupUnpaidExpensesByDate(List<Expense> expenses) {
+    final unpaid = expenses.where((e) => !e.paid).toList();
+    final grouped = groupBy(unpaid, (e) => e.date);
+    return _sortGroupedExpenses(grouped);
+  }
+
+  Map<String, List<Expense>> _sortGroupedExpenses(
+      Map<String, List<Expense>> grouped) {
+    final sortedKeys = grouped.keys.toList()
       ..sort((a, b) => DateTime.parse(b).compareTo(DateTime.parse(a)));
-
-    return {for (var key in sortedKeys) key: groupedExpenses[key]!};
-  }
-
-  Map<String, List<Map<String, dynamic>>> getGroupedUnpaidExpensesByDate() {
-    final unpaidExpenses =
-        expenses.where((expense) => !expense['paid']).toList();
-    final groupedExpenses =
-        groupBy(unpaidExpenses, (expense) => expense['date']);
-
-    final sortedKeys = groupedExpenses.keys.toList()
-      ..sort((a, b) => DateTime.parse(b).compareTo(DateTime.parse(a)));
-
-    return {for (var key in sortedKeys) key: groupedExpenses[key]!};
+    return {for (var key in sortedKeys) key: grouped[key]!};
   }
 }

@@ -36,14 +36,10 @@ class ExpenseCubit extends Cubit<ExpenseState> {
       tempId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
       final tempExpense = expense.copyWith(id: tempId);
 
-      // Optimistic update
       _localCache = [tempExpense, ..._localCache];
       emit(ExpenseLoaded(List.from(_localCache)));
 
-      // Firestore operation
       final docRef = await _expensesCollection.add(tempExpense.toFirestore());
-
-      // Update with real ID
       final newExpense = tempExpense.copyWith(id: docRef.id);
       _localCache =
           _localCache.map((e) => e.id == tempId ? newExpense : e).toList();
@@ -56,76 +52,69 @@ class ExpenseCubit extends Cubit<ExpenseState> {
   }
 
   Future<void> updateExpense(Expense updatedExpense) async {
-    int index = -1;
+    final index = _localCache.indexWhere((e) => e.id == updatedExpense.id);
+    if (index == -1) return;
+
+    final previousExpense = _localCache[index];
+    _localCache[index] = updatedExpense;
+    emit(ExpenseLoaded(List.from(_localCache)));
+
     try {
-      index = _localCache.indexWhere((e) => e.id == updatedExpense.id);
-      if (index != -1) {
-        // Store previous state for rollback
-        final previousExpense = _localCache[index];
-
-        // Optimistic update
-        _localCache[index] = updatedExpense;
-        emit(ExpenseLoaded(List.from(_localCache)));
-
-        // Firestore operation
-        await _expensesCollection
-            .doc(updatedExpense.id)
-            .update(updatedExpense.toFirestore());
-      }
+      await _expensesCollection
+          .doc(updatedExpense.id)
+          .update(updatedExpense.toFirestore());
     } catch (e) {
-      if (index != -1) {
-        // Rollback to previous state
-        _localCache[index] = _localCache[index];
-        emit(ExpenseLoaded(List.from(_localCache)));
-      }
+      _localCache[index] = previousExpense;
+      emit(ExpenseLoaded(List.from(_localCache)));
       emit(ExpenseError('Failed to update expense: ${e.toString()}'));
     }
   }
 
   Future<void> deleteExpense(String expenseId) async {
-    Expense? deletedExpense;
-    int index = -1;
+    final index = _localCache.indexWhere((e) => e.id == expenseId);
+    if (index == -1) return;
+
+    final deletedExpense = _localCache.removeAt(index);
+    emit(ExpenseLoaded(List.from(_localCache)));
+
     try {
-      index = _localCache.indexWhere((e) => e.id == expenseId);
-      if (index != -1) {
-        deletedExpense = _localCache[index];
-
-        // Optimistic update
-        _localCache.removeAt(index);
-        emit(ExpenseLoaded(List.from(_localCache)));
-
-        // Firestore operation
-        await _expensesCollection.doc(expenseId).delete();
-      }
+      await _expensesCollection.doc(expenseId).delete();
     } catch (e) {
-      if (deletedExpense != null && index != -1) {
-        // Rollback deletion
-        _localCache.insert(index, deletedExpense);
-        _localCache.sort((a, b) => b.date.compareTo(a.date));
-        emit(ExpenseLoaded(List.from(_localCache)));
-      }
+      _localCache.insert(index, deletedExpense);
+      emit(ExpenseLoaded(List.from(_localCache)));
       emit(ExpenseError('Failed to delete expense: ${e.toString()}'));
     }
   }
 
   Future<void> togglePaymentStatus(String expenseId, bool newStatus) async {
-    int index = -1;
-    try {
-      index = _localCache.indexWhere((e) => e.id == expenseId);
-      if (index != -1) {
-        final updatedExpense = _localCache[index].copyWith(paid: newStatus);
-        _localCache[index] = updatedExpense;
-        emit(ExpenseLoaded(List.from(_localCache)));
+    final index = _localCache.indexWhere((e) => e.id == expenseId);
+    if (index == -1) return;
 
-        await _expensesCollection.doc(expenseId).update(
-            {'paid': newStatus, 'timestamp': FieldValue.serverTimestamp()});
-      }
+    final updatedExpense = _localCache[index].copyWith(paid: newStatus);
+    _localCache[index] = updatedExpense;
+    emit(ExpenseLoaded(List.from(_localCache)));
+
+    try {
+      await _expensesCollection.doc(expenseId).update(
+          {'paid': newStatus, 'timestamp': FieldValue.serverTimestamp()});
     } catch (e) {
-      if (index != -1) {
-        _localCache[index] = _localCache[index].copyWith(paid: !newStatus);
-        emit(ExpenseLoaded(List.from(_localCache)));
-      }
+      _localCache[index] = _localCache[index].copyWith(paid: !newStatus);
+      emit(ExpenseLoaded(List.from(_localCache)));
       emit(ExpenseError('Payment status update failed: ${e.toString()}'));
+    }
+  }
+
+  Future<void> loadExpenses() async {
+    try {
+      emit(ExpenseLoading());
+      final snapshot = await _expensesCollection
+          .orderBy('timestamp', descending: true)
+          .get();
+      _localCache =
+          snapshot.docs.map((doc) => Expense.fromFirestore(doc)).toList();
+      emit(ExpenseLoaded(List.from(_localCache)));
+    } catch (e) {
+      emit(ExpenseError('Failed to load expenses: ${e.toString()}'));
     }
   }
 

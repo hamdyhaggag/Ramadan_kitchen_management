@@ -4,9 +4,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/core/widgets/general_button.dart';
 import 'package:ramadan_kitchen_management/features/daily_expenses/logic/expense_cubit.dart';
-import 'package:ramadan_kitchen_management/features/daily_expenses/logic/expense_state.dart';
-import 'add_expenses_Screen.dart';
-import 'model/expense_model.dart';
+import 'package:ramadan_kitchen_management/features/daily_expenses/model/expense_model.dart';
+import 'add_expenses_screen.dart';
+import 'logic/expense_state.dart';
 
 class DailyExpensesScreen extends StatelessWidget {
   const DailyExpensesScreen({super.key});
@@ -19,9 +19,7 @@ class DailyExpensesScreen extends StatelessWidget {
           if (state is ExpenseLoading) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (state is ExpenseError) {
-            return Center(child: Text(state.message));
-          }
+          if (state is ExpenseError) return Center(child: Text(state.message));
           if (state is ExpenseLoaded) {
             return _ExpenseContent(expenses: state.expenses);
           }
@@ -98,7 +96,6 @@ class _ExpenseContentState extends State<_ExpenseContent> {
         IconButton(
           icon: const Icon(Icons.calendar_today),
           onPressed: _pickDate,
-          tooltip: 'اختر تاريخ',
         ),
       ],
     );
@@ -126,10 +123,9 @@ class _ExpenseContentState extends State<_ExpenseContent> {
                           AppColors.customColors.length],
                   radius: 100,
                   titleStyle: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
                 );
               }).toList(),
               centerSpaceRadius: 60,
@@ -144,18 +140,16 @@ class _ExpenseContentState extends State<_ExpenseContent> {
               Text(
                 'الإجمالي',
                 style: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.primaryColor,
-                  fontWeight: FontWeight.bold,
-                ),
+                    fontSize: 16,
+                    color: AppColors.primaryColor,
+                    fontWeight: FontWeight.bold),
               ),
               Text(
                 '${totalFilteredAmount.toStringAsFixed(2)} ج.م',
                 style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryColor,
-                ),
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryColor),
               ),
             ],
           ),
@@ -167,21 +161,16 @@ class _ExpenseContentState extends State<_ExpenseContent> {
   Widget _buildExpenseList() {
     if (filteredExpenses.isEmpty) {
       return const Center(
-        child: Text(
-          'لا توجد مصروفات لهذا اليوم',
-          style: TextStyle(fontSize: 16),
-        ),
-      );
+          child: Text('لا توجد مصروفات لهذا اليوم',
+              style: TextStyle(fontSize: 16)));
     }
 
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: filteredExpenses.length,
-      itemBuilder: (context, index) {
-        final expense = filteredExpenses[index];
-        return _buildExpenseItem(expense);
-      },
+      itemBuilder: (context, index) =>
+          _buildExpenseItem(filteredExpenses[index]),
     );
   }
 
@@ -210,20 +199,11 @@ class _ExpenseContentState extends State<_ExpenseContent> {
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              '${expense.amount.toStringAsFixed(2)} ج.م',
-              style: const TextStyle(
-                color: Colors.green,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              expense.category,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
-              ),
-            ),
+            Text('${expense.amount.toStringAsFixed(2)} ج.م',
+                style: const TextStyle(
+                    color: Colors.green, fontWeight: FontWeight.bold)),
+            Text(expense.category,
+                style: TextStyle(color: Colors.grey[600], fontSize: 12)),
           ],
         ),
       ),
@@ -235,19 +215,13 @@ class _ExpenseContentState extends State<_ExpenseContent> {
       onTap: () => _togglePaymentStatus(expense),
       child: Row(
         children: [
-          Icon(
-            expense.paid ? Icons.check_circle : Icons.cancel,
-            color: expense.paid ? Colors.green : Colors.red,
-            size: 20,
-          ),
+          Icon(expense.paid ? Icons.check_circle : Icons.cancel,
+              color: expense.paid ? Colors.green : Colors.red, size: 20),
           const SizedBox(width: 4),
-          Text(
-            expense.paid ? 'تم الدفع' : 'لم يتم الدفع',
-            style: TextStyle(
-              color: expense.paid ? Colors.green : Colors.red,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text(expense.paid ? 'تم الدفع' : 'لم يتم الدفع',
+              style: TextStyle(
+                  color: expense.paid ? Colors.green : Colors.red,
+                  fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -269,9 +243,7 @@ class _ExpenseContentState extends State<_ExpenseContent> {
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
     );
-    if (pickedDate != null) {
-      setState(() => selectedDate = pickedDate);
-    }
+    if (pickedDate != null) setState(() => selectedDate = pickedDate);
   }
 
   Future<bool?> _confirmDelete(Expense expense) async {
@@ -282,13 +254,11 @@ class _ExpenseContentState extends State<_ExpenseContent> {
         content: const Text('هل أنت متأكد من حذف هذا المصروف؟'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('إلغاء'),
-          ),
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('إلغاء')),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('حذف', style: TextStyle(color: Colors.red)),
-          ),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('حذف', style: TextStyle(color: Colors.red))),
         ],
       ),
     );
@@ -300,24 +270,18 @@ class _ExpenseContentState extends State<_ExpenseContent> {
       SnackBar(
         content: Text('تم حذف مصروف ${expense.product}'),
         action: SnackBarAction(
-          label: 'تراجع',
-          onPressed: () => context.read<ExpenseCubit>().addExpense(expense),
-        ),
+            label: 'تراجع',
+            onPressed: () => context.read<ExpenseCubit>().addExpense(expense)),
       ),
     );
   }
 
   void _togglePaymentStatus(Expense expense) {
-    context.read<ExpenseCubit>().togglePaymentStatus(
-          expense.id,
-          !expense.paid,
-        );
+    context.read<ExpenseCubit>().togglePaymentStatus(expense.id, !expense.paid);
   }
 
   void _navigateToAddExpense(BuildContext context) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const AddExpenseScreen()),
-    );
+    await Navigator.push(context,
+        MaterialPageRoute(builder: (context) => const AddExpenseScreen()));
   }
 }

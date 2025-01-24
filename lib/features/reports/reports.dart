@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:ramadan_kitchen_management/features/daily_expenses/services/expense_service.dart';
+import 'package:ramadan_kitchen_management/features/daily_expenses/logic/expense_cubit.dart';
+import 'package:ramadan_kitchen_management/features/daily_expenses/model/expense_model.dart';
 import '../../core/utils/app_colors.dart';
+import '../daily_expenses/logic/expense_state.dart';
 
 String formatDateString(String dateString) {
   try {
@@ -12,26 +15,8 @@ String formatDateString(String dateString) {
   }
 }
 
-String formatTimeString(String timeString) {
-  try {
-    if (timeString.isEmpty) return '';
-    final parts = timeString.split(':');
-    if (parts.length == 2) {
-      final time =
-          TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
-      return DateFormat('h:mm a', 'ar')
-          .format(DateTime(2023, 1, 1, time.hour, time.minute));
-    }
-    return DateFormat('h:mm a', 'ar').format(DateTime.parse(timeString));
-  } catch (e) {
-    return '';
-  }
-}
-
 class ReportsScreen extends StatefulWidget {
-  final ExpenseService _expenseService = ExpenseService();
-
-  ReportsScreen({super.key});
+  const ReportsScreen({super.key});
 
   @override
   ReportsScreenState createState() => ReportsScreenState();
@@ -46,6 +31,7 @@ class ReportsScreenState extends State<ReportsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    context.read<ExpenseCubit>().loadExpenses();
   }
 
   @override
@@ -75,8 +61,18 @@ class ReportsScreenState extends State<ReportsScreen>
     );
   }
 
-  Widget _buildExpensesList(
-      Map<String, List<Map<String, dynamic>>> groupedExpenses) {
+  Map<String, List<Expense>> groupExpensesByDate(List<Expense> expenses,
+      {bool unpaidOnly = false}) {
+    final grouped = <String, List<Expense>>{};
+    for (var expense in expenses) {
+      if (unpaidOnly && expense.paid) continue;
+      grouped.putIfAbsent(expense.date, () => []);
+      grouped[expense.date]!.add(expense);
+    }
+    return grouped;
+  }
+
+  Widget _buildExpensesList(Map<String, List<Expense>> groupedExpenses) {
     final sortedEntries = groupedExpenses.entries.toList()
       ..sort((a, b) => _isAscending
           ? DateTime.parse(a.key).compareTo(DateTime.parse(b.key))
@@ -84,8 +80,7 @@ class ReportsScreenState extends State<ReportsScreen>
 
     if (sortedEntries.isEmpty) {
       return const Center(
-        child: Text('لا توجد مصروفات مسجلة', style: TextStyle(fontSize: 16)),
-      );
+          child: Text('لا توجد مصروفات مسجلة', style: TextStyle(fontSize: 16)));
     }
 
     return Padding(
@@ -94,8 +89,7 @@ class ReportsScreenState extends State<ReportsScreen>
         itemCount: sortedEntries.length,
         itemBuilder: (context, index) {
           final entry = sortedEntries[index];
-          final total =
-              entry.value.fold(0.0, (sum, e) => sum + (e['amount'] ?? 0.0));
+          final total = entry.value.fold(0.0, (sum, e) => sum + e.amount);
 
           return Card(
             shape:
@@ -149,7 +143,7 @@ class ReportsScreenState extends State<ReportsScreen>
                         const SizedBox(height: 12),
                         ...entry.value.map((expense) => ListTile(
                               contentPadding: EdgeInsets.zero,
-                              title: Text(expense['description'],
+                              title: Text(expense.product,
                                   style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600)),
@@ -158,7 +152,7 @@ class ReportsScreenState extends State<ReportsScreen>
                                 children: [
                                   const SizedBox(height: 4),
                                   Text(
-                                      'المبلغ: ${expense['amount'].toStringAsFixed(2)} ج.م',
+                                      'المبلغ: ${expense.amount.toStringAsFixed(2)} ج.م',
                                       style: TextStyle(
                                           color: Colors.grey[700],
                                           fontSize: 13)),
@@ -178,13 +172,7 @@ class ReportsScreenState extends State<ReportsScreen>
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(
-                                        formatTimeString(expense['time'] ?? ''),
-                                        style: TextStyle(
-                                            color: Colors.grey[500],
-                                            fontSize: 13)),
-                                    _buildPaymentStatus(
-                                        expense['paid'] ?? false),
+                                    _buildPaymentStatus(expense.paid),
                                   ],
                                 ),
                               ),
@@ -207,48 +195,52 @@ class ReportsScreenState extends State<ReportsScreen>
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-            title: const Text('التقارير اليومية'),
-            actions: [
-              IconButton(
-                icon: Icon(
-                    _isAscending ? Icons.arrow_upward : Icons.arrow_downward),
-                onPressed: () => setState(() => _isAscending = !_isAscending),
-              ),
+          title: const Text('التقارير اليومية'),
+          actions: [
+            IconButton(
+              icon: Icon(
+                  _isAscending ? Icons.arrow_upward : Icons.arrow_downward),
+              onPressed: () => setState(() => _isAscending = !_isAscending),
+            ),
+          ],
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'جميع المصروفات'),
+              Tab(text: 'غير المدفوعة'),
             ],
-            bottom: const TabBar(
-              tabs: [
-                Tab(text: 'جميع المصروفات'),
-                Tab(text: 'غير المدفوعة'),
-              ],
-              indicatorColor: AppColors.primaryColor,
-              labelColor: AppColors.primaryColor,
-              unselectedLabelColor: Colors.grey,
-              labelStyle: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontFamily: 'DIN',
-                color: AppColors.primaryColor,
-              ),
-              unselectedLabelStyle: TextStyle(
-                fontWeight: FontWeight.normal,
-                fontFamily: 'DIN',
-                color: Colors.grey,
-              ),
-            )),
-        body: FutureBuilder(
-          future: widget._expenseService.loadExpenses(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
+            indicatorColor: AppColors.primaryColor,
+            labelColor: AppColors.primaryColor,
+            unselectedLabelColor: Colors.grey,
+            labelStyle: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontFamily: 'DIN',
+              color: AppColors.primaryColor,
+            ),
+            unselectedLabelStyle: TextStyle(
+              fontWeight: FontWeight.normal,
+              fontFamily: 'DIN',
+              color: Colors.grey,
+            ),
+          ),
+        ),
+        body: BlocBuilder<ExpenseCubit, ExpenseState>(
+          builder: (context, state) {
+            if (state is ExpenseLoading) {
               return const Center(child: CircularProgressIndicator());
             }
-
-            return TabBarView(
-              children: [
-                _buildExpensesList(
-                    widget._expenseService.getGroupedExpensesByDate()),
-                _buildExpensesList(
-                    widget._expenseService.getGroupedUnpaidExpensesByDate()),
-              ],
-            );
+            if (state is ExpenseError) {
+              return Center(child: Text(state.message));
+            }
+            if (state is ExpenseLoaded) {
+              return TabBarView(
+                children: [
+                  _buildExpensesList(groupExpensesByDate(state.expenses)),
+                  _buildExpensesList(
+                      groupExpensesByDate(state.expenses, unpaidOnly: true)),
+                ],
+              );
+            }
+            return const Center(child: Text('لا توجد مصروفات'));
           },
         ),
       ),
