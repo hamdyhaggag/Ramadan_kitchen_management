@@ -1,11 +1,9 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/core/widgets/general_button.dart';
 import 'package:ramadan_kitchen_management/features/daily_expenses/services/expense_service.dart';
-
 import '../../core/cache/prefs.dart';
 import 'add_expenses_Screen.dart';
 
@@ -18,13 +16,11 @@ class DailyExpensesScreen extends StatefulWidget {
 
 class DailyExpensesScreenState extends State<DailyExpensesScreen> {
   final ExpenseService expenseService = ExpenseService();
-
   List<Map<String, dynamic>> expenses = [];
   DateTime? selectedDate;
 
-  double get totalExpenses {
-    return expenses.fold(0, (sum, item) => sum + item['amount']);
-  }
+  double get totalExpenses =>
+      expenses.fold(0, (sum, item) => sum + item['amount']);
 
   Map<String, double> get categoryExpenses {
     Map<String, double> categories = {};
@@ -49,16 +45,20 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
         .toList();
   }
 
-  void addExpense(String date, double amount, String description) {
+  void addExpense(String date, double amount, String description, bool paid) {
     setState(() {
       expenseService.addExpense({
         'date': date,
         'amount': amount,
         'description': description,
+        'paid': paid,
       });
-      setState(() {});
-      expenses
-          .add({'date': date, 'amount': amount, 'description': description});
+      expenses.add({
+        'date': date,
+        'amount': amount,
+        'description': description,
+        'paid': paid
+      });
     });
     saveExpenses();
   }
@@ -66,19 +66,15 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
   void navigateToAddExpenseScreen() async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const AddExpenseScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const AddExpenseScreen()),
     );
     if (result != null) {
-      setState(() {
-        expenses.add({
-          'date': result['date'],
-          'amount': result['amount'],
-          'description': result['product'],
-        });
-      });
-      saveExpenses();
+      addExpense(
+        result['date'],
+        result['amount'],
+        result['product'],
+        result['paid'],
+      );
     }
   }
 
@@ -90,14 +86,12 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
       lastDate: DateTime.now(),
     );
     if (pickedDate != null) {
-      setState(() {
-        selectedDate = pickedDate;
-      });
+      setState(() => selectedDate = pickedDate);
     }
   }
 
   Widget _buildPieChart() {
-    final categoryData = {};
+    final categoryData = <String, double>{};
     for (var expense in filteredExpenses) {
       categoryData.update(
         expense['description'],
@@ -140,27 +134,31 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
 
   void _removeExpense(int index) {
     final removedExpense = expenses[index];
-
-    setState(() {
-      expenses.removeAt(index);
-    });
+    setState(() => expenses.removeAt(index));
     saveExpenses();
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('تم حذف المصروف: ${removedExpense['description']}'),
         action: SnackBarAction(
-          disabledTextColor: AppColors.whiteColor,
           label: 'تراجع',
           onPressed: () {
-            setState(() {
-              expenses.insert(index, removedExpense);
-            });
+            setState(() => expenses.insert(index, removedExpense));
             saveExpenses();
           },
         ),
       ),
     );
+  }
+
+  void _togglePaymentStatus(Map<String, dynamic> expense) {
+    final index = expenses.indexWhere((e) =>
+        e['date'] == expense['date'] &&
+        e['description'] == expense['description'] &&
+        e['amount'] == expense['amount']);
+    if (index != -1) {
+      setState(() => expenses[index]['paid'] = !expenses[index]['paid']);
+      saveExpenses();
+    }
   }
 
   Widget _buildExpenseList() {
@@ -180,7 +178,8 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
       itemBuilder: (context, index) {
         final expense = displayExpenses[index];
         return Dismissible(
-          key: Key(expense['description'] + expense['date']),
+          key: Key(
+              '${expense['description']}${expense['date']}${expense['amount']}'),
           direction: DismissDirection.endToStart,
           background: Container(
             alignment: Alignment.centerRight,
@@ -208,15 +207,37 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
               ),
             );
           },
-          onDismissed: (direction) {
-            _removeExpense(index);
-          },
+          onDismissed: (direction) => _removeExpense(expenses.indexOf(expense)),
           child: ListTile(
-            title: Text(
-              expense['description'],
-              style: const TextStyle(fontWeight: FontWeight.bold),
+            title: Text(expense['description'],
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('التاريخ: ${expense['date']}'),
+                const SizedBox(height: 4),
+                GestureDetector(
+                  onTap: () => _togglePaymentStatus(expense),
+                  child: Row(
+                    children: [
+                      Icon(
+                        expense['paid'] ? Icons.check_circle : Icons.cancel,
+                        color: expense['paid'] ? Colors.green : Colors.red,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        expense['paid'] ? 'تم الدفع' : 'لم يتم الدفع',
+                        style: TextStyle(
+                          color: expense['paid'] ? Colors.green : Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            subtitle: Text('التاريخ: ${expense['date']}'),
             trailing: Text(
               '${expense['amount']} ج.م',
               style: const TextStyle(
@@ -235,7 +256,6 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
   void initState() {
     super.initState();
     expenseService.loadExpenses();
-
     loadExpenses();
   }
 
@@ -262,14 +282,11 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'المصروفات:',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
+                  Text('المصروفات:',
+                      style: Theme.of(context).textTheme.titleLarge),
                   IconButton(
-                    icon: const Icon(Icons.calendar_today),
-                    onPressed: pickDate,
-                  ),
+                      icon: const Icon(Icons.calendar_today),
+                      onPressed: pickDate),
                 ],
               ),
               if (selectedDate != null)
@@ -277,11 +294,7 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     TextButton(
-                      onPressed: () {
-                        setState(() {
-                          selectedDate = null;
-                        });
-                      },
+                      onPressed: () => setState(() => selectedDate = null),
                       child: const Text(
                         'إزالة الفلتر',
                         style: TextStyle(
@@ -297,9 +310,10 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
               GestureDetector(
                 onTap: navigateToAddExpenseScreen,
                 child: GeneralButton(
-                    text: 'إضافة مصروف جديد',
-                    backgroundColor: AppColors.primaryColor,
-                    textColor: AppColors.whiteColor),
+                  text: 'إضافة مصروف جديد',
+                  backgroundColor: AppColors.primaryColor,
+                  textColor: AppColors.whiteColor,
+                ),
               ),
             ],
           ),
@@ -309,15 +323,23 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
   }
 
   void saveExpenses() async {
-    final jsonString = jsonEncode(expenses);
-    await Prefs.setString('expenses', jsonString);
+    await Prefs.setString('expenses', jsonEncode(expenses));
   }
 
   void loadExpenses() {
     final jsonString = Prefs.getString('expenses');
     if (jsonString.isNotEmpty) {
       setState(() {
-        expenses = List<Map<String, dynamic>>.from(jsonDecode(jsonString));
+        expenses = (jsonDecode(jsonString) as List<dynamic>)
+            .map<Map<String, dynamic>>((item) {
+          final map = Map<String, dynamic>.from(item as Map<dynamic, dynamic>);
+          return {
+            'date': map['date'] as String,
+            'amount': map['amount'] as double,
+            'description': map['description'] as String,
+            'paid': map['paid'] as bool? ?? false,
+          };
+        }).toList();
       });
     }
   }
