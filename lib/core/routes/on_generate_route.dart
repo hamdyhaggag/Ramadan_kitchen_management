@@ -14,9 +14,6 @@ import '../../features/manage_cases/manage_cases.dart';
 import '../../features/on_boarding/presentation/views/login_or_register_view.dart';
 import '../../features/reports/reports.dart';
 import '../../features/statistics/statistics_screen.dart';
-import 'dart:convert';
-
-import '../cache/prefs.dart';
 
 Route<dynamic> onGenerateRoutes(RouteSettings settings) {
   switch (settings.name) {

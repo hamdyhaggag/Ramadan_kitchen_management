@@ -1,130 +1,251 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/core/widgets/general_button.dart';
-import 'package:ramadan_kitchen_management/features/daily_expenses/services/expense_service.dart';
-import '../../core/cache/prefs.dart';
+import 'package:ramadan_kitchen_management/features/daily_expenses/logic/expense_cubit.dart';
+import 'package:ramadan_kitchen_management/features/daily_expenses/logic/expense_state.dart';
 import 'add_expenses_Screen.dart';
+import 'model/expense_model.dart';
 
-class DailyExpensesScreen extends StatefulWidget {
+class DailyExpensesScreen extends StatelessWidget {
   const DailyExpensesScreen({super.key});
 
   @override
-  DailyExpensesScreenState createState() => DailyExpensesScreenState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: BlocBuilder<ExpenseCubit, ExpenseState>(
+        builder: (context, state) {
+          if (state is ExpenseLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (state is ExpenseError) {
+            return Center(child: Text(state.message));
+          }
+          if (state is ExpenseLoaded) {
+            return _ExpenseContent(expenses: state.expenses);
+          }
+          return const Center(child: Text('لا توجد مصروفات'));
+        },
+      ),
+    );
+  }
 }
 
-class DailyExpensesScreenState extends State<DailyExpensesScreen> {
-  final ExpenseService expenseService = ExpenseService();
-  List<Map<String, dynamic>> expenses = [];
+class _ExpenseContent extends StatefulWidget {
+  final List<Expense> expenses;
+  const _ExpenseContent({required this.expenses});
+
+  @override
+  State<_ExpenseContent> createState() => _ExpenseContentState();
+}
+
+class _ExpenseContentState extends State<_ExpenseContent> {
   DateTime? selectedDate;
 
-  double get totalExpenses =>
-      expenses.fold(0, (sum, item) => sum + item['amount']);
-
-  Map<String, double> get categoryExpenses {
-    Map<String, double> categories = {};
-    for (var expense in expenses) {
-      categories.update(
-        expense['description'],
-        (existingValue) => existingValue + expense['amount'],
-        ifAbsent: () => expense['amount'],
-      );
-    }
-    return categories;
-  }
-
-  List<Map<String, dynamic>> get filteredExpenses {
+  List<Expense> get filteredExpenses {
     final today = DateTime.now().toIso8601String().split('T')[0];
-    if (selectedDate == null) {
-      return expenses.where((expense) => expense['date'] == today).toList();
-    }
-    return expenses
-        .where((expense) =>
-            expense['date'] == selectedDate!.toIso8601String().split('T')[0])
-        .toList();
+    final filterDate = selectedDate?.toIso8601String().split('T')[0] ?? today;
+    return widget.expenses.where((e) => e.date == filterDate).toList();
   }
 
-  void addExpense(String date, double amount, String description, bool paid) {
-    setState(() {
-      expenseService.addExpense({
-        'date': date,
-        'amount': amount,
-        'description': description,
-        'paid': paid,
-      });
-      expenses.add({
-        'date': date,
-        'amount': amount,
-        'description': description,
-        'paid': paid
-      });
-    });
-    saveExpenses();
-  }
+  double get totalFilteredAmount =>
+      filteredExpenses.fold(0, (sum, e) => sum + e.amount);
 
-  void navigateToAddExpenseScreen() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const AddExpenseScreen()),
-    );
-    if (result != null) {
-      addExpense(
-        result['date'],
-        result['amount'],
-        result['product'],
-        result['paid'],
+  Map<String, double> get categoryAmounts {
+    Map<String, double> amounts = {};
+    for (var expense in filteredExpenses) {
+      amounts.update(
+        expense.category,
+        (value) => value + expense.amount,
+        ifAbsent: () => expense.amount,
       );
     }
+    return amounts;
   }
 
-  Future<void> pickDate() async {
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDateHeader(),
+            const SizedBox(height: 20),
+            _buildPieChart(),
+            const SizedBox(height: 20),
+            _buildExpenseList(),
+            const SizedBox(height: 20),
+            _buildAddButton(context),
+          ],
+        ),
+      ),
     );
-    if (pickedDate != null) {
-      setState(() => selectedDate = pickedDate);
-    }
+  }
+
+  Widget _buildDateHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          selectedDate != null
+              ? 'المصاريف بتاريخ: ${selectedDate!.toLocal().toString().split(' ')[0]}'
+              : 'مصاريف اليوم',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        IconButton(
+          icon: const Icon(Icons.calendar_today),
+          onPressed: _pickDate,
+          tooltip: 'اختر تاريخ',
+        ),
+      ],
+    );
   }
 
   Widget _buildPieChart() {
-    final categoryData = <String, double>{};
-    for (var expense in filteredExpenses) {
-      categoryData.update(
-        expense['description'],
-        (existingValue) => existingValue + expense['amount'],
-        ifAbsent: () => expense['amount'],
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          height: 280,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: PieChart(
+            PieChartData(
+              sections: categoryAmounts.entries.map((entry) {
+                return PieChartSectionData(
+                  value: entry.value,
+                  title: '${entry.key}\n${entry.value.toStringAsFixed(0)}',
+                  color: AppColors.customColors[
+                      categoryAmounts.keys.toList().indexOf(entry.key) %
+                          AppColors.customColors.length],
+                  radius: 100,
+                  titleStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                );
+              }).toList(),
+              centerSpaceRadius: 60,
+              sectionsSpace: 4,
+            ),
+          ),
+        ),
+        Positioned(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'الإجمالي',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.primaryColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                '${totalFilteredAmount.toStringAsFixed(2)} ج.م',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExpenseList() {
+    if (filteredExpenses.isEmpty) {
+      return const Center(
+        child: Text(
+          'لا توجد مصروفات لهذا اليوم',
+          style: TextStyle(fontSize: 16),
+        ),
       );
     }
 
-    return SizedBox(
-      height: 280,
-      child: Stack(
-        children: [
-          PieChart(
-            PieChartData(
-              sections: categoryData.entries.map((entry) {
-                return PieChartSectionData(
-                  value: entry.value,
-                  title: entry.key,
-                  color: AppColors.customColors[
-                      categoryData.keys.toList().indexOf(entry.key) %
-                          AppColors.customColors.length],
-                );
-              }).toList(),
-            ),
-          ),
-          Center(
-            child: Text(
-              'الإجمالي لليوم: ${filteredExpenses.fold(0.0, (sum, item) => sum + item['amount']).toStringAsFixed(0)} ',
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: filteredExpenses.length,
+      itemBuilder: (context, index) {
+        final expense = filteredExpenses[index];
+        return _buildExpenseItem(expense);
+      },
+    );
+  }
+
+  Widget _buildExpenseItem(Expense expense) {
+    return Dismissible(
+      key: Key(expense.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        color: Colors.red,
+        padding: const EdgeInsets.only(right: 20),
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      confirmDismiss: (direction) => _confirmDelete(expense),
+      onDismissed: (direction) => _deleteExpense(expense),
+      child: ListTile(
+        title: Text(expense.product),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('الكمية: ${expense.quantity} ${expense.unitType}'),
+            Text('السعر: ${expense.unitPrice.toStringAsFixed(2)} ج.م/وحدة'),
+            _buildPaymentStatus(expense),
+          ],
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '${expense.amount.toStringAsFixed(2)} ج.م',
               style: const TextStyle(
-                fontSize: 18,
+                color: Colors.green,
                 fontWeight: FontWeight.bold,
-                color: Colors.black,
               ),
+            ),
+            Text(
+              expense.category,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentStatus(Expense expense) {
+    return GestureDetector(
+      onTap: () => _togglePaymentStatus(expense),
+      child: Row(
+        children: [
+          Icon(
+            expense.paid ? Icons.check_circle : Icons.cancel,
+            color: expense.paid ? Colors.green : Colors.red,
+            size: 20,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            expense.paid ? 'تم الدفع' : 'لم يتم الدفع',
+            style: TextStyle(
+              color: expense.paid ? Colors.green : Colors.red,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ],
@@ -132,215 +253,71 @@ class DailyExpensesScreenState extends State<DailyExpensesScreen> {
     );
   }
 
-  void _removeExpense(int index) {
-    final removedExpense = expenses[index];
-    setState(() => expenses.removeAt(index));
-    saveExpenses();
+  Widget _buildAddButton(BuildContext context) {
+    return GeneralButton(
+      text: 'إضافة مصروف جديد',
+      backgroundColor: AppColors.primaryColor,
+      textColor: AppColors.whiteColor,
+      onPressed: () => _navigateToAddExpense(context),
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (pickedDate != null) {
+      setState(() => selectedDate = pickedDate);
+    }
+  }
+
+  Future<bool?> _confirmDelete(Expense expense) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تأكيد الحذف'),
+        content: const Text('هل أنت متأكد من حذف هذا المصروف؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('حذف', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteExpense(Expense expense) {
+    context.read<ExpenseCubit>().deleteExpense(expense.id);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('تم حذف المصروف: ${removedExpense['description']}'),
+        content: Text('تم حذف مصروف ${expense.product}'),
         action: SnackBarAction(
           label: 'تراجع',
-          onPressed: () {
-            setState(() => expenses.insert(index, removedExpense));
-            saveExpenses();
-          },
+          onPressed: () => context.read<ExpenseCubit>().addExpense(expense),
         ),
       ),
     );
   }
 
-  void _togglePaymentStatus(Map<String, dynamic> expense) {
-    final index = expenses.indexWhere((e) =>
-        e['date'] == expense['date'] &&
-        e['description'] == expense['description'] &&
-        e['amount'] == expense['amount']);
-    if (index != -1) {
-      setState(() => expenses[index]['paid'] = !expenses[index]['paid']);
-      saveExpenses();
-    }
-  }
-
-  Widget _buildExpenseList() {
-    final displayExpenses = filteredExpenses;
-    if (displayExpenses.isEmpty) {
-      return const Center(
-        child: Text(
-          'لا توجد مصروفات لهذا اليوم',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        ),
-      );
-    }
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: displayExpenses.length,
-      itemBuilder: (context, index) {
-        final expense = displayExpenses[index];
-        return Dismissible(
-          key: Key(
-              '${expense['description']}${expense['date']}${expense['amount']}'),
-          direction: DismissDirection.endToStart,
-          background: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 20.0),
-            color: Colors.red,
-            child: const Icon(Icons.delete, color: Colors.white),
-          ),
-          confirmDismiss: (direction) async {
-            return await showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('تأكيد الحذف'),
-                content: const Text('هل أنت متأكد أنك تريد حذف هذا المصروف؟'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: const Text('إلغاء'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(true),
-                    child:
-                        const Text('حذف', style: TextStyle(color: Colors.red)),
-                  ),
-                ],
-              ),
-            );
-          },
-          onDismissed: (direction) => _removeExpense(expenses.indexOf(expense)),
-          child: ListTile(
-            title: Text(expense['description'],
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('التاريخ: ${expense['date']}'),
-                const SizedBox(height: 4),
-                GestureDetector(
-                  onTap: () => _togglePaymentStatus(expense),
-                  child: Row(
-                    children: [
-                      Icon(
-                        expense['paid'] ? Icons.check_circle : Icons.cancel,
-                        color: expense['paid'] ? Colors.green : Colors.red,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        expense['paid'] ? 'تم الدفع' : 'لم يتم الدفع',
-                        style: TextStyle(
-                          color: expense['paid'] ? Colors.green : Colors.red,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            trailing: Text(
-              '${expense['amount']} ج.م',
-              style: const TextStyle(
-                color: Colors.green,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ),
+  void _togglePaymentStatus(Expense expense) {
+    context.read<ExpenseCubit>().togglePaymentStatus(
+          expense.id,
+          !expense.paid,
         );
-      },
+  }
+
+  void _navigateToAddExpense(BuildContext context) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddExpenseScreen()),
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    expenseService.loadExpenses();
-    loadExpenses();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Text(
-                  selectedDate != null
-                      ? 'مصاريف يوم ${selectedDate!.toIso8601String().split('T')[0]}'
-                      : '',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-              const SizedBox(height: 20),
-              _buildPieChart(),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('المصروفات:',
-                      style: Theme.of(context).textTheme.titleLarge),
-                  IconButton(
-                      icon: const Icon(Icons.calendar_today),
-                      onPressed: pickDate),
-                ],
-              ),
-              if (selectedDate != null)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    TextButton(
-                      onPressed: () => setState(() => selectedDate = null),
-                      child: const Text(
-                        'إزالة الفلتر',
-                        style: TextStyle(
-                            color: AppColors.blackColor,
-                            fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                  ],
-                ),
-              const SizedBox(height: 10),
-              _buildExpenseList(),
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: navigateToAddExpenseScreen,
-                child: GeneralButton(
-                  text: 'إضافة مصروف جديد',
-                  backgroundColor: AppColors.primaryColor,
-                  textColor: AppColors.whiteColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void saveExpenses() async {
-    await Prefs.setString('expenses', jsonEncode(expenses));
-  }
-
-  void loadExpenses() {
-    final jsonString = Prefs.getString('expenses');
-    if (jsonString.isNotEmpty) {
-      setState(() {
-        expenses = (jsonDecode(jsonString) as List<dynamic>)
-            .map<Map<String, dynamic>>((item) {
-          final map = Map<String, dynamic>.from(item as Map<dynamic, dynamic>);
-          return {
-            'date': map['date'] as String,
-            'amount': map['amount'] as double,
-            'description': map['description'] as String,
-            'paid': map['paid'] as bool? ?? false,
-          };
-        }).toList();
-      });
-    }
   }
 }

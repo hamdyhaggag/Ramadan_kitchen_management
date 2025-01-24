@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../core/utils/app_colors.dart';
-import '../../core/widgets/general_button.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
+import 'package:ramadan_kitchen_management/core/widgets/general_button.dart';
+import 'package:ramadan_kitchen_management/features/daily_expenses/logic/expense_cubit.dart';
+import 'package:ramadan_kitchen_management/features/daily_expenses/model/expense_model.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   const AddExpenseScreen({super.key});
@@ -10,13 +13,14 @@ class AddExpenseScreen extends StatefulWidget {
 }
 
 class AddExpenseScreenState extends State<AddExpenseScreen> {
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _unitPriceController = TextEditingController();
+  DateTime _selectedDate = DateTime.now();
   String _selectedCategory = 'قسم البقالة';
   String? _selectedProduct;
   String _selectedUnitType = 'كيلوجرام';
   String _selectedPaymentStatus = 'لم يتم الدفع';
-  DateTime _selectedDate = DateTime.now();
 
   final Map<String, List<String>> _categoryProducts = {
     'قسم البقالة': ['رز', 'مكرونة', 'شعرية', 'زيت', 'سمن', 'سكر', 'ملح'],
@@ -37,56 +41,34 @@ class AddExpenseScreenState extends State<AddExpenseScreen> {
     'قسم الوقود ': ['غاز'],
   };
 
-  void _saveExpense() {
-    final quantityText = _quantityController.text.trim();
-    final unitPriceText = _unitPriceController.text.trim();
-    final quantity = double.tryParse(quantityText);
-    final unitPrice = double.tryParse(unitPriceText);
-
-    if (quantity == null || unitPrice == null || _selectedProduct == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء إدخال جميع التفاصيل بشكل صحيح')),
-      );
-      return;
-    }
-
-    Navigator.pop(context, {
-      'date': _selectedDate.toString().split(' ')[0],
-      'amount': quantity * unitPrice,
-      'quantity': quantity,
-      'unitPrice': unitPrice,
-      'unitType': _selectedUnitType,
-      'category': _selectedCategory,
-      'product': _selectedProduct,
-      'paid': _selectedPaymentStatus == 'تم الدفع',
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('إضافة مصروف')),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildDatePicker(),
-              _buildCategoryDropdown(),
-              const SizedBox(height: 10),
-              _buildProductDropdown(),
-              const SizedBox(height: 10),
-              _buildUnitTypeDropdown(),
-              const SizedBox(height: 10),
-              _buildQuantityField(),
-              const SizedBox(height: 10),
-              _buildUnitPriceField(),
-              const SizedBox(height: 15),
-              _buildPaymentStatusDropdown(),
-              const SizedBox(height: 20),
-              _buildSaveButton(),
-            ],
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildDatePicker(),
+                _buildCategoryDropdown(),
+                const SizedBox(height: 10),
+                _buildProductDropdown(),
+                const SizedBox(height: 10),
+                _buildUnitTypeDropdown(),
+                const SizedBox(height: 10),
+                _buildQuantityField(),
+                const SizedBox(height: 10),
+                _buildUnitPriceField(),
+                const SizedBox(height: 15),
+                _buildPaymentStatusDropdown(),
+                const SizedBox(height: 20),
+                _buildSaveButton(),
+              ],
+            ),
           ),
         ),
       ),
@@ -102,7 +84,7 @@ class AddExpenseScreenState extends State<AddExpenseScreen> {
           context: context,
           initialDate: _selectedDate,
           firstDate: DateTime(2020),
-          lastDate: DateTime(2101),
+          lastDate: DateTime.now(),
         );
         if (picked != null && picked != _selectedDate) {
           setState(() => _selectedDate = picked);
@@ -112,71 +94,68 @@ class AddExpenseScreenState extends State<AddExpenseScreen> {
   }
 
   Widget _buildCategoryDropdown() {
-    return DropdownButton<String>(
+    return DropdownButtonFormField<String>(
       value: _selectedCategory,
-      onChanged: (String? newValue) => setState(() {
-        _selectedCategory = newValue!;
-        _selectedProduct = null;
-      }),
+      decoration: _inputDecoration('القسم'),
       items: _categoryProducts.keys.map((String value) {
-        return DropdownMenuItem<String>(
+        return DropdownMenuItem(
           value: value,
           child: Text(value),
         );
       }).toList(),
-      elevation: 3,
-      isExpanded: true,
+      onChanged: (value) => setState(() {
+        _selectedCategory = value!;
+        _selectedProduct = null;
+      }),
     );
   }
 
   Widget _buildProductDropdown() {
-    return DropdownButton<String>(
+    return DropdownButtonFormField<String>(
       value: _selectedProduct,
-      hint: const Text('اختر المنتج'),
-      onChanged: (String? newValue) =>
-          setState(() => _selectedProduct = newValue),
+      decoration: _inputDecoration('المادة'),
       items: _categoryProducts[_selectedCategory]!.map((String value) {
-        return DropdownMenuItem<String>(
+        return DropdownMenuItem(
           value: value,
           child: Text(value),
         );
       }).toList(),
-      elevation: 3,
-      isExpanded: true,
+      onChanged: (value) => setState(() => _selectedProduct = value),
+      validator: (value) => value == null ? 'الرجاء اختيار المادة' : null,
     );
   }
 
   Widget _buildUnitTypeDropdown() {
-    return DropdownButton<String>(
+    return DropdownButtonFormField<String>(
       value: _selectedUnitType,
-      onChanged: (String? newValue) =>
-          setState(() => _selectedUnitType = newValue!),
+      decoration: _inputDecoration('الوحدة'),
       items: ['كيلوجرام', 'لتر', 'قطعة'].map((String value) {
-        return DropdownMenuItem<String>(
+        return DropdownMenuItem(
           value: value,
           child: Text(value),
         );
       }).toList(),
-      elevation: 3,
-      isExpanded: true,
+      onChanged: (value) => setState(() => _selectedUnitType = value!),
     );
   }
 
   Widget _buildQuantityField() {
-    return TextField(
+    return TextFormField(
       controller: _quantityController,
       keyboardType: TextInputType.number,
       decoration: _inputDecoration('الكمية'),
       cursorColor: AppColors.primaryColor,
+      validator: (value) => _validateNumber(value, 'الكمية'),
     );
   }
 
   Widget _buildUnitPriceField() {
-    return TextField(
+    return TextFormField(
       controller: _unitPriceController,
       keyboardType: TextInputType.number,
       decoration: _inputDecoration('سعر الوحدة'),
       cursorColor: AppColors.primaryColor,
+      validator: (value) => _validateNumber(value, 'السعر'),
     );
   }
 
@@ -185,27 +164,53 @@ class AddExpenseScreenState extends State<AddExpenseScreen> {
       value: _selectedPaymentStatus,
       decoration: _inputDecoration('حالة الدفع'),
       items: ['تم الدفع', 'لم يتم الدفع'].map((String value) {
-        return DropdownMenuItem<String>(
+        return DropdownMenuItem(
           value: value,
           child: Text(value),
         );
       }).toList(),
-      onChanged: (String? newValue) {
-        setState(() => _selectedPaymentStatus = newValue!);
-      },
-      isExpanded: true,
+      onChanged: (value) => setState(() => _selectedPaymentStatus = value!),
     );
   }
 
   Widget _buildSaveButton() {
-    return GestureDetector(
-      onTap: _saveExpense,
-      child: GeneralButton(
-        text: 'حفظ المصروف',
-        backgroundColor: AppColors.primaryColor,
-        textColor: AppColors.whiteColor,
-      ),
+    return GeneralButton(
+      text: 'حفظ المصروف',
+      backgroundColor: AppColors.primaryColor,
+      textColor: AppColors.whiteColor,
+      onPressed: _submitForm,
     );
+  }
+
+  String? _validateNumber(String? value, String fieldName) {
+    if (value == null || value.isEmpty) {
+      return 'الرجاء إدخال $fieldName';
+    }
+    if (double.tryParse(value) == null) {
+      return 'قيمة غير صالحة';
+    }
+    return null;
+  }
+
+  void _submitForm() {
+    if (_formKey.currentState!.validate() && _selectedProduct != null) {
+      final expense = Expense(
+        id: '',
+        date: _selectedDate.toIso8601String().split('T')[0],
+        amount: double.parse(_quantityController.text) *
+            double.parse(_unitPriceController.text),
+        description: _selectedProduct!,
+        paid: _selectedPaymentStatus == 'تم الدفع',
+        category: _selectedCategory,
+        product: _selectedProduct!,
+        quantity: double.parse(_quantityController.text),
+        unitPrice: double.parse(_unitPriceController.text),
+        unitType: _selectedUnitType,
+      );
+
+      context.read<ExpenseCubit>().addExpense(expense);
+      Navigator.pop(context);
+    }
   }
 
   InputDecoration _inputDecoration(String label) {

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../../core/cache/prefs.dart';
@@ -46,7 +45,7 @@ class _ScreenLayoutState extends State<ScreenLayout> {
                 ),
               ],
             )
-          : _currentIndex == 3
+          : _currentIndex == 2 || _currentIndex == 3
               ? null
               : AppBar(
                   title: _getAppBarTitle(),

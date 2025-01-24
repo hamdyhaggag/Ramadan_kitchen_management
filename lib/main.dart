@@ -8,6 +8,7 @@ import 'core/cache/prefs.dart';
 import 'core/routes/on_generate_route.dart';
 import 'core/services/service_locator.dart';
 import 'core/utils/app_colors.dart';
+import 'features/daily_expenses/logic/expense_cubit.dart';
 import 'features/manage_cases/logic/cases_cubit.dart';
 import 'firebase_options.dart';
 import 'generated/l10n.dart';
@@ -38,6 +39,7 @@ class KitchenApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => CasesCubit()),
+        BlocProvider(create: (context) => ExpenseCubit()),
       ],
       child: MaterialApp(
         theme: ThemeData(
