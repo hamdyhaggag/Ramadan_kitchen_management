@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'package:collection/collection.dart';
 import '../../../core/cache/prefs.dart';
 
 class ExpenseService {
@@ -31,17 +31,26 @@ class ExpenseService {
 
     for (var expense in expenses) {
       final date = expense['date'];
-
       if (date != null) {
-        if (!groupedExpenses.containsKey(date)) {
-          groupedExpenses[date] = [];
-        }
-        groupedExpenses[date]!.add(expense);
+        groupedExpenses.putIfAbsent(date, () => []).add(expense);
       }
     }
 
-    var sortedKeys = groupedExpenses.keys.toList()
+    final sortedKeys = groupedExpenses.keys.toList()
       ..sort((a, b) => DateTime.parse(b).compareTo(DateTime.parse(a)));
+
+    return {for (var key in sortedKeys) key: groupedExpenses[key]!};
+  }
+
+  Map<String, List<Map<String, dynamic>>> getGroupedUnpaidExpensesByDate() {
+    final unpaidExpenses =
+        expenses.where((expense) => !expense['paid']).toList();
+    final groupedExpenses =
+        groupBy(unpaidExpenses, (expense) => expense['date']);
+
+    final sortedKeys = groupedExpenses.keys.toList()
+      ..sort((a, b) => DateTime.parse(b).compareTo(DateTime.parse(a)));
+
     return {for (var key in sortedKeys) key: groupedExpenses[key]!};
   }
 }
