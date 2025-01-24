@@ -1,14 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import 'package:ramadan_kitchen_management/features/daily_expenses/logic/expense_cubit.dart';
 import 'package:ramadan_kitchen_management/features/daily_expenses/model/expense_model.dart';
 import '../../core/utils/app_colors.dart';
 import '../daily_expenses/logic/expense_state.dart';
 
+extension DateTimeExtension on DateTime {
+  int get weekOfYear {
+    final date = DateTime(year, month, day);
+    final firstDay = DateTime(date.year, 1, 1);
+    final difference = date.difference(firstDay).inDays;
+    return ((difference + firstDay.weekday) / 7).ceil();
+  }
+}
+
 String formatDateString(String dateString) {
   try {
-    return DateFormat('EEEE , d MMM yyyy', 'ar')
+    return DateFormat('EEEE ، d MMM yyyy', 'ar')
         .format(DateTime.parse(dateString));
   } catch (e) {
     return 'تاريخ غير صالح';
@@ -26,12 +39,20 @@ class ReportsScreenState extends State<ReportsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isAscending = true;
+  late pw.Font arabicFont;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     context.read<ExpenseCubit>().loadExpenses();
+    _loadFont();
+  }
+
+  Future<void> _loadFont() async {
+    final fontData =
+        await rootBundle.load('assets/fonts/DINNextLTArabic-Regular.ttf');
+    arabicFont = pw.Font.ttf(fontData);
   }
 
   @override
@@ -189,6 +210,172 @@ class ReportsScreenState extends State<ReportsScreen>
     );
   }
 
+  void _showExportDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تصدير التقرير'),
+        content: const Text('اختر نوع التقرير المراد تصديره:'),
+        actions: [
+          TextButton(
+            child: const Text('تقرير يومي'),
+            onPressed: () {
+              Navigator.pop(context);
+              _generatePdfReport(context, isWeekly: false);
+            },
+          ),
+          TextButton(
+            child: const Text('تقرير أسبوعي'),
+            onPressed: () {
+              Navigator.pop(context);
+              _generatePdfReport(context, isWeekly: true);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Map<String, List<Expense>> _groupExpensesByWeek(List<Expense> expenses) {
+    final grouped = <String, List<Expense>>{};
+    for (var expense in expenses) {
+      final date = DateTime.parse(expense.date);
+      final startOfWeek = date.subtract(Duration(days: date.weekday - 1));
+      final weekKey = '${startOfWeek.year}-W${startOfWeek.weekOfYear}';
+      grouped.putIfAbsent(weekKey, () => []);
+      grouped[weekKey]!.add(expense);
+    }
+    return grouped;
+  }
+
+  List<pw.Widget> _buildPdfContent(Map<String, List<Expense>> groupedData,
+      {bool isWeekly = false}) {
+    return groupedData.entries.map((entry) {
+      final total = entry.value.fold(0.0, (sum, e) => sum + e.amount);
+      return pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            isWeekly
+                ? 'أسبوع: ${_formatWeekHeader(entry.key)}'
+                : 'تاريخ: ${formatDateString(entry.key)}',
+            style: pw.TextStyle(
+                font: arabicFont, fontWeight: pw.FontWeight.bold, fontSize: 18),
+            textDirection: pw.TextDirection.rtl,
+          ),
+          pw.SizedBox(height: 10),
+          pw.Table(
+            border: pw.TableBorder.all(),
+            columnWidths: {
+              0: const pw.FlexColumnWidth(2),
+              1: const pw.FlexColumnWidth(1),
+              2: const pw.FlexColumnWidth(1.5),
+            },
+            children: [
+              pw.TableRow(
+                children: ['البند', 'المبلغ', 'حالة الدفع']
+                    .map((text) => pw.Padding(
+                          padding: const pw.EdgeInsets.all(8),
+                          child: pw.Text(text,
+                              style: pw.TextStyle(
+                                  font: arabicFont,
+                                  fontWeight: pw.FontWeight.bold),
+                              textDirection: pw.TextDirection.rtl,
+                              textAlign: pw.TextAlign.right),
+                        ))
+                    .toList(),
+              ),
+              ...entry.value.map((expense) => pw.TableRow(
+                    children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8),
+                        child: pw.Text(expense.product,
+                            style: pw.TextStyle(font: arabicFont),
+                            textDirection: pw.TextDirection.rtl,
+                            textAlign: pw.TextAlign.right),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8),
+                        child: pw.Text(
+                            '${expense.amount.toStringAsFixed(2)} ج.م',
+                            style: pw.TextStyle(font: arabicFont),
+                            textDirection: pw.TextDirection.rtl,
+                            textAlign: pw.TextAlign.right),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(8),
+                        child: pw.Text(expense.paid ? 'تم الدفع' : 'غير مدفوع',
+                            style: pw.TextStyle(font: arabicFont),
+                            textDirection: pw.TextDirection.rtl,
+                            textAlign: pw.TextAlign.right),
+                      ),
+                    ],
+                  )),
+            ],
+          ),
+          pw.SizedBox(height: 10),
+          pw.Align(
+            alignment: pw.Alignment.centerLeft,
+            child: pw.Text('المجموع: ${total.toStringAsFixed(2)} ج.م',
+                style: pw.TextStyle(
+                    font: arabicFont,
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 16),
+                textDirection: pw.TextDirection.rtl),
+          ),
+          pw.SizedBox(height: 20),
+        ],
+      );
+    }).toList();
+  }
+
+  String _formatWeekHeader(String weekKey) {
+    final parts = weekKey.split('-W');
+    final year = int.parse(parts[0]);
+    final week = int.parse(parts[1]);
+    final firstDay = DateTime(year, 1, 1 + (week - 1) * 7);
+    final dateFormat = DateFormat('dd/MM', 'ar');
+    final numberFormat = NumberFormat.decimalPattern('ar');
+    return 'الأسبوع ${numberFormat.format(week)} (${dateFormat.format(firstDay)} - ${dateFormat.format(firstDay.add(const Duration(days: 6)))})';
+  }
+
+  Future<void> _generatePdfReport(BuildContext context,
+      {required bool isWeekly}) async {
+    final state = context.read<ExpenseCubit>().state;
+    final expenses = state is ExpenseLoaded ? state.expenses : <Expense>[];
+    final pdf = pw.Document();
+
+    final groupedData = isWeekly
+        ? _groupExpensesByWeek(expenses)
+        : groupExpensesByDate(expenses);
+
+    pdf.addPage(
+      pw.MultiPage(
+        theme: pw.ThemeData.withFont(
+          base: arabicFont,
+          bold: arabicFont,
+          fontFallback: [arabicFont],
+        ),
+        build: (context) => [
+          pw.Header(
+            level: 0,
+            child: pw.Text(isWeekly ? 'تقرير أسبوعي' : 'تقرير يومي',
+                style: pw.TextStyle(font: arabicFont, fontSize: 24),
+                textDirection: pw.TextDirection.rtl),
+          ),
+          ..._buildPdfContent(groupedData, isWeekly: isWeekly),
+          pw.SizedBox(height: 20),
+          pw.Text(
+              'تاريخ التصدير: ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}',
+              style: pw.TextStyle(font: arabicFont),
+              textDirection: pw.TextDirection.rtl),
+        ],
+      ),
+    );
+
+    await Printing.layoutPdf(onLayout: (format) => pdf.save());
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -197,6 +384,10 @@ class ReportsScreenState extends State<ReportsScreen>
         appBar: AppBar(
           title: const Text('التقارير اليومية'),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf),
+              onPressed: () => _showExportDialog(context),
+            ),
             IconButton(
               icon: Icon(
                   _isAscending ? Icons.arrow_upward : Icons.arrow_downward),

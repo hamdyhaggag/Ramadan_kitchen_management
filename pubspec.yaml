@@ -52,7 +52,8 @@ dependencies:
   fluttertoast: ^8.2.4
   connectivity_plus: ^6.1.2
   internet_connection_checker: ^3.0.1
-
+  printing: ^5.13.4
+  pdf: ^3.11.1
   flutter_localizations:
     sdk: flutter
 dev_dependencies:
