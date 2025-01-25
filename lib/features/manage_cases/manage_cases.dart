@@ -3,9 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/core/widgets/general_button.dart';
+import '../../core/services/service_locator.dart';
 import 'case-details_screen.dart';
 import 'logic/cases_cubit.dart';
 import 'logic/cases_state.dart';
+import 'package:ramadan_kitchen_management/features/auth/data/repos/auth_repo.dart';
 
 class ManageCasesScreen extends StatelessWidget {
   const ManageCasesScreen({super.key});
@@ -17,13 +19,10 @@ class ManageCasesScreen extends StatelessWidget {
         builder: (context, state) {
           if (state is CasesLoading) {
             return const Center(
-                child: CircularProgressIndicator(
-              color: AppColors.primaryColor,
-            ));
+                child:
+                    CircularProgressIndicator(color: AppColors.primaryColor));
           }
-          if (state is CasesError) {
-            return Center(child: Text(state.message));
-          }
+          if (state is CasesError) return Center(child: Text(state.message));
           if (state is CasesLoaded) {
             return _ManageCasesContent(cases: state.cases);
           }
@@ -47,17 +46,26 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
   bool? selectedFilterValue;
   final Map<String, String> filterOptions = {
     "جاهزة": "جاهزة للتوزيع",
-    "هنا؟": "الشنطة هنا؟",
+    "هنا؟": "الشنطة هنا؟"
   };
+  late bool isAdmin;
 
   @override
   void initState() {
     super.initState();
+    _checkAdminStatus();
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
+  }
+
+  Future<void> _checkAdminStatus() async {
+    final authRepo = getIt<AuthRepo>();
+    final currentUser = authRepo.currentUser;
+    if (currentUser != null)
+      setState(() => isAdmin = currentUser.role == 'admin');
   }
 
   @override
@@ -77,11 +85,9 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
 
   void _navigateToManageDetails() async {
     await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const ManageCaseDetailsScreen(),
-      ),
-    );
+        context,
+        MaterialPageRoute(
+            builder: (context) => const ManageCaseDetailsScreen()));
     context.read<CasesCubit>().loadCases();
   }
 
@@ -93,32 +99,27 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
       String name, String field, bool currentValue, VoidCallback onConfirm) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: AppColors.whiteColor,
-          title: const Text("تأكيد التغيير",
-              style: TextStyle(color: AppColors.blackColor)),
-          content: Text(
+      builder: (BuildContext context) => AlertDialog(
+        backgroundColor: AppColors.whiteColor,
+        title: const Text("تأكيد التغيير",
+            style: TextStyle(color: AppColors.blackColor)),
+        content: Text(
             "هل أنت متأكد أنك تريد تغيير حالة \"$field\" لـ \"$name\"؟",
-            style: const TextStyle(color: AppColors.blackColor, fontSize: 16),
-          ),
-          actions: [
-            TextButton(
+            style: const TextStyle(color: AppColors.blackColor, fontSize: 16)),
+        actions: [
+          TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text("إلغاء",
-                  style: TextStyle(color: AppColors.blackColor)),
-            ),
-            TextButton(
+                  style: TextStyle(color: AppColors.blackColor))),
+          TextButton(
               onPressed: () {
                 Navigator.pop(context);
                 onConfirm();
               },
               child: const Text("تأكيد",
-                  style: TextStyle(color: AppColors.primaryColor)),
-            ),
-          ],
-        );
-      },
+                  style: TextStyle(color: AppColors.primaryColor))),
+        ],
+      ),
     );
   }
 
@@ -130,23 +131,20 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
         title: const Text("تأكيد إعادة التعيين",
             style: TextStyle(color: AppColors.blackColor)),
         content: const Text(
-          "هل أنت متأكد من أنك تريد إعادة تعيين جميع الحالات لليوم الجديد؟",
-          style: TextStyle(color: AppColors.blackColor, fontSize: 16),
-        ),
+            "هل أنت متأكد من أنك تريد إعادة تعيين جميع الحالات لليوم الجديد؟",
+            style: TextStyle(color: AppColors.blackColor, fontSize: 16)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("إلغاء",
-                style: TextStyle(color: AppColors.blackColor)),
-          ),
+              onPressed: () => Navigator.pop(context),
+              child: const Text("إلغاء",
+                  style: TextStyle(color: AppColors.blackColor))),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.read<CasesCubit>().resetAllCases();
-            },
-            child: const Text("تأكيد",
-                style: TextStyle(color: AppColors.primaryColor)),
-          ),
+              onPressed: () {
+                Navigator.pop(context);
+                context.read<CasesCubit>().resetAllCases();
+              },
+              child: const Text("تأكيد",
+                  style: TextStyle(color: AppColors.primaryColor))),
         ],
       ),
     );
@@ -154,6 +152,10 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
 
   @override
   Widget build(BuildContext context) {
+    final authRepo = getIt<AuthRepo>();
+    final currentUser = authRepo.currentUser;
+    final isAdmin = currentUser?.role == 'admin';
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -165,6 +167,8 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
               children: [
                 _buildFilterSection(isPortrait),
                 const SizedBox(height: 16),
+                if (!isAdmin) _buildPermissionBanner(),
+                const SizedBox(height: 8),
                 Expanded(
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
@@ -175,7 +179,7 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
                       dataRowMaxHeight: 60,
                       columnSpacing: isPortrait ? 20 : 40,
                       columns: _buildDataColumns(isPortrait),
-                      rows: _buildDataRows(isPortrait),
+                      rows: _buildDataRows(isPortrait, isAdmin),
                     ),
                   ),
                 ),
@@ -190,21 +194,42 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
                         onPressed: _showResetConfirmation,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: GeneralButton(
-                        text: 'إدارة الحالات',
-                        backgroundColor: AppColors.primaryColor,
-                        textColor: AppColors.whiteColor,
-                        onPressed: _navigateToManageDetails,
+                    if (isAdmin) ...[
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: GeneralButton(
+                          text: 'إدارة الحالات',
+                          backgroundColor: AppColors.primaryColor,
+                          textColor: AppColors.whiteColor,
+                          onPressed: _navigateToManageDetails,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ],
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildPermissionBanner() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.primaryColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.primaryColor),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.lock_outline, color: AppColors.primaryColor, size: 18),
+          const SizedBox(width: 8),
+          Text("بعض المعلومات مخفية بسبب الصلاحيات المحدودة",
+              style: TextStyle(color: AppColors.primaryColor, fontSize: 14)),
+        ],
       ),
     );
   }
@@ -221,27 +246,23 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
             value: selectedFilter,
             decoration: InputDecoration(
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: AppColors.greyColor),
-              ),
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: AppColors.greyColor)),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: AppColors.greyColor),
-              ),
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: AppColors.greyColor)),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: AppColors.greyColor),
-              ),
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: AppColors.greyColor)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12),
             ),
             icon: Icon(Icons.arrow_drop_down, color: AppColors.greyColor),
             hint: const Text("اختر نوع الفلتر"),
             items: [
               DropdownMenuItem(
-                value: null,
-                child: Text("إلغاء الفلتر",
-                    style: TextStyle(fontSize: isPortrait ? 14 : 16)),
-              ),
+                  value: null,
+                  child: Text("إلغاء الفلتر",
+                      style: TextStyle(fontSize: isPortrait ? 14 : 16))),
               ...filterOptions.entries.map((entry) => DropdownMenuItem(
                     value: entry.key,
                     child: Text(entry.value,
@@ -260,9 +281,8 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
             child: DropdownButtonFormField<bool?>(
               value: selectedFilterValue,
               decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12),
               ),
               hint: const Text("اختر القيمة"),
@@ -281,85 +301,97 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
   List<DataColumn> _buildDataColumns(bool isPortrait) {
     return [
       DataColumn(
-        label: Text("الرقم",
-            style: TextStyle(
-                fontSize: isPortrait ? 16 : 18, fontWeight: FontWeight.bold)),
-      ),
+          label: Text("الرقم",
+              style: TextStyle(
+                  fontSize: isPortrait ? 16 : 18,
+                  fontWeight: FontWeight.bold))),
       DataColumn(
-        label: Text("الاسم",
-            style: TextStyle(
-                fontSize: isPortrait ? 16 : 16, fontWeight: FontWeight.bold)),
-      ),
+          label: Text("الاسم",
+              style: TextStyle(
+                  fontSize: isPortrait ? 16 : 16,
+                  fontWeight: FontWeight.bold))),
       DataColumn(
-        label: Text("عدد الأفراد",
-            style: TextStyle(
-                fontSize: isPortrait ? 16 : 18, fontWeight: FontWeight.bold)),
-      ),
+          label: Text("عدد الأفراد",
+              style: TextStyle(
+                  fontSize: isPortrait ? 16 : 18,
+                  fontWeight: FontWeight.bold))),
       DataColumn(
-        label: Text("جاهزة للتوزيع",
-            style: TextStyle(
-                fontSize: isPortrait ? 16 : 18, fontWeight: FontWeight.bold)),
-      ),
+          label: Text("جاهزة للتوزيع",
+              style: TextStyle(
+                  fontSize: isPortrait ? 16 : 18,
+                  fontWeight: FontWeight.bold))),
       DataColumn(
-        label: Text("الشنطة هنا؟",
-            style: TextStyle(
-                fontSize: isPortrait ? 16 : 18, fontWeight: FontWeight.bold)),
-      ),
+          label: Text("الشنطة هنا؟",
+              style: TextStyle(
+                  fontSize: isPortrait ? 16 : 18,
+                  fontWeight: FontWeight.bold))),
     ];
   }
 
-  List<DataRow> _buildDataRows(bool isPortrait) {
+  List<DataRow> _buildDataRows(bool isPortrait, bool isAdmin) {
     return filteredCases.map((caseItem) {
-      return DataRow(
-        cells: [
-          DataCell(Center(
+      return DataRow(cells: [
+        DataCell(Center(
             child: Text(caseItem["الرقم"].toString(),
-                style: TextStyle(fontSize: isPortrait ? 18 : 20)),
-          )),
-          DataCell(Text(caseItem["الاسم"],
-              style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: isPortrait ? 16 : 20))),
-          DataCell(Center(
+                style: TextStyle(fontSize: isPortrait ? 18 : 20)))),
+        DataCell(
+          isAdmin
+              ? Text(caseItem["الاسم"],
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: isPortrait ? 16 : 20))
+              : Row(
+                  children: [
+                    Text("•••••",
+                        style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: isPortrait ? 16 : 20,
+                            fontWeight: FontWeight.w600)),
+                    const SizedBox(width: 8),
+                    Tooltip(
+                      message: "مطلوب صلاحيات إدارية لعرض الأسماء",
+                      child: Icon(Icons.lock_outline,
+                          color: Colors.grey.shade600, size: 16),
+                    )
+                  ],
+                ),
+        ),
+        DataCell(Center(
             child: Text(caseItem["عدد الأفراد"].toString(),
                 style: TextStyle(
                     fontSize: isPortrait ? 18 : 20,
-                    fontWeight: FontWeight.w700)),
-          )),
-          DataCell(Center(
-            child: IconButton(
-              iconSize: isPortrait ? 24 : 28,
-              icon: Icon(
-                caseItem["جاهزة"] ? Icons.check_circle : Icons.cancel,
-                color: caseItem["جاهزة"] ? Colors.green : Colors.red,
-              ),
-              onPressed: () => _showConfirmationDialog(
-                caseItem["الاسم"],
-                "جاهزة",
-                caseItem["جاهزة"],
-                () => _updateCaseState(
-                    caseItem['id'], "جاهزة", !caseItem["جاهزة"]),
-              ),
-            ),
-          )),
-          DataCell(Center(
-            child: IconButton(
-              iconSize: isPortrait ? 24 : 28,
-              icon: Icon(
-                caseItem["هنا؟"] ? Icons.check_circle : Icons.cancel,
-                color: caseItem["هنا؟"] ? Colors.green : Colors.red,
-              ),
-              onPressed: () => _showConfirmationDialog(
-                caseItem["الاسم"],
-                "هنا؟",
-                caseItem["هنا؟"],
-                () =>
-                    _updateCaseState(caseItem['id'], "هنا؟", !caseItem["هنا؟"]),
-              ),
-            ),
-          )),
-        ],
-      );
+                    fontWeight: FontWeight.w700)))),
+        DataCell(Center(
+          child: IconButton(
+            iconSize: isPortrait ? 24 : 28,
+            icon: Icon(caseItem["جاهزة"] ? Icons.check_circle : Icons.cancel,
+                color: caseItem["جاهزة"] ? Colors.green : Colors.red),
+            onPressed: isAdmin
+                ? () => _showConfirmationDialog(
+                    caseItem["الاسم"],
+                    "جاهزة",
+                    caseItem["جاهزة"],
+                    () => _updateCaseState(
+                        caseItem['id'], "جاهزة", !caseItem["جاهزة"]))
+                : null,
+          ),
+        )),
+        DataCell(Center(
+          child: IconButton(
+            iconSize: isPortrait ? 24 : 28,
+            icon: Icon(caseItem["هنا؟"] ? Icons.check_circle : Icons.cancel,
+                color: caseItem["هنا؟"] ? Colors.green : Colors.red),
+            onPressed: isAdmin
+                ? () => _showConfirmationDialog(
+                    caseItem["الاسم"],
+                    "هنا؟",
+                    caseItem["هنا؟"],
+                    () => _updateCaseState(
+                        caseItem['id'], "هنا؟", !caseItem["هنا؟"]))
+                : null,
+          ),
+        )),
+      ]);
     }).toList();
   }
 }

@@ -3,18 +3,21 @@ class UserModel {
   final String email;
   final String name;
   final String phoneNumber;
+  final String role; // 'admin' or 'user'
 
   UserModel({
     required this.uid,
     required this.email,
     required this.name,
     required this.phoneNumber,
+    this.role = 'user', // Default role
   });
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
         uid: json['uid'] as String,
         email: json['email'] as String,
         name: json['name'] as String,
-        phoneNumber: json['phoneNumber'] ,
+        phoneNumber: json['phoneNumber'],
+        role: json['role'] as String? ?? 'user', // Handle null case
       );
 
   toMap() => {
@@ -22,5 +25,6 @@ class UserModel {
         'email': email,
         'name': name,
         'phoneNumber': phoneNumber,
+        'role': role,
       };
 }

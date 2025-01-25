@@ -26,4 +26,9 @@ class Prefs {
   static Future<bool> removeData({required String key}) async {
     return await _instance.remove(key);
   }
+
+  static Future<bool> remove(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.remove(key);
+  }
 }
