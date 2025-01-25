@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
+import 'package:ramadan_kitchen_management/features/auth/data/repos/auth_repo.dart';
 import 'package:ramadan_kitchen_management/features/daily_expenses/logic/expense_cubit.dart';
+import 'package:ramadan_kitchen_management/features/daily_expenses/logic/expense_state.dart';
 import 'package:ramadan_kitchen_management/features/daily_expenses/model/expense_model.dart';
-import '../../core/utils/app_colors.dart';
-import '../daily_expenses/logic/expense_state.dart';
+
+import '../../core/services/service_locator.dart';
 
 extension DateTimeExtension on DateTime {
   int get weekOfYear {
@@ -378,6 +380,8 @@ class ReportsScreenState extends State<ReportsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isAdmin = getIt<AuthRepo>().currentUser?.role == 'admin';
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -385,8 +389,20 @@ class ReportsScreenState extends State<ReportsScreen>
           title: const Text('التقارير اليومية'),
           actions: [
             IconButton(
-              icon: const Icon(Icons.picture_as_pdf),
-              onPressed: () => _showExportDialog(context),
+              icon: Icon(Icons.picture_as_pdf,
+                  color: isAdmin ? null : Colors.grey),
+              onPressed: () {
+                if (isAdmin) {
+                  _showExportDialog(context);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('لا تمتلك الصلاحية لتصدير التقارير'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
             ),
             IconButton(
               icon: Icon(
