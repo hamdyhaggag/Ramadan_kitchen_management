@@ -9,45 +9,14 @@ import 'logic/cases_cubit.dart';
 import 'logic/cases_state.dart';
 import 'package:ramadan_kitchen_management/features/auth/data/repos/auth_repo.dart';
 
-class ManageCasesScreen extends StatelessWidget {
+class ManageCasesScreen extends StatefulWidget {
   const ManageCasesScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: BlocBuilder<CasesCubit, CasesState>(
-        builder: (context, state) {
-          if (state is CasesLoading) {
-            return const Center(
-                child:
-                    CircularProgressIndicator(color: AppColors.primaryColor));
-          }
-          if (state is CasesError) return Center(child: Text(state.message));
-          if (state is CasesLoaded) {
-            return _ManageCasesContent(cases: state.cases);
-          }
-          return const Center(child: Text('No cases found'));
-        },
-      ),
-    );
-  }
+  State<ManageCasesScreen> createState() => _ManageCasesScreenState();
 }
 
-class _ManageCasesContent extends StatefulWidget {
-  final List<Map<String, dynamic>> cases;
-  const _ManageCasesContent({required this.cases});
-
-  @override
-  State<_ManageCasesContent> createState() => _ManageCasesContentState();
-}
-
-class _ManageCasesContentState extends State<_ManageCasesContent> {
-  String? selectedFilter;
-  bool? selectedFilterValue;
-  final Map<String, String> filterOptions = {
-    "جاهزة": "جاهزة للتوزيع",
-    "هنا؟": "الشنطة هنا؟"
-  };
+class _ManageCasesScreenState extends State<ManageCasesScreen> {
   late bool isAdmin;
 
   @override
@@ -63,9 +32,7 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
 
   Future<void> _checkAdminStatus() async {
     final authRepo = getIt<AuthRepo>();
-    final currentUser = authRepo.currentUser;
-    if (currentUser != null)
-      setState(() => isAdmin = currentUser.role == 'admin');
+    setState(() => isAdmin = authRepo.currentUser?.role == 'admin');
   }
 
   @override
@@ -74,10 +41,47 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
     super.dispose();
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: BlocBuilder<CasesCubit, CasesState>(
+        builder: (context, state) {
+          if (state is CasesLoading) {
+            return const Center(
+                child:
+                    CircularProgressIndicator(color: AppColors.primaryColor));
+          }
+          if (state is CasesError) return Center(child: Text(state.message));
+          if (state is CasesLoaded) {
+            return _ManageCasesContent(cases: state.cases, isAdmin: isAdmin);
+          }
+          return const Center(child: Text('No cases found'));
+        },
+      ),
+    );
+  }
+}
+
+class _ManageCasesContent extends StatefulWidget {
+  final List<Map<String, dynamic>> cases;
+  final bool isAdmin;
+  const _ManageCasesContent({required this.cases, required this.isAdmin});
+
+  @override
+  State<_ManageCasesContent> createState() => _ManageCasesContentState();
+}
+
+class _ManageCasesContentState extends State<_ManageCasesContent> {
+  String? selectedFilter;
+  bool? selectedFilterValue;
+  final Map<String, String> filterOptions = {
+    "جاهزة": "جاهزة للتوزيع",
+    "هنا؟": "الشنطة هنا؟"
+  };
+
   List<Map<String, dynamic>> get filteredCases {
-    if (selectedFilter == null || selectedFilterValue == null) {
+    if (selectedFilter == null || selectedFilterValue == null)
       return widget.cases;
-    }
     return widget.cases
         .where((caseItem) => caseItem[selectedFilter] == selectedFilterValue)
         .toList();
@@ -152,10 +156,6 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
 
   @override
   Widget build(BuildContext context) {
-    final authRepo = getIt<AuthRepo>();
-    final currentUser = authRepo.currentUser;
-    final isAdmin = currentUser?.role == 'admin';
-
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -167,7 +167,7 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
               children: [
                 _buildFilterSection(isPortrait),
                 const SizedBox(height: 16),
-                if (!isAdmin) _buildPermissionBanner(),
+                if (!widget.isAdmin) _buildPermissionBanner(),
                 const SizedBox(height: 8),
                 Expanded(
                   child: SingleChildScrollView(
@@ -179,7 +179,7 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
                       dataRowMaxHeight: 60,
                       columnSpacing: isPortrait ? 20 : 40,
                       columns: _buildDataColumns(isPortrait),
-                      rows: _buildDataRows(isPortrait, isAdmin),
+                      rows: _buildDataRows(isPortrait),
                     ),
                   ),
                 ),
@@ -189,12 +189,26 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
                     Expanded(
                       child: GeneralButton(
                         text: 'بدء يوم جديد',
-                        backgroundColor: AppColors.secondaryColor,
+                        backgroundColor: widget.isAdmin
+                            ? AppColors.secondaryColor
+                            : Colors.grey,
                         textColor: AppColors.whiteColor,
-                        onPressed: _showResetConfirmation,
+                        onPressed: () {
+                          if (widget.isAdmin) {
+                            _showResetConfirmation();
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content:
+                                    Text('لا تمتلك الصلاحية لبدء يوم جديد'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
                       ),
                     ),
-                    if (isAdmin) ...[
+                    if (widget.isAdmin) ...[
                       const SizedBox(width: 16),
                       Expanded(
                         child: GeneralButton(
@@ -328,70 +342,101 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
     ];
   }
 
-  List<DataRow> _buildDataRows(bool isPortrait, bool isAdmin) {
+  List<DataRow> _buildDataRows(bool isPortrait) {
     return filteredCases.map((caseItem) {
-      return DataRow(cells: [
-        DataCell(Center(
-            child: Text(caseItem["الرقم"].toString(),
-                style: TextStyle(fontSize: isPortrait ? 18 : 20)))),
-        DataCell(
-          isAdmin
-              ? Text(caseItem["الاسم"],
-                  style: TextStyle(
+      final caseData = Map<String, dynamic>.from(caseItem);
+      return DataRow(
+        cells: [
+          DataCell(Center(
+            child: Text(
+              caseData["الرقم"].toString(),
+              style: TextStyle(fontSize: isPortrait ? 18 : 20),
+            ),
+          )),
+          DataCell(
+            widget.isAdmin
+                ? Text(
+                    caseData["الاسم"],
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      fontSize: isPortrait ? 16 : 20))
-              : Row(
-                  children: [
-                    Text("•••••",
+                      fontSize: isPortrait ? 16 : 20,
+                    ),
+                  )
+                : Row(
+                    children: [
+                      Text(
+                        "•••••",
                         style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: isPortrait ? 16 : 20,
-                            fontWeight: FontWeight.w600)),
-                    const SizedBox(width: 8),
-                    Tooltip(
-                      message: "مطلوب صلاحيات إدارية لعرض الأسماء",
-                      child: Icon(Icons.lock_outline,
-                          color: Colors.grey.shade600, size: 16),
-                    )
-                  ],
-                ),
-        ),
-        DataCell(Center(
-            child: Text(caseItem["عدد الأفراد"].toString(),
-                style: TextStyle(
-                    fontSize: isPortrait ? 18 : 20,
-                    fontWeight: FontWeight.w700)))),
-        DataCell(Center(
-          child: IconButton(
-            iconSize: isPortrait ? 24 : 28,
-            icon: Icon(caseItem["جاهزة"] ? Icons.check_circle : Icons.cancel,
-                color: caseItem["جاهزة"] ? Colors.green : Colors.red),
-            onPressed: isAdmin
-                ? () => _showConfirmationDialog(
-                    caseItem["الاسم"],
-                    "جاهزة",
-                    caseItem["جاهزة"],
-                    () => _updateCaseState(
-                        caseItem['id'], "جاهزة", !caseItem["جاهزة"]))
-                : null,
+                          color: Colors.grey.shade600,
+                          fontSize: isPortrait ? 16 : 20,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Tooltip(
+                        message: "مطلوب صلاحيات إدارية لعرض الأسماء",
+                        child: Icon(
+                          Icons.lock_outline,
+                          color: Colors.grey.shade600,
+                          size: 16,
+                        ),
+                      )
+                    ],
+                  ),
           ),
-        )),
-        DataCell(Center(
-          child: IconButton(
-            iconSize: isPortrait ? 24 : 28,
-            icon: Icon(caseItem["هنا؟"] ? Icons.check_circle : Icons.cancel,
-                color: caseItem["هنا؟"] ? Colors.green : Colors.red),
-            onPressed: isAdmin
-                ? () => _showConfirmationDialog(
-                    caseItem["الاسم"],
-                    "هنا؟",
-                    caseItem["هنا؟"],
-                    () => _updateCaseState(
-                        caseItem['id'], "هنا؟", !caseItem["هنا؟"]))
-                : null,
-          ),
-        )),
-      ]);
+          DataCell(Center(
+            child: Text(
+              caseData["عدد الأفراد"].toString(),
+              style: TextStyle(
+                fontSize: isPortrait ? 18 : 20,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          )),
+          DataCell(Center(
+            child: IconButton(
+              iconSize: isPortrait ? 24 : 28,
+              icon: Icon(
+                caseData["جاهزة"] ? Icons.check_circle : Icons.cancel,
+                color: caseData["جاهزة"] ? Colors.green : Colors.red,
+              ),
+              onPressed: widget.isAdmin
+                  ? () => _showConfirmationDialog(
+                        caseData["الاسم"],
+                        "جاهزة",
+                        caseData["جاهزة"],
+                        () => context.read<CasesCubit>().updateCaseState(
+                              caseData['id'],
+                              "جاهزة",
+                              !caseData["جاهزة"],
+                            ),
+                      )
+                  : null,
+            ),
+          )),
+          DataCell(Center(
+            child: IconButton(
+              iconSize: isPortrait ? 24 : 28,
+              icon: Icon(
+                caseData["هنا؟"] ? Icons.check_circle : Icons.cancel,
+                color: caseData["هنا؟"] ? Colors.green : Colors.red,
+              ),
+              onPressed: widget.isAdmin
+                  ? () => _showConfirmationDialog(
+                        caseData["الاسم"],
+                        "هنا؟",
+                        caseData["هنا؟"],
+                        () => context.read<CasesCubit>().updateCaseState(
+                              caseData['id'],
+                              "هنا؟",
+                              !caseData["هنا؟"],
+                            ),
+                      )
+                  : null,
+            ),
+          )),
+        ],
+      );
     }).toList();
   }
 }
