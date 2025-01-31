@@ -1,89 +1,97 @@
 import 'package:clipboard/clipboard.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class DonationSection extends StatelessWidget {
-  final String mealImageUrl;
-  final String mealTitle;
-  final String mealDescription;
-  final List<ContactPerson> contacts;
+import '../donation/presentation/cubit/donation_cubit.dart';
 
-  const DonationSection({
-    super.key,
-    required this.mealImageUrl,
-    required this.mealTitle,
-    required this.mealDescription,
-    required this.contacts,
-  });
+class DonationSection extends StatelessWidget {
+  const DonationSection({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 300,
-            flexibleSpace: _MealHeader(imageUrl: mealImageUrl),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: MediaQuery.of(context).size.width * 0.05,
-                vertical: 16,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    mealTitle,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: Colors.grey.shade800,
+    return BlocBuilder<DonationCubit, DonationState>(
+      builder: (context, state) {
+        if (state is DonationLoaded) {
+          return Scaffold(
+            body: CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  expandedHeight: 300,
+                  flexibleSpace:
+                      _MealHeader(imageUrl: state.donationData['mealImageUrl']),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: MediaQuery.of(context).size.width * 0.05,
+                      vertical: 16,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          state.donationData['mealTitle'],
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: Colors.grey.shade800,
+                              ),
                         ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    mealDescription,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.grey.shade600,
-                          height: 1.5,
+                        const SizedBox(height: 12),
+                        Text(
+                          state.donationData['mealDescription'],
+                          style:
+                              Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    color: Colors.grey.shade600,
+                                    height: 1.5,
+                                  ),
                         ),
-                  ),
-                  const SizedBox(height: 32),
-                  Center(
-                    child: Text(
-                      'تواصل معنا للمساهمة ودعم المطبخ',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: Colors.grey.shade800,
+                        const SizedBox(height: 32),
+                        Center(
+                          child: Text(
+                            'تواصل معنا للمساهمة ودعم المطبخ',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.grey.shade800,
+                                ),
                           ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: MediaQuery.of(context).size.width * 0.05,
+                  ),
+                  sliver: SliverGrid(
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 400,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      childAspectRatio:
+                          MediaQuery.of(context).size.width > 600 ? 0.8 : 0.7,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => _DonorCard(
+                          contact: state.donationData['contacts'][index]),
+                      childCount: state.donationData['contacts'].length,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-          SliverPadding(
-            padding: EdgeInsets.symmetric(
-              horizontal: MediaQuery.of(context).size.width * 0.05,
-            ),
-            sliver: SliverGrid(
-              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 400,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio:
-                    MediaQuery.of(context).size.width > 600 ? 0.8 : 0.7,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => _DonorCard(contact: contacts[index]),
-                childCount: contacts.length,
-              ),
-            ),
-          ),
-        ],
-      ),
+          );
+        }
+        return const Center(child: CircularProgressIndicator());
+      },
     );
   }
 }
@@ -116,7 +124,7 @@ class _MealHeader extends StatelessWidget {
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
                 colors: [
-                  Colors.black.withOpacity(0.6),
+                  Colors.black.withValues(alpha: 0.6),
                   Colors.transparent,
                 ],
               ),

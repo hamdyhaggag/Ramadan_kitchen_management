@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/core/widgets/general_button.dart';
 import '../../core/services/service_locator.dart';
+import '../donation/presentation/cubit/donation_cubit.dart';
+import '../donation/presentation/views/widgets/editable_donation_section.dart';
 import 'case-details_screen.dart';
 import 'donation_section.dart';
 import 'logic/cases_cubit.dart';
@@ -21,26 +23,6 @@ class _ManageCasesScreenState extends State<ManageCasesScreen>
     with SingleTickerProviderStateMixin {
   TabController? _tabController;
   late bool isAdmin;
-
-  final Map<String, dynamic> donationData = {
-    'mealImageUrl': 'https://amiraspantry.com/ramadan-meal-plan-week1/',
-    'mealTitle': 'إفطار رمضان خاص',
-    'mealDescription': 'ساعد في توفير وجبات مغذية للأسر المحتاجة...',
-    'contacts': <ContactPerson>[
-      ContactPerson(
-        name: 'أ/ كامل صابر',
-        phoneNumber: '+201033420527',
-        role: 'منسق التبرعات',
-        bankAccount: '1234-5678-9012-3456',
-      ),
-      ContactPerson(
-        name: 'أ/ أحمد أبو سرية',
-        phoneNumber: '+201147117011',
-        role: ' منسق التبرعات',
-        bankAccount: '1234-5678-9012-3456',
-      ),
-    ],
-  };
 
   @override
   void initState() {
@@ -83,11 +65,7 @@ class _ManageCasesScreenState extends State<ManageCasesScreen>
                 controller: _tabController,
                 tabs: const [
                   Tab(icon: Icon(Icons.assignment), text: 'الحالات'),
-                  Tab(
-                      icon: Icon(
-                        Icons.volunteer_activism,
-                      ),
-                      text: 'التبرعات'),
+                  Tab(icon: Icon(Icons.volunteer_activism), text: 'التبرعات'),
                 ],
               )
             : null,
@@ -103,8 +81,9 @@ class _ManageCasesScreenState extends State<ManageCasesScreen>
                           child: CircularProgressIndicator(
                               color: AppColors.primaryColor));
                     }
-                    if (state is CasesError)
+                    if (state is CasesError) {
                       return Center(child: Text(state.message));
+                    }
                     if (state is CasesLoaded) {
                       return _ManageCasesContent(
                           cases: state.cases, isAdmin: isAdmin);
@@ -112,20 +91,20 @@ class _ManageCasesScreenState extends State<ManageCasesScreen>
                     return const Center(child: Text('لا توجد حالات'));
                   },
                 ),
-                DonationSection(
-                  mealImageUrl: donationData['mealImageUrl'] as String,
-                  mealTitle: donationData['mealTitle'] as String,
-                  mealDescription: donationData['mealDescription'] as String,
-                  contacts: donationData['contacts'] as List<ContactPerson>,
+                BlocBuilder<DonationCubit, DonationState>(
+                  builder: (context, state) {
+                    if (state is DonationLoaded) {
+                      return EditableDonationSection(
+                          donationData: state.donationData);
+                    }
+                    return const Center(
+                        child: CircularProgressIndicator(
+                            color: AppColors.primaryColor));
+                  },
                 ),
               ],
             )
-          : DonationSection(
-              mealImageUrl: donationData['mealImageUrl'] as String,
-              mealTitle: donationData['mealTitle'] as String,
-              mealDescription: donationData['mealDescription'] as String,
-              contacts: donationData['contacts'] as List<ContactPerson>,
-            ),
+          : const DonationSection(),
     );
   }
 }
@@ -148,8 +127,9 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
   };
 
   List<Map<String, dynamic>> get filteredCases {
-    if (selectedFilter == null || selectedFilterValue == null)
+    if (selectedFilter == null || selectedFilterValue == null) {
       return widget.cases;
+    }
     return widget.cases
         .where((caseItem) => caseItem[selectedFilter] == selectedFilterValue)
         .toList();
