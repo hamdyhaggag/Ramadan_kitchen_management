@@ -148,153 +148,146 @@ class _DonorCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
 
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: Colors.grey.shade200, width: 1),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Column(
-              children: [
-                Container(
-                  width: isMobile ? 80 : 100,
-                  height: isMobile ? 80 : 100,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    image: contact.photoUrl != null
-                        ? DecorationImage(
-                            image: NetworkImage(contact.photoUrl!),
-                            fit: BoxFit.cover,
-                          )
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 20,
+              spreadRadius: 2,
+            )
+          ],
+        ),
+        child: Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () => _launchWhatsApp(contact.phoneNumber),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: isMobile ? 100 : 120,
+                    height: isMobile ? 100 : 120,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      image: contact.photoUrl != null
+                          ? DecorationImage(
+                              image: NetworkImage(contact.photoUrl!),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                      color: Colors.grey.shade100,
+                      border:
+                          Border.all(color: Colors.grey.shade200, width: 1.5),
+                    ),
+                    child: contact.photoUrl == null
+                        ? Icon(Icons.person_outline_rounded,
+                            size: isMobile ? 40 : 50,
+                            color: Colors.grey.shade400)
                         : null,
-                    color: Colors.grey.shade100,
                   ),
-                  child: contact.photoUrl == null
-                      ? Icon(Icons.person,
-                          size: isMobile ? 40 : 50, color: Colors.grey)
-                      : null,
-                ),
-                const SizedBox(height: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
+                  const SizedBox(height: 20),
+                  Text(
+                    contact.name,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: isMobile ? 18 : 20,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.grey.shade900,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (contact.role != null) ...[
+                    const SizedBox(height: 8),
                     Text(
-                      contact.name,
+                      contact.role!,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: isMobile ? 18 : 20,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.grey.shade800,
+                        fontSize: isMobile ? 14 : 15,
+                        color: AppColors.primaryColor,
+                        fontWeight: FontWeight.w600,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    if (contact.role != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          contact.role!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: isMobile ? 12 : 14,
-                            color: Colors.grey.shade600,
+                  ],
+                  const SizedBox(height: 20),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _ContactTile(
+                          icon: Icons.phone_iphone_rounded,
+                          value: contact.formattedPhoneNumber,
+                          onCopy: () =>
+                              _copyToClipboard(contact.phoneNumber, context),
+                        ),
+                        if (contact.bankAccount != null) ...[
+                          const SizedBox(height: 12),
+                          _ContactTile(
+                            icon: Icons.account_balance_rounded,
+                            value: contact.bankAccount!,
+                            onCopy: () =>
+                                _copyToClipboard(contact.bankAccount!, context),
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: Icon(Icons.copy_rounded,
+                              size: 18, color: Colors.grey.shade700),
+                          label: Text('نسخ',
+                              style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontWeight: FontWeight.w600)),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            side: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          onPressed: () =>
+                              _copyToClipboard(contact.phoneNumber, context),
                         ),
                       ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const NeverScrollableScrollPhysics(),
-                child: Column(
-                  children: [
-                    _ContactTile(
-                      icon: Icons.phone_iphone_rounded,
-                      value: contact.formattedPhoneNumber,
-                      onCopy: () =>
-                          _copyToClipboard(contact.phoneNumber, context),
-                    ),
-                    if (contact.bankAccount != null) ...[
-                      const SizedBox(height: 8),
-                      _ContactTile(
-                        icon: Icons.account_balance_wallet_rounded,
-                        value: contact.bankAccount!,
-                        onCopy: () =>
-                            _copyToClipboard(contact.bankAccount!, context),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton.icon(
+                          icon: const Icon(Icons.chat_rounded, size: 18),
+                          label: const Text('واتساب',
+                              style: TextStyle(fontWeight: FontWeight.w600)),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          onPressed: () => _launchWhatsApp(contact.phoneNumber),
+                        ),
                       ),
                     ],
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth < 150) {
-                    return Column(
-                      children: _buildButtons(isMobile, context),
-                    );
-                  }
-                  return Row(
-                    children: _buildButtons(isMobile, context),
-                  );
-                },
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
-  }
-
-  List<Widget> _buildButtons(bool isMobile, BuildContext context) {
-    return [
-      Expanded(
-        child: TextButton.icon(
-          icon: Icon(Icons.copy_all_rounded,
-              color: AppColors.primaryColor, size: isMobile ? 16 : 18),
-          label: Text('نسخ',
-              style: TextStyle(
-                  color: AppColors.primaryColor, fontSize: isMobile ? 14 : 16)),
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.blue.shade700,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          onPressed: () => _copyToClipboard(contact.phoneNumber, context),
-        ),
-      ),
-      SizedBox(width: isMobile ? 8 : 12),
-      Expanded(
-        child: FilledButton.icon(
-          icon: Icon(Icons.chat_rounded, size: isMobile ? 16 : 18),
-          label:
-              Text('التواصل', style: TextStyle(fontSize: isMobile ? 14 : 16)),
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.primaryColor,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          onPressed: () => _launchWhatsApp(contact.phoneNumber),
-        ),
-      ),
-    ];
   }
 
   void _launchWhatsApp(String number) async {
@@ -307,7 +300,14 @@ class _DonorCard extends StatelessWidget {
   void _copyToClipboard(String text, BuildContext context) {
     FlutterClipboard.copy(text).then((_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("تم نسخ الرقم بنجاح")),
+        SnackBar(
+          content: const Text("تم النسخ بنجاح"),
+          backgroundColor: AppColors.primaryColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
       );
     });
   }
@@ -326,38 +326,35 @@ class _ContactTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         onTap: onCopy,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          margin: const EdgeInsets.symmetric(vertical: 4),
           decoration: BoxDecoration(
             color: Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200),
           ),
           child: Row(
             children: [
-              Icon(icon, size: isMobile ? 20 : 22, color: Colors.grey.shade600),
+              Icon(icon, size: 20, color: AppColors.primaryColor),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   value,
                   style: TextStyle(
-                    fontSize: isMobile ? 14 : 16,
+                    fontSize: 15,
                     color: Colors.grey.shade800,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Icon(Icons.copy_rounded,
-                  size: isMobile ? 18 : 20, color: Colors.grey.shade500),
+              Icon(Icons.copy_rounded, size: 18, color: Colors.grey.shade500),
             ],
           ),
         ),
@@ -403,9 +400,13 @@ class ContactPerson {
     final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
     if (cleanNumber.length < 7) return phoneNumber;
 
-    return '+${cleanNumber.substring(0, 3)} '
-        '${cleanNumber.substring(3, 6)} '
-        '${cleanNumber.substring(6)}';
+    final displayNumber = cleanNumber.startsWith('2') && cleanNumber.length > 2
+        ? cleanNumber.substring(1)
+        : cleanNumber;
+
+    return '\u200E${displayNumber.substring(0, 3)} '
+        '${displayNumber.substring(3, 6)} '
+        '${displayNumber.substring(6)}';
   }
 
   ContactPerson copyWith({
