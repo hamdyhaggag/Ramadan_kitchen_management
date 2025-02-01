@@ -1,11 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:ramadan_kitchen_management/core/routes/app_routes.dart';
-import 'cloudinary_config.dart';
 import 'core/cache/prefs.dart';
 import 'core/routes/on_generate_route.dart';
 import 'core/services/service_locator.dart';
@@ -30,12 +28,6 @@ void main() async {
 
   await Prefs.init();
   setupGetit();
-  CloudinaryPublic cloudinary = CloudinaryPublic(
-    cloudinaryCloudName,
-    cloudinaryUploadPreset,
-    // apiKey: 'your_api_key',
-    // apiSecret: 'your_api_secret'
-  );
   runApp(const KitchenApp());
 }
 

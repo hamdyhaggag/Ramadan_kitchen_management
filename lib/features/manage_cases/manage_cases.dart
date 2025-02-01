@@ -95,11 +95,17 @@ class _ManageCasesScreenState extends State<ManageCasesScreen>
                   builder: (context, state) {
                     if (state is DonationLoaded) {
                       return EditableDonationSection(
-                          donationData: state.donationData);
+                        donationData: state.donationData,
+                        documentId: state.documentId,
+                      );
+                    }
+                    if (state is DonationError) {
+                      return Center(child: Text(state.message));
                     }
                     return const Center(
-                        child: CircularProgressIndicator(
-                            color: AppColors.primaryColor));
+                      child: CircularProgressIndicator(
+                          color: AppColors.primaryColor),
+                    );
                   },
                 ),
               ],

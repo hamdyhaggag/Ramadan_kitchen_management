@@ -13,7 +13,10 @@ import '../../../../manage_cases/donation_section.dart';
 
 class EditableDonationSection extends StatefulWidget {
   final Map<String, dynamic> donationData;
-  const EditableDonationSection({super.key, required this.donationData});
+  final String documentId;
+
+  const EditableDonationSection(
+      {super.key, required this.donationData, required this.documentId});
 
   @override
   State<EditableDonationSection> createState() =>
@@ -75,21 +78,33 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
     setState(() => _isUploading = true);
     try {
       String? imageUrl = _existingImageUrl;
-
       if (_pickedImage != null) {
         imageUrl = await _uploadImageToCloudinary(_pickedImage!);
       }
 
-      await FirebaseFirestore.instance.collection('donations').doc().set({
-        'userId': FirebaseAuth.instance.currentUser!.uid,
+      final Map<String, dynamic> donationData = {
         'mealImageUrl': imageUrl,
         'mealTitle': _mealTitleController.text.trim(),
         'mealDescription': _mealDescriptionController.text.trim(),
         'contacts': _contacts.map((c) => c.toMap()).toList(),
-        'created_at': FieldValue.serverTimestamp(),
         'updated_at': FieldValue.serverTimestamp(),
-      });
+      };
+
+      if (widget.documentId.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('donations')
+            .doc(widget.documentId)
+            .update(donationData);
+      } else {
+        donationData['userId'] = user.uid;
+        donationData['created_at'] = FieldValue.serverTimestamp();
+        await FirebaseFirestore.instance
+            .collection('donations')
+            .add(donationData);
+      }
+
       _showSnackbar('تم حفظ التغييرات بنجاح');
+      Navigator.pop(context);
     } catch (e) {
       _showSnackbar('حدث خطأ: ${e.toString()}');
     } finally {

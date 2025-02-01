@@ -14,6 +14,10 @@ class DonationSection extends StatelessWidget {
     return BlocBuilder<DonationCubit, DonationState>(
       builder: (context, state) {
         if (state is DonationLoaded) {
+          final contacts = (state.donationData['contacts'] as List<dynamic>)
+              .map((e) => ContactPerson.fromMap(e))
+              .toList();
+
           return Scaffold(
             body: CustomScrollView(
               slivers: [
@@ -80,9 +84,8 @@ class DonationSection extends StatelessWidget {
                           MediaQuery.of(context).size.width > 600 ? 0.8 : 0.7,
                     ),
                     delegate: SliverChildBuilderDelegate(
-                      (context, index) => _DonorCard(
-                          contact: state.donationData['contacts'][index]),
-                      childCount: state.donationData['contacts'].length,
+                      (context, index) => _DonorCard(contact: contacts[index]),
+                      childCount: contacts.length,
                     ),
                   ),
                 ),
@@ -363,7 +366,6 @@ class _ContactTile extends StatelessWidget {
   }
 }
 
-// contact_person.dart
 class ContactPerson {
   final String name;
   final String phoneNumber;
@@ -399,7 +401,7 @@ class ContactPerson {
 
   String get formattedPhoneNumber {
     final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
-    if (cleanNumber.length < 7) return phoneNumber; // Avoids errors
+    if (cleanNumber.length < 7) return phoneNumber;
 
     return '+${cleanNumber.substring(0, 3)} '
         '${cleanNumber.substring(3, 6)} '

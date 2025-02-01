@@ -1,36 +1,61 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../../manage_cases/donation_section.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 part 'donation_state.dart';
 
 class DonationCubit extends Cubit<DonationState> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   DonationCubit() : super(DonationInitial()) {
-    // Initialize with default data
-    final initialData = {
-      'mealImageUrl': 'https://amiraspantry.com/ramadan-meal-plan-week1/',
-      'mealTitle': 'إفطار اليوم',
-      'mealDescription':
-          'ساعد في توفير وجبات مغذية للأسر المحتاجة خلال شهر رمضان',
-      'contacts': [
-        ContactPerson(
-          name: 'أ/ كامل صابر',
-          phoneNumber: '+201033420527',
-          role: 'منسق التبرعات',
-          bankAccount: '1234-5678-9012-3456',
-        ),
-        ContactPerson(
-          name: 'أ/ أحمد أبو سرية',
-          phoneNumber: '+201147117011',
-          role: ' منسق التبرعات',
-          bankAccount: '1234-5678-9012-3456',
-        ),
-      ],
-    };
-    emit(DonationLoaded(initialData));
+    _loadInitialData();
   }
 
-  void updateDonationData(Map<String, dynamic> newData) {
-    emit(DonationLoaded(newData));
+  Future<void> _loadInitialData() async {
+    try {
+      final snapshot = await _firestore.collection('donations').limit(1).get();
+      if (snapshot.docs.isNotEmpty) {
+        final doc = snapshot.docs.first;
+        emit(DonationLoaded(
+          donationData: doc.data(),
+          documentId: doc.id,
+        ));
+      } else {
+        final docRef = await _firestore.collection('donations').add({
+          'mealImageUrl': 'https://example.com/default-image.jpg',
+          'mealTitle': 'إفطار اليوم',
+          'mealDescription': 'ساعد في توفير وجبات إفطار يومياَ للأسر المحتاجة',
+          'contacts': [],
+          'created_at': FieldValue.serverTimestamp(),
+        });
+
+        emit(DonationLoaded(
+          donationData: {},
+          documentId: docRef.id,
+        ));
+      }
+    } catch (e) {
+      emit(DonationError('Failed to load data: $e'));
+    }
+  }
+
+  Future<void> updateDonation({
+    required String documentId,
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      await _firestore.collection('donations').doc(documentId).update({
+        ...data,
+        'updated_at': FieldValue.serverTimestamp(),
+      });
+
+      final doc =
+          await _firestore.collection('donations').doc(documentId).get();
+      emit(DonationLoaded(
+        donationData: doc.data() ?? {},
+        documentId: documentId,
+      ));
+    } catch (e) {
+      emit(DonationError('Failed to update donation: $e'));
+    }
   }
 }

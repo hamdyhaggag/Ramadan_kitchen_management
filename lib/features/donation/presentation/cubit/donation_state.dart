@@ -6,6 +6,16 @@ class DonationInitial extends DonationState {}
 
 class DonationLoaded extends DonationState {
   final Map<String, dynamic> donationData;
+  final String documentId;
 
-  DonationLoaded(this.donationData);
+  DonationLoaded({
+    required this.donationData,
+    required this.documentId,
+  });
+}
+
+class DonationError extends DonationState {
+  final String message;
+
+  DonationError(this.message);
 }
