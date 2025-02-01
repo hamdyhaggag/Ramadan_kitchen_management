@@ -363,21 +363,68 @@ class _ContactTile extends StatelessWidget {
   }
 }
 
+// contact_person.dart
 class ContactPerson {
   final String name;
   final String phoneNumber;
-  final String? role;
+  final String role;
+  final String bankAccount;
   final String? photoUrl;
-  final String? bankAccount;
 
-  ContactPerson({
+  const ContactPerson({
     required this.name,
     required this.phoneNumber,
-    this.role,
+    required this.role,
+    required this.bankAccount,
     this.photoUrl,
-    this.bankAccount,
   });
 
-  String get formattedPhoneNumber =>
-      '+${phoneNumber.substring(0, 3)} ${phoneNumber.substring(3, 6)} ${phoneNumber.substring(6)}';
+  factory ContactPerson.fromMap(Map<String, dynamic> map) {
+    return ContactPerson(
+      name: map['name']?.toString() ?? '',
+      phoneNumber: map['phoneNumber']?.toString() ?? '',
+      role: map['role']?.toString() ?? '',
+      bankAccount: map['bankAccount']?.toString() ?? '',
+      photoUrl: map['photoUrl']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+        'name': name,
+        'phoneNumber': phoneNumber,
+        'role': role,
+        'bankAccount': bankAccount,
+        'photoUrl': photoUrl,
+      };
+
+  String get formattedPhoneNumber {
+    final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
+    if (cleanNumber.length < 7) return phoneNumber; // Avoids errors
+
+    return '+${cleanNumber.substring(0, 3)} '
+        '${cleanNumber.substring(3, 6)} '
+        '${cleanNumber.substring(6)}';
+  }
+
+  ContactPerson copyWith({
+    String? name,
+    String? phoneNumber,
+    String? role,
+    String? bankAccount,
+    String? photoUrl,
+  }) {
+    if (name == null &&
+        phoneNumber == null &&
+        role == null &&
+        bankAccount == null &&
+        photoUrl == null) return this;
+
+    return ContactPerson(
+      name: name ?? this.name,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      role: role ?? this.role,
+      bankAccount: bankAccount ?? this.bankAccount,
+      photoUrl: photoUrl ?? this.photoUrl,
+    );
+  }
 }

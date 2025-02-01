@@ -12,7 +12,7 @@ class DonationCubit extends Cubit<DonationState> {
       'mealTitle': 'إفطار اليوم',
       'mealDescription':
           'ساعد في توفير وجبات مغذية للأسر المحتاجة خلال شهر رمضان',
-      'contacts': <ContactPerson>[
+      'contacts': [
         ContactPerson(
           name: 'أ/ كامل صابر',
           phoneNumber: '+201033420527',
