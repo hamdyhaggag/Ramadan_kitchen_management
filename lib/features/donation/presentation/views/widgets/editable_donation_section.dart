@@ -179,8 +179,7 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildSectionHeader(
-                'معلومات الوجبة الأساسية', Icons.fastfood_rounded),
+            _buildSectionHeader('معلومات الوجبة ', Icons.fastfood_rounded),
             const SizedBox(height: 16),
             _buildImagePicker(),
             const SizedBox(height: 24),
@@ -220,7 +219,7 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
         const SizedBox(height: 8),
         Container(
           height: 2,
-          width: 120,
+          width: 180,
           decoration: BoxDecoration(
             color: AppColors.primaryColor.withAlpha(76),
             borderRadius: BorderRadius.circular(2),

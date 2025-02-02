@@ -56,59 +56,72 @@ class _ManageCasesScreenState extends State<ManageCasesScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        bottom: isAdmin
-            ? TabBar(
-                labelStyle:
-                    TextStyle(color: AppColors.primaryColor, fontFamily: 'DIN'),
-                indicatorColor: AppColors.primaryColor,
-                controller: _tabController,
-                tabs: const [
-                  Tab(icon: Icon(Icons.assignment), text: 'الحالات'),
-                  Tab(icon: Icon(Icons.volunteer_activism), text: 'التبرعات'),
-                ],
-              )
-            : null,
-      ),
       body: isAdmin
-          ? TabBarView(
-              controller: _tabController,
-              children: [
-                BlocBuilder<CasesCubit, CasesState>(
-                  builder: (context, state) {
-                    if (state is CasesLoading) {
-                      return const Center(
-                          child: CircularProgressIndicator(
-                              color: AppColors.primaryColor));
-                    }
-                    if (state is CasesError) {
-                      return Center(child: Text(state.message));
-                    }
-                    if (state is CasesLoaded) {
-                      return _ManageCasesContent(
-                          cases: state.cases, isAdmin: isAdmin);
-                    }
-                    return const Center(child: Text('لا توجد حالات'));
-                  },
-                ),
-                BlocBuilder<DonationCubit, DonationState>(
-                  builder: (context, state) {
-                    if (state is DonationLoaded) {
-                      return EditableDonationSection(
-                        donationData: state.donationData,
-                        documentId: state.documentId,
-                      );
-                    }
-                    if (state is DonationError) {
-                      return Center(child: Text(state.message));
-                    }
-                    return const Center(
-                      child: CircularProgressIndicator(
-                          color: AppColors.primaryColor),
-                    );
-                  },
-                ),
-              ],
+          ? SafeArea(
+              child: Column(
+                children: [
+                  TabBar(
+                    labelStyle: TextStyle(
+                      color: AppColors.primaryColor,
+                      fontFamily: 'DIN',
+                    ),
+                    indicatorColor: AppColors.primaryColor,
+                    controller: _tabController,
+                    tabs: const [
+                      Tab(icon: Icon(Icons.assignment), text: 'الحالات'),
+                      Tab(
+                          icon: Icon(Icons.volunteer_activism),
+                          text: 'التبرعات'),
+                    ],
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        BlocBuilder<CasesCubit, CasesState>(
+                          builder: (context, state) {
+                            if (state is CasesLoading) {
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primaryColor,
+                                ),
+                              );
+                            }
+                            if (state is CasesError) {
+                              return Center(child: Text(state.message));
+                            }
+                            if (state is CasesLoaded) {
+                              return _ManageCasesContent(
+                                cases: state.cases,
+                                isAdmin: isAdmin,
+                              );
+                            }
+                            return const Center(child: Text('لا توجد حالات'));
+                          },
+                        ),
+                        BlocBuilder<DonationCubit, DonationState>(
+                          builder: (context, state) {
+                            if (state is DonationLoaded) {
+                              return EditableDonationSection(
+                                donationData: state.donationData,
+                                documentId: state.documentId,
+                              );
+                            }
+                            if (state is DonationError) {
+                              return Center(child: Text(state.message));
+                            }
+                            return const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.primaryColor,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             )
           : const DonationSection(),
     );
