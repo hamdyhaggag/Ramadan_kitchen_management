@@ -9,7 +9,7 @@ import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/core/widgets/general_button.dart';
 import '../../../../../cloudinary_config.dart';
-import '../../../../manage_cases/donation_section.dart';
+import 'contact_person.dart';
 
 class EditableDonationSection extends StatefulWidget {
   final Map<String, dynamic> donationData;

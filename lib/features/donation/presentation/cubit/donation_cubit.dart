@@ -38,6 +38,11 @@ class DonationCubit extends Cubit<DonationState> {
     }
   }
 
+  // Add this public method to allow refreshing the data
+  Future<void> fetchDonationData() async {
+    await _loadInitialData();
+  }
+
   Future<void> updateDonation({
     required String documentId,
     required Map<String, dynamic> data,
