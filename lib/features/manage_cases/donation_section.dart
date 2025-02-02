@@ -8,8 +8,21 @@ import 'package:url_launcher/url_launcher.dart';
 import '../donation/presentation/cubit/donation_cubit.dart';
 import '../donation/presentation/views/widgets/contact_person.dart';
 
-class DonationSection extends StatelessWidget {
+class DonationSection extends StatefulWidget {
   const DonationSection({super.key});
+
+  @override
+  State<DonationSection> createState() => _DonationSectionState();
+}
+
+class _DonationSectionState extends State<DonationSection> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DonationCubit>().fetchDonationData();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
