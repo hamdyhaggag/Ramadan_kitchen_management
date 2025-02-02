@@ -101,4 +101,14 @@ class AuthRepoImpl extends AuthRepo {
     await firebaseAuthService.signOut();
     await Prefs.remove(kUserData);
   }
+
+  @override
+  Future<Either<Failure, void>> resetPassword({required String email}) async {
+    try {
+      await firebaseAuthService.resetPassword(email: email);
+      return const Right(null);
+    } on CustomException catch (e) {
+      return Left(FirebaseAuthFailure(errMessage: e.message));
+    }
+  }
 }

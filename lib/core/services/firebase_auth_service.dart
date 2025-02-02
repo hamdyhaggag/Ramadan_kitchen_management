@@ -78,4 +78,24 @@ class FirebaseAuthService {
   Future<void> signOut() async {
     await FirebaseAuth.instance.signOut();
   }
+
+  Future<void> resetPassword({required String email}) async {
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'invalid-email') {
+        throw CustomException(message: 'البريد الالكتروني غير صحيح');
+      } else if (e.code == 'user-not-found') {
+        throw CustomException(message: 'البريد الالكتروني غير موجود');
+      } else if (e.code == 'too-many-requests') {
+        throw CustomException(
+            message: 'لقد تجاوزت الحد المسموح به من المحاولات');
+      } else if (e.code == 'network-request-failed') {
+        throw CustomException(message: 'برجاء التحقق من الاتصال بالانترنت');
+      } else {
+        throw CustomException(
+            message: 'لقد حدث خطأ ما, يرجى المحاولة مرة أخرى');
+      }
+    }
+  }
 }

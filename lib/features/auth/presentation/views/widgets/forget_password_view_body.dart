@@ -1,52 +1,70 @@
 import 'package:flutter/material.dart';
-import 'package:ramadan_kitchen_management/core/routes/app_routes.dart';
-import 'package:ramadan_kitchen_management/core/utils/app_texts.dart';
-import 'package:ramadan_kitchen_management/core/widgets/custom_text_form_field.dart';
-import 'package:ramadan_kitchen_management/core/widgets/general_button.dart';
-
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../../../core/utils/app_styles.dart';
+import '../../../../../core/utils/app_texts.dart';
+import '../../../../../core/widgets/custom_text_form_field.dart';
+import '../../../../../core/widgets/general_button.dart';
+import '../../manager/reset_password_cubit/reset_password_cubit.dart';
 
-class ForgetPasswordViewBody extends StatelessWidget {
+class ForgetPasswordViewBody extends StatefulWidget {
   const ForgetPasswordViewBody({super.key});
+
+  @override
+  State<ForgetPasswordViewBody> createState() => _ForgetPasswordViewBodyState();
+}
+
+class _ForgetPasswordViewBodyState extends State<ForgetPasswordViewBody> {
+  late final TextEditingController controller;
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  AutovalidateMode autoValidateMode = AutovalidateMode.disabled;
+
+  @override
+  void initState() {
+    controller = TextEditingController();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       reverse: true,
-      child: Column(
-        children: [
-          SizedBox(height: MediaQuery.of(context).size.height * .05),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Align(
+      child: Form(
+        key: formKey,
+        autovalidateMode: autoValidateMode,
+        child: Column(
+          children: [
+            SizedBox(height: MediaQuery.of(context).size.height * .05),
+            Align(
               alignment: Alignment.centerRight,
               child: Text(
                 AppTexts.doNotWorry,
-                style: AppStyles.dinRegular16.copyWith(
-                  color: AppColors.blackColor,
-                ),
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          const CustomTextFormField(
-            hitnText: AppTexts.enterYourPhoneNumber,
-            textInputType: TextInputType.number,
-          ),
-          const SizedBox(height: 32),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: GeneralButton(
+            const SizedBox(height: 16),
+            CustomTextFormField(
+              controller: controller,
+              hitnText: AppTexts.email,
+            ),
+            const SizedBox(height: 32),
+            GeneralButton(
               onPressed: () {
-                Navigator.pushNamed(context, AppRoutes.verify);
+                if (formKey.currentState!.validate()) {
+                  formKey.currentState!.save();
+                  context.read<ResetPasswordCubit>().resetPassword(
+                        email: controller.text,
+                      );
+                } else {
+                  autoValidateMode = AutovalidateMode.always;
+                  setState(() {});
+                }
               },
               text: AppTexts.forgetPassword,
               backgroundColor: AppColors.primaryColor,
               textColor: AppColors.whiteColor,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ramadan_kitchen_management/core/routes/app_routes.dart';
 import 'package:ramadan_kitchen_management/features/auth/presentation/views/register_view.dart';
-import 'package:ramadan_kitchen_management/features/auth/presentation/views/reset_password_view.dart';
-import 'package:ramadan_kitchen_management/features/auth/presentation/views/verify_view.dart';
 import 'package:ramadan_kitchen_management/features/home/presentation/views/widgets/screen_layout.dart';
 import 'package:ramadan_kitchen_management/features/on_boarding/presentation/views/on_boarding_view.dart';
 import 'package:ramadan_kitchen_management/features/splash/presentation/views/splash_view.dart';
@@ -32,14 +30,6 @@ Route<dynamic> onGenerateRoutes(RouteSettings settings) {
     case AppRoutes.forgetPassword:
       return MaterialPageRoute(
         builder: (context) => const ForgetPasswordView(),
-      );
-    case AppRoutes.verify:
-      return MaterialPageRoute(
-        builder: (context) => const VerifyView(),
-      );
-    case AppRoutes.resetPassword:
-      return MaterialPageRoute(
-        builder: (context) => const ResetPasswordView(),
       );
     case AppRoutes.home:
       return MaterialPageRoute(

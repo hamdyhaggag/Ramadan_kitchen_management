@@ -37,7 +37,7 @@ abstract class AppTexts {
       " يرجى قبول الشروط والاحكام للتسجيل";
   static const String forgetPassword = "نسيت كلمة المرور؟";
   static const String doNotWorry =
-      'لا تقلق ، ما عليك سوى كتابة رقم هاتفك وسنرسل رمز التحقق.';
+      "لا تقلق كل ما عليك هو ادخال بريدك الإلكتروني وسنرسل لك رابط لإعادة تعيين كلمة المرور";
   static const String enterYourPhoneNumber = 'ادخل رقم هاتفك';
   static const String verifyYourRamz = 'التحقق من الرمز';
   static const String enterYourRamz = 'ادخل رمز التحقق';
@@ -51,4 +51,5 @@ abstract class AppTexts {
   static const String invalidPhoneNumber = 'رقم هاتف غير صالح';
 
   static const String invalidEmail = 'البريد الإلكتروني غير صالح';
+  static const String lookToYourEmail = 'تحقق من بريدك الالكتروني';
 }
