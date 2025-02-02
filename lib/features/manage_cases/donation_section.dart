@@ -43,7 +43,8 @@ class _DonationSectionState extends State<DonationSection> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
                   SliverAppBar(
-                    expandedHeight: 300,
+                    expandedHeight:
+                        MediaQuery.of(context).size.width * (1180 / 1500),
                     flexibleSpace: _MealHeader(
                         imageUrl: state.donationData['mealImageUrl']),
                   ),
@@ -131,7 +132,7 @@ class _MealHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return FlexibleSpaceBar(
       background: Stack(
-        fit: StackFit.passthrough,
+        fit: StackFit.expand,
         children: [
           CachedNetworkImage(
             imageUrl: imageUrl,

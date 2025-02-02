@@ -76,8 +76,9 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return _showSnackbar('يجب تسجيل الدخول أولاً');
-    if (_mealTitleController.text.trim().isEmpty)
+    if (_mealTitleController.text.trim().isEmpty) {
       return _showSnackbar('يرجى إدخال عنوان الوجبة');
+    }
 
     setState(() => _isUploading = true);
 
@@ -259,30 +260,6 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
               if (_existingImageUrl != null) _buildNetworkImage(),
               if (_pickedImage == null && _existingImageUrl == null)
                 _buildImagePlaceholder(),
-              Positioned(
-                bottom: 12,
-                right: 12,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.grey.withValues(alpha: 0.1),
-                          blurRadius: 8)
-                    ],
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.camera_alt_rounded, size: 18),
-                      SizedBox(width: 6),
-                      Text('إضافة صورة', style: TextStyle(fontSize: 14)),
-                    ],
-                  ),
-                ),
-              ),
               if (_pickedImage != null || _existingImageUrl != null)
                 Positioned(
                   top: 12,
@@ -366,7 +343,7 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
   Widget _buildContactsSection() {
     return Column(
       children: [
-        _buildSectionHeader('جهات الاتصال', Icons.contacts_rounded),
+        _buildSectionHeader('منسقي التبرعات', Icons.contacts_rounded),
         const SizedBox(height: 16),
         ..._contacts.asMap().entries.map((entry) => Padding(
               padding: const EdgeInsets.only(bottom: 16),
@@ -380,9 +357,13 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            icon: const Icon(Icons.add_circle_outline_rounded, size: 22),
-            label: const Text('إضافة جهة اتصال جديدة',
-                style: TextStyle(fontSize: 15)),
+            icon: const Icon(
+              Icons.add_circle_outline_rounded,
+              size: 22,
+              color: AppColors.primaryColor,
+            ),
+            label:
+                const Text('إضافة منسق جديد', style: TextStyle(fontSize: 15)),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.grey[50],
               foregroundColor: AppColors.primaryColor,
@@ -477,6 +458,10 @@ class _ContactEditorState extends State<ContactEditor> {
   late final TextEditingController _phoneController;
   late final TextEditingController _roleController;
   late final TextEditingController _bankController;
+  late FocusNode _nameFocusNode;
+  late FocusNode _phoneFocusNode;
+  late FocusNode _roleFocusNode;
+  late FocusNode _bankFocusNode;
 
   @override
   void initState() {
@@ -485,6 +470,25 @@ class _ContactEditorState extends State<ContactEditor> {
     _phoneController = TextEditingController(text: widget.contact.phoneNumber);
     _roleController = TextEditingController(text: widget.contact.role);
     _bankController = TextEditingController(text: widget.contact.bankAccount);
+
+    _nameFocusNode = FocusNode();
+    _phoneFocusNode = FocusNode();
+    _roleFocusNode = FocusNode();
+    _bankFocusNode = FocusNode();
+
+    _nameFocusNode.addListener(() => setState(() {}));
+    _phoneFocusNode.addListener(() => setState(() {}));
+    _roleFocusNode.addListener(() => setState(() {}));
+    _bankFocusNode.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _nameFocusNode.dispose();
+    _phoneFocusNode.dispose();
+    _roleFocusNode.dispose();
+    _bankFocusNode.dispose();
+    super.dispose();
   }
 
   @override
@@ -510,7 +514,7 @@ class _ContactEditorState extends State<ContactEditor> {
                     color: Colors.grey, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                    'جهة الاتصال ${widget.contact.name.isNotEmpty ? widget.contact.name : "الجديدة"}',
+                    'المنسق ${widget.contact.name.isNotEmpty ? widget.contact.name : "الجديدة"}',
                     style: TextStyle(
                         color: Colors.grey[700], fontWeight: FontWeight.w600)),
                 const Spacer(),
@@ -531,13 +535,17 @@ class _ContactEditorState extends State<ContactEditor> {
               childAspectRatio: 3,
               children: [
                 _buildContactField(_nameController, 'الاسم الكامل',
-                    Icons.person_outline_rounded),
-                _buildContactField(_phoneController, 'رقم الهاتف',
-                    Icons.phone_iphone_rounded, TextInputType.phone),
+                    Icons.person_outline_rounded, _nameFocusNode),
                 _buildContactField(
-                    _roleController, 'الدور', Icons.work_outline_rounded),
-                _buildContactField(_bankController, 'الحساب البنكي',
-                    Icons.account_balance_wallet_rounded),
+                    _phoneController,
+                    'رقم الهاتف',
+                    Icons.phone_iphone_rounded,
+                    _phoneFocusNode,
+                    TextInputType.phone),
+                _buildContactField(_roleController, 'الدور',
+                    Icons.work_outline_rounded, _roleFocusNode),
+                _buildContactField(_bankController, 'انستاباي',
+                    Icons.account_balance_wallet_rounded, _bankFocusNode),
               ],
             ),
           ],
@@ -546,11 +554,13 @@ class _ContactEditorState extends State<ContactEditor> {
     );
   }
 
-  Widget _buildContactField(
-      TextEditingController controller, String label, IconData icon,
+  Widget _buildContactField(TextEditingController controller, String label,
+      IconData icon, FocusNode focusNode,
       [TextInputType? keyboardType]) {
     return TextFormField(
+      focusNode: focusNode,
       controller: controller,
+      cursorColor: AppColors.primaryColor,
       keyboardType: keyboardType,
       onChanged: (_) => widget.onChanged(ContactPerson(
         name: _nameController.text,
@@ -560,7 +570,17 @@ class _ContactEditorState extends State<ContactEditor> {
       )),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, size: 20),
+        labelStyle: TextStyle(
+          color: focusNode.hasFocus ? AppColors.primaryColor : Colors.grey,
+        ),
+        floatingLabelStyle: TextStyle(
+          color: focusNode.hasFocus ? AppColors.primaryColor : Colors.grey,
+        ),
+        prefixIcon: Icon(
+          icon,
+          size: 20,
+          color: focusNode.hasFocus ? AppColors.primaryColor : Colors.grey,
+        ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
