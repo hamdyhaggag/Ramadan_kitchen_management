@@ -24,7 +24,7 @@ class _ContactInfoRowState extends State<ContactInfoRow> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: AppColors.primaryColor.withOpacity(0.1),
+      color: AppColors.primaryColor.withValues(alpha: 0.1),
       elevation: 0,
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(
@@ -37,8 +37,8 @@ class _ContactInfoRowState extends State<ContactInfoRow> {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () => _copyToClipboard(context, widget.value),
-        hoverColor: AppColors.primaryColor.withOpacity(0.05),
-        splashColor: AppColors.primaryColor.withOpacity(0.1),
+        hoverColor: AppColors.primaryColor.withValues(alpha: 0.05),
+        splashColor: AppColors.primaryColor.withValues(alpha: 0.1),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
           child: Row(
@@ -46,7 +46,7 @@ class _ContactInfoRowState extends State<ContactInfoRow> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryColor.withOpacity(0.1),
+                  color: AppColors.primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
