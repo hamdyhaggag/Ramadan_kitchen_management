@@ -156,15 +156,17 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildSectionHeader('معلومات الوجبة الأساسية', Icons.fastfood),
+            _buildSectionHeader(
+                'معلومات الوجبة الأساسية', Icons.fastfood_rounded),
+            const SizedBox(height: 16),
             _buildImagePicker(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             _buildTitleField(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             _buildDescriptionField(),
-            const SizedBox(height: 30),
+            const SizedBox(height: 32),
             _buildContactsSection(),
-            const SizedBox(height: 30),
+            const SizedBox(height: 32),
             _buildSaveButton(),
           ],
         ),
@@ -173,19 +175,37 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
   }
 
   Widget _buildSectionHeader(String title, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.primaryColor, size: 24),
-          const SizedBox(width: 8),
-          Text(title,
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[800])),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: AppColors.primaryColor, size: 28),
+            ),
+            const SizedBox(width: 12),
+            Text(title,
+                style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87)),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 2,
+          width: 120,
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+      ],
     );
   }
 
@@ -195,62 +215,215 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
       child: Container(
         height: 200,
         decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]!),
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withValues(alpha: 0.1),
+              blurRadius: 12,
+              spreadRadius: 4,
+            )
+          ],
+          border: Border.all(
+            color: Colors.grey[300]!,
+            width: 1.5,
+            style: _pickedImage == null && _existingImageUrl == null
+                ? BorderStyle.solid
+                : BorderStyle.none,
+          ),
         ),
-        child: _pickedImage != null
-            ? _buildImagePreview()
-            : _existingImageUrl != null
-                ? _buildNetworkImage()
-                : _buildImagePlaceholder(),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            children: [
+              if (_pickedImage != null) _buildImagePreview(),
+              if (_existingImageUrl != null) _buildNetworkImage(),
+              if (_pickedImage == null && _existingImageUrl == null)
+                _buildImagePlaceholder(),
+              Positioned(
+                bottom: 12,
+                right: 12,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                      )
+                    ],
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.camera_alt_rounded, size: 18),
+                      SizedBox(width: 6),
+                      Text('إضافة صورة', style: TextStyle(fontSize: 14)),
+                    ],
+                  ),
+                ),
+              ),
+              if (_pickedImage != null || _existingImageUrl != null)
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: IconButton(
+                    icon: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.delete_forever_rounded,
+                          color: Colors.red[700], size: 24),
+                    ),
+                    onPressed: () => setState(() {
+                      _pickedImage = null;
+                      _existingImageUrl = null;
+                    }),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildImagePreview() {
-    return Stack(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.file(_pickedImage!, fit: BoxFit.cover),
+  Widget _buildTitleField() {
+    return TextFormField(
+      controller: _mealTitleController,
+      style: const TextStyle(fontSize: 16),
+      decoration: InputDecoration(
+        labelText: 'عنوان الوجبة',
+        hintText: 'أدخل عنواناً جذاباً للوجبة',
+        prefixIcon: Container(
+          margin: const EdgeInsets.all(12),
+          child: Icon(Icons.title_rounded, color: Colors.grey[600]),
         ),
-        _buildDeleteButton(),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[400]!),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide:
+              const BorderSide(color: AppColors.primaryColor, width: 1.5),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      ),
+    );
+  }
+
+  Widget _buildDescriptionField() {
+    return TextFormField(
+      controller: _mealDescriptionController,
+      maxLines: 4,
+      style: const TextStyle(fontSize: 16),
+      decoration: InputDecoration(
+        labelText: 'وصف الوجبة',
+        hintText: 'صف مكونات الوجبة وأي تفاصيل مهمة',
+        alignLabelWithHint: true,
+        prefixIcon: Container(
+          margin: const EdgeInsets.all(12),
+          child: Icon(Icons.description_rounded, color: Colors.grey[600]),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[400]!),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide:
+              const BorderSide(color: AppColors.primaryColor, width: 1.5),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+    );
+  }
+
+  Widget _buildContactsSection() {
+    return Column(
+      children: [
+        _buildSectionHeader('جهات الاتصال', Icons.contacts_rounded),
+        const SizedBox(height: 16),
+        ..._contacts.asMap().entries.map((entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: ContactEditor(
+                contact: entry.value,
+                onChanged: (newContact) =>
+                    setState(() => _contacts[entry.key] = newContact),
+                onRemove: () => setState(() => _contacts.removeAt(entry.key)),
+              ),
+            )),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            icon: const Icon(Icons.add_circle_outline_rounded, size: 22),
+            label: const Text('إضافة جهة اتصال جديدة',
+                style: TextStyle(fontSize: 15)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.grey[50],
+              foregroundColor: AppColors.primaryColor,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                    color: AppColors.primaryColor.withValues(alpha: 0.3),
+                    width: 1.5),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            onPressed: () => setState(() => _contacts.add(ContactPerson(
+                name: '', phoneNumber: '', role: '', bankAccount: ''))),
+          ),
+        ),
       ],
+    );
+  }
+
+  Widget _buildSaveButton() {
+    return GeneralButton(
+      icon: _isUploading
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 3,
+              ),
+            )
+          : const Icon(Icons.save_rounded, size: 24),
+      onPressed: _isUploading ? null : _saveChanges,
+      text: _isUploading ? 'جاري الحفظ...' : 'حفظ التغييرات',
+      backgroundColor: AppColors.primaryColor,
+      textColor: Colors.white,
+    );
+  }
+
+  Widget _buildImagePreview() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Image.file(_pickedImage!, fit: BoxFit.cover),
     );
   }
 
   Widget _buildNetworkImage() {
-    return Stack(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.network(
-            _existingImageUrl!,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              color: Colors.grey[200],
-              child: Center(
-                  child: Icon(Icons.broken_image,
-                      size: 40, color: Colors.grey[400])),
-            ),
-          ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Image.network(
+        _existingImageUrl!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          color: Colors.grey[200],
+          child: Center(
+              child:
+                  Icon(Icons.broken_image, size: 40, color: Colors.grey[400])),
         ),
-        _buildDeleteButton(),
-      ],
-    );
-  }
-
-  Widget _buildDeleteButton() {
-    return Positioned(
-      top: 8,
-      right: 8,
-      child: IconButton(
-        icon: Icon(Icons.delete, color: Colors.red[700]),
-        onPressed: () => setState(() {
-          _pickedImage = null;
-          _existingImageUrl = null;
-        }),
       ),
     );
   }
@@ -261,76 +434,12 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
       children: [
         Icon(Icons.add_photo_alternate, size: 50, color: Colors.grey[400]),
         const SizedBox(height: 8),
-        Text('انقر لإضافة صورة الوجبة',
-            style: TextStyle(color: Colors.grey[600])),
-      ],
-    );
-  }
-
-  Widget _buildTitleField() {
-    return TextFormField(
-      controller: _mealTitleController,
-      decoration: InputDecoration(
-        labelText: 'عنوان الوجبة',
-        hintText: 'أدخل عنواناً جذاباً للوجبة',
-        prefixIcon: const Icon(Icons.title),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-
-  Widget _buildDescriptionField() {
-    return TextFormField(
-      controller: _mealDescriptionController,
-      maxLines: 4,
-      decoration: InputDecoration(
-        labelText: 'وصف الوجبة',
-        hintText: 'صف مكونات الوجبة وأي تفاصيل مهمة',
-        prefixIcon: const Icon(Icons.description),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-
-  Widget _buildContactsSection() {
-    return Column(
-      children: [
-        _buildSectionHeader('جهات الاتصال', Icons.contacts),
-        ..._contacts.asMap().entries.map((entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: ContactEditor(
-                contact: entry.value,
-                onChanged: (newContact) =>
-                    setState(() => _contacts[entry.key] = newContact),
-                onRemove: () => setState(() => _contacts.removeAt(entry.key)),
-              ),
-            )),
-        OutlinedButton.icon(
-          icon: const Icon(Icons.add_circle_outline),
-          label: const Text('إضافة جهة اتصال جديدة'),
-          onPressed: () => setState(() => _contacts.add(ContactPerson(
-              name: '', phoneNumber: '', role: '', bankAccount: ''))),
+        Center(
+          child: Text('انقر لإضافة صورة الوجبة',
+              style: TextStyle(color: Colors.grey[600])),
         ),
       ],
     );
-  }
-
-  Widget _buildSaveButton() {
-    return GeneralButton(
-        icon: _isUploading
-            ? SizedBox(
-                width: 24,
-                height: 24,
-                child: const CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 3,
-                ),
-              )
-            : const Icon(Icons.save_alt),
-        onPressed: _isUploading ? null : _saveChanges,
-        text: _isUploading ? 'جاري الحفظ...' : 'حفظ التغييرات',
-        backgroundColor: AppColors.primaryColor,
-        textColor: AppColors.whiteColor);
   }
 }
 
@@ -366,29 +475,57 @@ class _ContactEditorState extends State<ContactEditor> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 12,
+            spreadRadius: 4,
+          )
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _buildContactField(_nameController, 'الاسم الكامل', Icons.person),
-            const SizedBox(height: 12),
-            _buildContactField(_phoneController, 'رقم الهاتف', Icons.phone,
-                TextInputType.phone),
-            const SizedBox(height: 12),
-            _buildContactField(
-                _roleController, 'الدور/المسمى الوظيفي', Icons.work_outline),
-            const SizedBox(height: 12),
-            _buildContactField(
-                _bankController, 'الحساب البنكي', Icons.account_balance),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                icon: const Icon(Icons.delete_outline),
-                label: const Text('حذف جهة الاتصال'),
-                onPressed: widget.onRemove,
-              ),
+            Row(
+              children: [
+                const Icon(Icons.contact_page_rounded,
+                    color: Colors.grey, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                    'جهة الاتصال ${widget.contact.name.isNotEmpty ? widget.contact.name : "الجديدة"}',
+                    style: TextStyle(
+                        color: Colors.grey[700], fontWeight: FontWeight.w600)),
+                const Spacer(),
+                IconButton(
+                  icon: Icon(Icons.close_rounded,
+                      color: Colors.grey[600], size: 22),
+                  onPressed: widget.onRemove,
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+              childAspectRatio: 3,
+              children: [
+                _buildContactField(_nameController, 'الاسم الكامل',
+                    Icons.person_outline_rounded),
+                _buildContactField(_phoneController, 'رقم الهاتف',
+                    Icons.phone_iphone_rounded, TextInputType.phone),
+                _buildContactField(
+                    _roleController, 'الدور', Icons.work_outline_rounded),
+                _buildContactField(_bankController, 'الحساب البنكي',
+                    Icons.account_balance_wallet_rounded),
+              ],
             ),
           ],
         ),
@@ -410,8 +547,17 @@ class _ContactEditorState extends State<ContactEditor> {
       )),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
-        border: const OutlineInputBorder(),
+        prefixIcon: Icon(icon, size: 20),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.grey[400]!),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide:
+              const BorderSide(color: AppColors.primaryColor, width: 1.2),
+        ),
       ),
     );
   }

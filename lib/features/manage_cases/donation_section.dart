@@ -155,7 +155,7 @@ class _DonorCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               blurRadius: 20,
               spreadRadius: 2,
             )
@@ -193,7 +193,7 @@ class _DonorCard extends StatelessWidget {
                             color: Colors.grey.shade400)
                         : null,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
                   Text(
                     contact.name,
                     textAlign: TextAlign.center,
@@ -217,7 +217,6 @@ class _DonorCard extends StatelessWidget {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 20),
                   Expanded(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -240,7 +239,6 @@ class _DonorCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
                   Row(
                     children: [
                       Expanded(
