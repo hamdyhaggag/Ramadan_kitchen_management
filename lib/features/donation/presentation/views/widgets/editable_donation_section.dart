@@ -15,8 +15,11 @@ class EditableDonationSection extends StatefulWidget {
   final Map<String, dynamic> donationData;
   final String documentId;
 
-  const EditableDonationSection(
-      {super.key, required this.donationData, required this.documentId});
+  const EditableDonationSection({
+    super.key,
+    required this.donationData,
+    required this.documentId,
+  });
 
   @override
   State<EditableDonationSection> createState() =>
@@ -34,6 +37,10 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
   @override
   void initState() {
     super.initState();
+    _initializeControllers();
+  }
+
+  void _initializeControllers() {
     _mealTitleController =
         TextEditingController(text: widget.donationData['mealTitle'] ?? '');
     _mealDescriptionController = TextEditingController(
@@ -48,11 +55,11 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
   }
 
   Future<void> _pickImage() async {
-    final XFile? pickedFile =
+    final pickedFile =
         await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
 
-    final File file = File(pickedFile.path);
+    final file = File(pickedFile.path);
     if (await file.length() > 10 * 1024 * 1024) {
       _showSnackbar('حجم الصورة لا يجب أن يتجاوز 10 ميجابايت');
       return;
@@ -65,30 +72,23 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
   }
 
   Future<void> _saveChanges() async {
+    if (!mounted) return;
+
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _showSnackbar('يجب تسجيل الدخول أولاً');
-      return;
-    }
-    if (_mealTitleController.text.trim().isEmpty) {
-      _showSnackbar('يرجى إدخال عنوان الوجبة');
-      return;
-    }
+    if (user == null) return _showSnackbar('يجب تسجيل الدخول أولاً');
+    if (_mealTitleController.text.trim().isEmpty)
+      return _showSnackbar('يرجى إدخال عنوان الوجبة');
 
     setState(() => _isUploading = true);
+
     try {
       String? imageUrl = _existingImageUrl;
       if (_pickedImage != null) {
         imageUrl = await _uploadImageToCloudinary(_pickedImage!);
+        if (imageUrl == null) throw Exception('فشل تحميل الصورة');
       }
 
-      final Map<String, dynamic> donationData = {
-        'mealImageUrl': imageUrl,
-        'mealTitle': _mealTitleController.text.trim(),
-        'mealDescription': _mealDescriptionController.text.trim(),
-        'contacts': _contacts.map((c) => c.toMap()).toList(),
-        'updated_at': FieldValue.serverTimestamp(),
-      };
+      final donationData = _prepareDonationData(user, imageUrl);
 
       if (widget.documentId.isNotEmpty) {
         await FirebaseFirestore.instance
@@ -104,45 +104,68 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
       }
 
       _showSnackbar('تم حفظ التغييرات بنجاح');
-      Navigator.pop(context);
+      _safeNavigateBack();
+    } on FirebaseException catch (e) {
+      _showSnackbar('خطأ في قاعدة البيانات: ${e.code}');
     } catch (e) {
-      _showSnackbar('حدث خطأ: ${e.toString()}');
+      _showSnackbar('حدث خطأ غير متوقع: ${e.toString()}');
     } finally {
-      setState(() => _isUploading = false);
+      if (mounted) setState(() => _isUploading = false);
     }
   }
 
-  Future<String> _uploadImageToCloudinary(File image) async {
-    final String fileName =
-        'meal_${DateTime.now().millisecondsSinceEpoch}${p.extension(image.path)}';
-    final String tempPath = '${image.path}_compressed.jpg';
+  Map<String, dynamic> _prepareDonationData(User user, String? imageUrl) {
+    return {
+      'mealImageUrl': imageUrl,
+      'mealTitle': _mealTitleController.text.trim(),
+      'mealDescription': _mealDescriptionController.text.trim(),
+      'contacts': _contacts.map((c) => c.toMap()).toList(),
+      'updated_at': FieldValue.serverTimestamp(),
+    };
+  }
 
-    final XFile? compressedResult =
-        await FlutterImageCompress.compressAndGetFile(
-      image.path,
-      tempPath,
-      quality: 80,
-      minWidth: 1024,
-      minHeight: 1024,
-    );
+  Future<String?> _uploadImageToCloudinary(File image) async {
+    try {
+      final fileName =
+          'meal_${DateTime.now().millisecondsSinceEpoch}${p.extension(image.path)}';
+      final tempPath = '${image.path}_compressed.jpg';
 
-    final File finalFile =
-        compressedResult != null ? File(compressedResult.path) : image;
+      final compressedResult = await FlutterImageCompress.compressAndGetFile(
+        image.path,
+        tempPath,
+        quality: 80,
+        minWidth: 1024,
+        minHeight: 1024,
+      );
 
-    final cloudinary = CloudinaryPublic(
-      cloudinaryCloudName,
-      cloudinaryUploadPreset,
-    );
-    final response = await cloudinary.uploadFile(
-      CloudinaryFile.fromFile(finalFile.path,
+      final finalFile =
+          compressedResult != null ? File(compressedResult.path) : image;
+
+      final cloudinary =
+          CloudinaryPublic(cloudinaryCloudName, cloudinaryUploadPreset);
+      final response = await cloudinary.uploadFile(
+        CloudinaryFile.fromFile(
+          finalFile.path,
           resourceType: CloudinaryResourceType.Image,
           publicId: fileName,
-          folder: 'meal_images'),
-    );
-    return response.secureUrl;
+          folder: 'meal_images',
+        ),
+      );
+      return response.secureUrl;
+    } catch (e) {
+      _showSnackbar('فشل رفع الصورة');
+      return null;
+    }
+  }
+
+  void _safeNavigateBack() {
+    if (mounted && Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
   }
 
   void _showSnackbar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
   }
@@ -183,17 +206,15 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.primaryColor.withValues(alpha: 0.1),
+                color: AppColors.primaryColor.withAlpha(25),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: AppColors.primaryColor, size: 28),
             ),
             const SizedBox(width: 12),
             Text(title,
-                style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87)),
+                style:
+                    const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
           ],
         ),
         const SizedBox(height: 8),
@@ -201,7 +222,7 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
           height: 2,
           width: 120,
           decoration: BoxDecoration(
-            color: AppColors.primaryColor.withValues(alpha: 0.3),
+            color: AppColors.primaryColor.withAlpha(76),
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -219,10 +240,9 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1),
-              blurRadius: 12,
-              spreadRadius: 4,
-            )
+                color: Colors.grey.withValues(alpha: 0.1),
+                blurRadius: 12,
+                spreadRadius: 4)
           ],
           border: Border.all(
             color: Colors.grey[300]!,
@@ -251,9 +271,8 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                      )
+                          color: Colors.grey.withValues(alpha: 0.1),
+                          blurRadius: 8)
                     ],
                   ),
                   child: const Row(
@@ -309,8 +328,7 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              const BorderSide(color: AppColors.primaryColor, width: 1.5),
+          borderSide: BorderSide(color: AppColors.primaryColor, width: 1.5),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -373,8 +391,7 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(
-                    color: AppColors.primaryColor.withValues(alpha: 0.3),
-                    width: 1.5),
+                    color: AppColors.primaryColor.withAlpha(76), width: 1.5),
               ),
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
@@ -393,9 +410,7 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
               width: 24,
               height: 24,
               child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 3,
-              ),
+                  color: Colors.white, strokeWidth: 3),
             )
           : const Icon(Icons.save_rounded, size: 24),
       onPressed: _isUploading ? null : _saveChanges,
@@ -435,9 +450,8 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
         Icon(Icons.add_photo_alternate, size: 50, color: Colors.grey[400]),
         const SizedBox(height: 8),
         Center(
-          child: Text('انقر لإضافة صورة الوجبة',
-              style: TextStyle(color: Colors.grey[600])),
-        ),
+            child: Text('انقر لإضافة صورة الوجبة',
+                style: TextStyle(color: Colors.grey[600]))),
       ],
     );
   }
@@ -448,11 +462,12 @@ class ContactEditor extends StatefulWidget {
   final Function(ContactPerson) onChanged;
   final VoidCallback onRemove;
 
-  const ContactEditor(
-      {super.key,
-      required this.contact,
-      required this.onChanged,
-      required this.onRemove});
+  const ContactEditor({
+    super.key,
+    required this.contact,
+    required this.onChanged,
+    required this.onRemove,
+  });
 
   @override
   State<ContactEditor> createState() => _ContactEditorState();
@@ -481,10 +496,9 @@ class _ContactEditorState extends State<ContactEditor> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 12,
-            spreadRadius: 4,
-          )
+              color: Colors.grey.withValues(alpha: 0.1),
+              blurRadius: 12,
+              spreadRadius: 4)
         ],
       ),
       child: Padding(
