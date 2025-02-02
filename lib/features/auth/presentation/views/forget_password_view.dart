@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/features/auth/presentation/views/widgets/forget_password_view_body_bloc_consumer.dart';
 
 import '../../../../core/routes/app_routes.dart';
 import '../../../../core/services/service_locator.dart';
-import '../../../../core/utils/app_styles.dart';
 import '../../../../core/utils/app_texts.dart';
 import '../../data/repos/auth_repo.dart';
 import '../manager/reset_password_cubit/reset_password_cubit.dart';
