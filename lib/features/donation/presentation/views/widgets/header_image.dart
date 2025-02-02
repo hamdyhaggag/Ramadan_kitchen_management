@@ -1,0 +1,52 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+
+class HeaderImage extends StatelessWidget {
+  final String imageUrl;
+
+  const HeaderImage({super.key, required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final imageWidth = constraints.maxWidth;
+        final imageHeight = imageWidth * (1180 / 1500);
+        return SizedBox(
+          width: imageWidth,
+          height: imageHeight,
+          child: Stack(
+            children: [
+              CachedNetworkImage(
+                imageUrl: imageUrl,
+                width: imageWidth,
+                height: imageHeight,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: Colors.grey[100],
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: Colors.grey[200],
+                  child: const Icon(Icons.fastfood_rounded,
+                      size: 50, color: Colors.grey),
+                ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.4),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}

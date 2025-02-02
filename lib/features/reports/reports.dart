@@ -433,7 +433,10 @@ class ReportsScreenState extends State<ReportsScreen>
         body: BlocBuilder<ExpenseCubit, ExpenseState>(
           builder: (context, state) {
             if (state is ExpenseLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(
+                  child: CircularProgressIndicator(
+                color: AppColors.primaryColor,
+              ));
             }
             if (state is ExpenseError) {
               return Center(child: Text(state.message));

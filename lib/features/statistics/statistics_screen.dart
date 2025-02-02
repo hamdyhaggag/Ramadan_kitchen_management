@@ -14,7 +14,10 @@ class StatisticsScreen extends StatelessWidget {
       body: BlocBuilder<CasesCubit, CasesState>(
         builder: (context, state) {
           if (state is CasesLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+                child: CircularProgressIndicator(
+              color: AppColors.primaryColor,
+            ));
           }
           if (state is CasesError) {
             return Center(child: Text(state.message));
