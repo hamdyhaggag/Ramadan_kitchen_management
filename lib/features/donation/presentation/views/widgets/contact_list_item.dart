@@ -28,15 +28,18 @@ class ContactListItem extends StatelessWidget {
             const SizedBox(height: 16),
             ContactInfoRow(
               label: 'خدمات كاش',
-              icon: Icons.phone_rounded,
+              icon: Icons.account_balance_wallet_rounded,
               value: contact.formattedPhoneNumber,
             ),
-            const SizedBox(height: 8),
-            ContactInfoRow(
-              label: 'انستاباي',
-              icon: Icons.account_balance_rounded,
-              value: contact.bankAccount,
-            ),
+            if (contact.bankAccount != null &&
+                contact.bankAccount!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              ContactInfoRow(
+                label: 'انستاباي',
+                icon: Icons.account_balance_rounded,
+                value: contact.bankAccount!,
+              ),
+            ],
             const SizedBox(height: 16),
             ActionButtons(contact: contact),
           ],

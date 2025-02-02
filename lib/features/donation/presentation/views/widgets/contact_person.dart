@@ -2,14 +2,14 @@ class ContactPerson {
   final String name;
   final String phoneNumber;
   final String role;
-  final String bankAccount;
+  final String? bankAccount; // Step 1: Made nullable
   final String? photoUrl;
 
   const ContactPerson({
     required this.name,
     required this.phoneNumber,
     required this.role,
-    required this.bankAccount,
+    this.bankAccount, // Step 2: Removed 'required'
     this.photoUrl,
   });
 
@@ -18,7 +18,7 @@ class ContactPerson {
       name: map['name']?.toString() ?? '',
       phoneNumber: map['phoneNumber']?.toString() ?? '',
       role: map['role']?.toString() ?? '',
-      bankAccount: map['bankAccount']?.toString() ?? '',
+      bankAccount: map['bankAccount']?.toString(), // Step 3: Removed fallback
       photoUrl: map['photoUrl']?.toString(),
     );
   }
@@ -55,7 +55,9 @@ class ContactPerson {
         phoneNumber == null &&
         role == null &&
         bankAccount == null &&
-        photoUrl == null) return this;
+        photoUrl == null) {
+      return this;
+    }
 
     return ContactPerson(
       name: name ?? this.name,
