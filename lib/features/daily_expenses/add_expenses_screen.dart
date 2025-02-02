@@ -30,6 +30,8 @@ class AddExpenseScreenState extends State<AddExpenseScreen> {
       'بطاطس',
       'جزر',
       'بصل',
+      'لوبيا',
+      'فاصولياء',
       'ثوم',
       'خضرة سلطة'
     ],

@@ -58,6 +58,7 @@ class _DailyExpensesScreenState extends State<DailyExpensesScreen> {
             _buildPieChart(filteredExpenses),
             const SizedBox(height: 20),
             _buildExpenseList(filteredExpenses),
+            const SizedBox(height: 20),
             if (isAdmin) _buildAddButton(context),
             const SizedBox(height: 20),
             if (!isAdmin) _buildPermissionBanner(),
@@ -159,7 +160,7 @@ class _DailyExpensesScreenState extends State<DailyExpensesScreen> {
                       fontSize: 16,
                       color: AppColors.primaryColor,
                       fontWeight: FontWeight.bold)),
-              Text('${totalAmount.toStringAsFixed(2)} ج.م',
+              Text(totalAmount.toStringAsFixed(0),
                   style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -182,9 +183,12 @@ class _DailyExpensesScreenState extends State<DailyExpensesScreen> {
 
   Widget _buildExpenseList(List<Expense> filteredExpenses) {
     if (filteredExpenses.isEmpty) {
-      return const Center(
-          child: Text('لا توجد مصروفات لهذا اليوم',
-              style: TextStyle(fontSize: 16)));
+      return SizedBox(
+        height: 20,
+        child: const Center(
+            child: Text('لا توجد مصروفات لهذا اليوم',
+                style: TextStyle(fontSize: 16))),
+      );
     }
 
     return ListView.builder(
@@ -231,7 +235,7 @@ class _DailyExpensesScreenState extends State<DailyExpensesScreen> {
       trailing: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('${expense.amount.toStringAsFixed(2)} ج.م',
+          Text('${expense.amount.toStringAsFixed(2)} ',
               style: const TextStyle(
                   color: Colors.green,
                   fontWeight: FontWeight.bold,

@@ -140,7 +140,7 @@ class ReportsScreenState extends State<ReportsScreen>
                       Text('${entry.value.length} مصروفات',
                           style: TextStyle(color: Colors.grey[700])),
                       const SizedBox(width: 8),
-                      Text('${total.toStringAsFixed(2)} ج.م',
+                      Text(total.toStringAsFixed(2),
                           style: TextStyle(
                               color: AppColors.primaryColor,
                               fontWeight: FontWeight.bold)),
