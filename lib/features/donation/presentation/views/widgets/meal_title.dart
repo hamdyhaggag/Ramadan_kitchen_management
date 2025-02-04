@@ -21,9 +21,9 @@ class MealTitle extends StatelessWidget {
         const SizedBox(width: 12),
         Text(
           title,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: Colors.grey[900],
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.blackColor,
               ),
         ),
       ],
