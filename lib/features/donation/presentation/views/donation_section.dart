@@ -179,9 +179,6 @@ class DonationSection extends StatelessWidget {
                 itemCount: contacts.length,
                 itemBuilder: (context, index) => ContactListItem(
                   contact: contacts[index],
-                  // onTap: () {
-                  //   Navigator.pop(context);
-                  // },
                 ),
               ),
             ),
