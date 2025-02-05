@@ -103,13 +103,7 @@ class DonationSection extends StatelessWidget {
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      DonationFormScreen(contacts: contacts),
-                                ),
-                              );
+                              _showDonationOptions(context, contacts);
                             },
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -144,31 +138,56 @@ class DonationSection extends StatelessWidget {
       },
     );
   }
-}
 
-class DonationFormScreen extends StatelessWidget {
-  final List<ContactPerson> contacts;
-
-  const DonationFormScreen({super.key, required this.contacts});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('طرق التبرع'),
-      ),
-      body: CustomScrollView(
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => ContactListItem(contact: contacts[index]),
-                childCount: contacts.length,
+  void _showDonationOptions(
+      BuildContext context, List<ContactPerson> contacts) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+        ),
+        padding: const EdgeInsets.only(top: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            const Text(
+              'طرق التبرع',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryColor,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                physics: const ClampingScrollPhysics(),
+                itemCount: contacts.length,
+                itemBuilder: (context, index) => ContactListItem(
+                  contact: contacts[index],
+                  // onTap: () {
+                  //   Navigator.pop(context);
+                  // },
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }

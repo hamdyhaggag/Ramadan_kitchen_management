@@ -537,7 +537,7 @@ class _ContactEditorState extends State<ContactEditor> {
                 ),
                 _buildPaymentField(
                   _additionalPaymentController,
-                  'طريقة دفع إضافية',
+                  'اتصالات كاش',
                   Icons.payment,
                   _additionalPaymentFocusNode,
                   TextInputType.text,

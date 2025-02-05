@@ -10,47 +10,39 @@ class ContactListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Colors.grey[50],
-      elevation: 2,
-      margin: const EdgeInsets.all(8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ContactInfoRow(
+            label: 'فودافون كاش',
+            icon: Icons.account_balance_wallet_rounded,
+            value: contact.formattedPhoneNumber,
+          ),
+          const SizedBox(height: 8),
+          if (contact.additionalPaymentInfo != null &&
+              contact.additionalPaymentInfo!.isNotEmpty) ...[
+            const SizedBox(height: 8),
             ContactInfoRow(
-              label: 'فودافون كاش',
+              label: 'اتصالات كاش',
               icon: Icons.account_balance_wallet_rounded,
-              value: contact.formattedPhoneNumber,
+              value: contact.formattedAdditionalPaymentInfo,
             ),
-            const SizedBox(height: 8),
-            if (contact.additionalPaymentInfo != null &&
-                contact.additionalPaymentInfo!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              ContactInfoRow(
-                label: 'اتصالات كاش',
-                icon: Icons.account_balance_wallet_rounded,
-                value: contact.formattedAdditionalPaymentInfo,
-              ),
-            ],
-            const SizedBox(height: 8),
-            if (contact.bankAccount != null &&
-                contact.bankAccount!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              ContactInfoRow(
-                label: 'انستاباي',
-                icon: Icons.account_balance_rounded,
-                value: contact.bankAccount!,
-              ),
-            ],
-            const SizedBox(height: 16),
-            ActionButtons(contact: contact),
           ],
-        ),
+          const SizedBox(height: 8),
+          if (contact.bankAccount != null &&
+              contact.bankAccount!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ContactInfoRow(
+              label: 'انستاباي',
+              icon: Icons.account_balance_rounded,
+              value: contact.bankAccount!,
+            ),
+          ],
+          const SizedBox(height: 16),
+          ActionButtons(contact: contact),
+        ],
       ),
     );
   }
