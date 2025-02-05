@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../../../../core/cache/prefs.dart';
-import '../../../../../core/constants/constatnts.dart';
-import '../../../../../core/routes/app_routes.dart';
-import '../../../../../core/services/firebase_auth_service.dart';
-import '../../../../../core/utils/app_colors.dart';
-import '../../../../daily_expenses/daily_expenses.dart';
-import '../../../../manage_cases/manage_cases.dart';
-import '../../../../reports/reports.dart';
-import '../../../../statistics/statistics_screen.dart';
+import 'package:ramadan_kitchen_management/core/cache/prefs.dart';
+import 'package:ramadan_kitchen_management/core/constants/constatnts.dart';
+import 'package:ramadan_kitchen_management/core/routes/app_routes.dart';
+import 'package:ramadan_kitchen_management/core/services/firebase_auth_service.dart';
+import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
+import 'package:ramadan_kitchen_management/features/daily_expenses/daily_expenses.dart';
+import 'package:ramadan_kitchen_management/features/manage_cases/manage_cases.dart';
+import 'package:ramadan_kitchen_management/features/reports/reports.dart';
+import 'package:ramadan_kitchen_management/features/statistics/statistics_screen.dart';
+import 'package:ramadan_kitchen_management/features/auth/data/repos/auth_repo.dart';
+import 'package:ramadan_kitchen_management/core/services/service_locator.dart';
+
+import '../../../../previous_days/presentation/views/previous_days_screen.dart';
 
 class ScreenLayout extends StatefulWidget {
   const ScreenLayout({super.key});
@@ -19,6 +23,20 @@ class ScreenLayout extends StatefulWidget {
 
 class _ScreenLayoutState extends State<ScreenLayout> {
   int _currentIndex = 0;
+  bool isAdmin = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAdminStatus();
+  }
+
+  void _checkAdminStatus() {
+    final authRepo = getIt<AuthRepo>();
+    setState(() {
+      isAdmin = authRepo.currentUser?.role == 'admin';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +83,9 @@ class _ScreenLayoutState extends State<ScreenLayout> {
       case 1:
         return StatisticsScreen();
       case 2:
-        return const DailyExpensesScreen();
+        return isAdmin
+            ? const DailyExpensesScreen()
+            : const PreviousDaysScreen();
       case 3:
         return ReportsScreen();
       default:
@@ -79,14 +99,14 @@ class _ScreenLayoutState extends State<ScreenLayout> {
       fontFamily: 'DIN',
       fontWeight: FontWeight.w500,
     );
-
     switch (_currentIndex) {
       case 0:
         return const Text('الرئيسية', style: defaultStyle);
       case 1:
         return const Text('الإحصائيات', style: defaultStyle);
       case 2:
-        return const Text('المصاريف', style: defaultStyle);
+        return Text(isAdmin ? 'المصاريف' : 'الأيام السابقة',
+            style: defaultStyle);
       case 3:
         return const Text('التقارير', style: defaultStyle);
       default:
@@ -131,19 +151,21 @@ class _ScreenLayoutState extends State<ScreenLayout> {
         ),
         BottomNavigationBarItem(
           icon: SvgPicture.asset(
-            'assets/icons/wallet.svg',
+            isAdmin ? 'assets/icons/wallet.svg' : 'assets/icons/calendar.svg',
             colorFilter: ColorFilter.mode(AppColors.greyColor, BlendMode.srcIn),
             width: 28,
             height: 28,
           ),
           activeIcon: SvgPicture.asset(
-            'assets/icons/wallet.svg',
+            isAdmin
+                ? 'assets/icons/wallet.svg'
+                : 'assets/icons/previous_days.svg',
             colorFilter:
                 const ColorFilter.mode(AppColors.primaryColor, BlendMode.srcIn),
             width: 28,
             height: 28,
           ),
-          label: 'المصروفات',
+          label: isAdmin ? 'المصاريف' : 'الأيام السابقة',
         ),
         BottomNavigationBarItem(
           icon: SvgPicture.asset(
