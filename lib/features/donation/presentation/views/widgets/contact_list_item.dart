@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'action_button.dart';
-import 'contact_header.dart';
 import 'contact_info_row.dart';
 import 'contact_person.dart';
 
@@ -24,11 +23,15 @@ class ContactListItem extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ContactHeader(contact: contact),
-            const SizedBox(height: 16),
             ContactInfoRow(
-              label: 'خدمات كاش',
+              label: 'فودافون كاش',
               icon: Icons.account_balance_wallet_rounded,
+              value: contact.formattedPhoneNumber,
+            ),
+            const SizedBox(height: 8),
+            ContactInfoRow(
+              label: 'اتصالات كاش ',
+              icon: Icons.payment_rounded,
               value: contact.formattedPhoneNumber,
             ),
             if (contact.bankAccount != null &&

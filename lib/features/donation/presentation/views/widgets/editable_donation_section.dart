@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
@@ -9,6 +10,7 @@ import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/core/widgets/general_button.dart';
 import '../../../../../cloudinary_config.dart';
+import '../../cubit/donation_cubit.dart';
 import 'contact_person.dart';
 
 class EditableDonationSection extends StatefulWidget {
@@ -91,18 +93,11 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
 
       final donationData = _prepareDonationData(user, imageUrl);
 
-      if (widget.documentId.isNotEmpty) {
-        await FirebaseFirestore.instance
-            .collection('donations')
-            .doc(widget.documentId)
-            .update(donationData);
-      } else {
-        donationData['userId'] = user.uid;
-        donationData['created_at'] = FieldValue.serverTimestamp();
-        await FirebaseFirestore.instance
-            .collection('donations')
-            .add(donationData);
-      }
+      final donationCubit = context.read<DonationCubit>();
+      await donationCubit.updateDonation(
+        documentId: widget.documentId,
+        data: donationData,
+      );
 
       _showSnackbar('تم حفظ التغييرات بنجاح');
       _safeNavigateBack();
@@ -213,8 +208,10 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
             ),
             const SizedBox(width: 12),
             Text(title,
-                style:
-                    const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.blackColor)),
           ],
         ),
         const SizedBox(height: 8),
@@ -290,7 +287,7 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
   Widget _buildTitleField() {
     return TextFormField(
       controller: _mealTitleController,
-      style: const TextStyle(fontSize: 16),
+      style: const TextStyle(fontSize: 16, color: AppColors.blackColor),
       decoration: InputDecoration(
         labelText: 'عنوان الوجبة',
         hintText: 'أدخل عنواناً جذاباً للوجبة',
@@ -304,7 +301,8 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.primaryColor, width: 1.5),
+          borderSide:
+              const BorderSide(color: AppColors.primaryColor, width: 1.5),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -316,7 +314,7 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
     return TextFormField(
       controller: _mealDescriptionController,
       maxLines: 4,
-      style: const TextStyle(fontSize: 16),
+      style: const TextStyle(fontSize: 16, color: AppColors.blackColor),
       decoration: InputDecoration(
         labelText: 'وصف الوجبة',
         hintText: 'صف مكونات الوجبة وأي تفاصيل مهمة',
@@ -343,12 +341,13 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
   Widget _buildContactsSection() {
     return Column(
       children: [
-        _buildSectionHeader('منسقي التبرعات', Icons.contacts_rounded),
+        _buildSectionHeader('معلومات الدفع', Icons.payment_rounded),
         const SizedBox(height: 16),
         ..._contacts.asMap().entries.map((entry) => Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: ContactEditor(
                 contact: entry.value,
+                index: entry.key,
                 onChanged: (newContact) =>
                     setState(() => _contacts[entry.key] = newContact),
                 onRemove: () => setState(() => _contacts.removeAt(entry.key)),
@@ -362,8 +361,8 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
               size: 22,
               color: AppColors.primaryColor,
             ),
-            label:
-                const Text('إضافة منسق جديد', style: TextStyle(fontSize: 15)),
+            label: const Text('إضافة طريقة دفع جديدة',
+                style: TextStyle(fontSize: 15, color: AppColors.primaryColor)),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.grey[50],
               foregroundColor: AppColors.primaryColor,
@@ -376,7 +375,10 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
             onPressed: () => setState(() => _contacts.add(ContactPerson(
-                name: '', phoneNumber: '', role: '', bankAccount: ''))),
+                name: 'Payment Method',
+                phoneNumber: '',
+                role: '',
+                bankAccount: ''))),
           ),
         ),
       ],
@@ -439,12 +441,14 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
 
 class ContactEditor extends StatefulWidget {
   final ContactPerson contact;
+  final int index;
   final Function(ContactPerson) onChanged;
   final VoidCallback onRemove;
 
   const ContactEditor({
     super.key,
     required this.contact,
+    required this.index,
     required this.onChanged,
     required this.onRemove,
   });
@@ -454,39 +458,23 @@ class ContactEditor extends StatefulWidget {
 }
 
 class _ContactEditorState extends State<ContactEditor> {
-  late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
-  late final TextEditingController _roleController;
   late final TextEditingController _bankController;
-  late FocusNode _nameFocusNode;
   late FocusNode _phoneFocusNode;
-  late FocusNode _roleFocusNode;
   late FocusNode _bankFocusNode;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.contact.name);
     _phoneController = TextEditingController(text: widget.contact.phoneNumber);
-    _roleController = TextEditingController(text: widget.contact.role);
     _bankController = TextEditingController(text: widget.contact.bankAccount);
-
-    _nameFocusNode = FocusNode();
     _phoneFocusNode = FocusNode();
-    _roleFocusNode = FocusNode();
     _bankFocusNode = FocusNode();
-
-    _nameFocusNode.addListener(() => setState(() {}));
-    _phoneFocusNode.addListener(() => setState(() {}));
-    _roleFocusNode.addListener(() => setState(() {}));
-    _bankFocusNode.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
-    _nameFocusNode.dispose();
     _phoneFocusNode.dispose();
-    _roleFocusNode.dispose();
     _bankFocusNode.dispose();
     super.dispose();
   }
@@ -510,13 +498,13 @@ class _ContactEditorState extends State<ContactEditor> {
           children: [
             Row(
               children: [
-                const Icon(Icons.contact_page_rounded,
-                    color: Colors.grey, size: 20),
+                const Icon(Icons.payment_rounded, color: Colors.grey, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                    'المنسق ${widget.contact.name.isNotEmpty ? widget.contact.name : "الجديدة"}',
-                    style: TextStyle(
-                        color: Colors.grey[700], fontWeight: FontWeight.w600)),
+                  'طريقة الدفع ${widget.index + 1}',
+                  style: TextStyle(
+                      color: Colors.grey[700], fontWeight: FontWeight.w600),
+                ),
                 const Spacer(),
                 IconButton(
                   icon: Icon(Icons.close_rounded,
@@ -534,18 +522,20 @@ class _ContactEditorState extends State<ContactEditor> {
               crossAxisSpacing: 16,
               childAspectRatio: 3,
               children: [
-                _buildContactField(_nameController, 'الاسم الكامل',
-                    Icons.person_outline_rounded, _nameFocusNode),
-                _buildContactField(
-                    _phoneController,
-                    'رقم الهاتف',
-                    Icons.phone_iphone_rounded,
-                    _phoneFocusNode,
-                    TextInputType.phone),
-                _buildContactField(_roleController, 'الدور',
-                    Icons.work_outline_rounded, _roleFocusNode),
-                _buildContactField(_bankController, 'انستاباي',
-                    Icons.account_balance_wallet_rounded, _bankFocusNode),
+                _buildPaymentField(
+                  _phoneController,
+                  'فودافون كاش',
+                  Icons.phone_iphone_rounded,
+                  _phoneFocusNode,
+                  TextInputType.phone,
+                ),
+                _buildPaymentField(
+                  _bankController,
+                  'انستاباي',
+                  Icons.account_balance_wallet_rounded,
+                  _bankFocusNode,
+                  TextInputType.text,
+                ),
               ],
             ),
           ],
@@ -554,18 +544,22 @@ class _ContactEditorState extends State<ContactEditor> {
     );
   }
 
-  Widget _buildContactField(TextEditingController controller, String label,
-      IconData icon, FocusNode focusNode,
-      [TextInputType? keyboardType]) {
+  Widget _buildPaymentField(
+    TextEditingController controller,
+    String label,
+    IconData icon,
+    FocusNode focusNode,
+    TextInputType keyboardType,
+  ) {
     return TextFormField(
       focusNode: focusNode,
       controller: controller,
       cursorColor: AppColors.primaryColor,
       keyboardType: keyboardType,
       onChanged: (_) => widget.onChanged(ContactPerson(
-        name: _nameController.text,
+        name: widget.contact.name,
         phoneNumber: _phoneController.text,
-        role: _roleController.text,
+        role: widget.contact.role,
         bankAccount: _bankController.text,
       )),
       decoration: InputDecoration(

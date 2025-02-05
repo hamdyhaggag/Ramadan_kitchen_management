@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -38,7 +39,6 @@ class DonationCubit extends Cubit<DonationState> {
     }
   }
 
-  // Add this public method to allow refreshing the data
   Future<void> fetchDonationData() async {
     await _loadInitialData();
   }
@@ -48,17 +48,29 @@ class DonationCubit extends Cubit<DonationState> {
     required Map<String, dynamic> data,
   }) async {
     try {
-      await _firestore.collection('donations').doc(documentId).update({
-        ...data,
-        'updated_at': FieldValue.serverTimestamp(),
-      });
-
-      final doc =
-          await _firestore.collection('donations').doc(documentId).get();
-      emit(DonationLoaded(
-        donationData: doc.data() ?? {},
-        documentId: documentId,
-      ));
+      if (documentId.isEmpty) {
+        final newDocRef = await _firestore.collection('donations').add({
+          ...data,
+          'userId': FirebaseAuth.instance.currentUser?.uid ?? '',
+          'created_at': FieldValue.serverTimestamp(),
+        });
+        final newDoc = await newDocRef.get();
+        emit(DonationLoaded(
+          donationData: newDoc.data() ?? {},
+          documentId: newDocRef.id,
+        ));
+      } else {
+        await _firestore.collection('donations').doc(documentId).update({
+          ...data,
+          'updated_at': FieldValue.serverTimestamp(),
+        });
+        final updatedDoc =
+            await _firestore.collection('donations').doc(documentId).get();
+        emit(DonationLoaded(
+          donationData: updatedDoc.data() ?? {},
+          documentId: documentId,
+        ));
+      }
     } catch (e) {
       emit(DonationError('Failed to update donation: $e'));
     }
