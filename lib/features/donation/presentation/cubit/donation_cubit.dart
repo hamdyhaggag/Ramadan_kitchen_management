@@ -1,25 +1,33 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_cubit.dart';
+
+import '../../../manage_cases/logic/cases_state.dart';
 
 part 'donation_state.dart';
 
 class DonationCubit extends Cubit<DonationState> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final CasesCubit _casesCubit;
+  StreamSubscription? _casesSubscription;
 
-  DonationCubit() : super(DonationInitial()) {
+  DonationCubit(this._casesCubit) : super(DonationInitial()) {
+    _casesSubscription = _casesCubit.stream.listen((_) => _loadInitialData());
     _loadInitialData();
   }
 
   Future<void> _loadInitialData() async {
     try {
       final snapshot = await _firestore.collection('donations').limit(1).get();
+
+      Map<String, dynamic> donationData = {};
+      String documentId = '';
+
       if (snapshot.docs.isNotEmpty) {
         final doc = snapshot.docs.first;
-        emit(DonationLoaded(
-          donationData: doc.data(),
-          documentId: doc.id,
-        ));
+        donationData = doc.data();
+        documentId = doc.id;
       } else {
         final docRef = await _firestore.collection('donations').add({
           'mealImageUrl': 'https://example.com/default-image.jpg',
@@ -28,19 +36,30 @@ class DonationCubit extends Cubit<DonationState> {
           'contacts': [],
           'created_at': FieldValue.serverTimestamp(),
         });
-
-        emit(DonationLoaded(
-          donationData: {},
-          documentId: docRef.id,
-        ));
+        documentId = docRef.id;
+        final newDoc = await docRef.get();
+        donationData = newDoc.data() ?? {};
       }
+
+      final totalIndividuals = _calculateTotalIndividuals();
+      donationData['numberOfIndividuals'] = totalIndividuals;
+
+      emit(DonationLoaded(
+        donationData: donationData,
+        documentId: documentId,
+      ));
     } catch (e) {
       emit(DonationError('Failed to load data: $e'));
     }
   }
 
-  Future<void> fetchDonationData() async {
-    await _loadInitialData();
+  int _calculateTotalIndividuals() {
+    final state = _casesCubit.state;
+    if (state is CasesLoaded) {
+      return state.cases
+          .fold(0, (sum, e) => sum + (e['عدد الأفراد'] as int? ?? 0));
+    }
+    return 0;
   }
 
   Future<void> updateDonation({
@@ -48,31 +67,19 @@ class DonationCubit extends Cubit<DonationState> {
     required Map<String, dynamic> data,
   }) async {
     try {
-      if (documentId.isEmpty) {
-        final newDocRef = await _firestore.collection('donations').add({
-          ...data,
-          'userId': FirebaseAuth.instance.currentUser?.uid ?? '',
-          'created_at': FieldValue.serverTimestamp(),
-        });
-        final newDoc = await newDocRef.get();
-        emit(DonationLoaded(
-          donationData: newDoc.data() ?? {},
-          documentId: newDocRef.id,
-        ));
-      } else {
-        await _firestore.collection('donations').doc(documentId).update({
-          ...data,
-          'updated_at': FieldValue.serverTimestamp(),
-        });
-        final updatedDoc =
-            await _firestore.collection('donations').doc(documentId).get();
-        emit(DonationLoaded(
-          donationData: updatedDoc.data() ?? {},
-          documentId: documentId,
-        ));
-      }
+      await _firestore.collection('donations').doc(documentId).update({
+        ...data,
+        'updated_at': FieldValue.serverTimestamp(),
+      });
+      _loadInitialData();
     } catch (e) {
       emit(DonationError('Failed to update donation: $e'));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _casesSubscription?.cancel();
+    return super.close();
   }
 }
