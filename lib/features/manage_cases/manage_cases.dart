@@ -27,6 +27,8 @@ class _ManageCasesScreenState extends State<ManageCasesScreen>
   @override
   void initState() {
     super.initState();
+    isAdmin = false;
+
     _checkAdminStatus();
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,

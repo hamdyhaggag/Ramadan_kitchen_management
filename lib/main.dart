@@ -10,7 +10,6 @@ import 'core/services/service_locator.dart';
 import 'core/utils/app_colors.dart';
 import 'features/daily_expenses/logic/expense_cubit.dart';
 import 'features/donation/presentation/cubit/donation_cubit.dart';
-import 'features/donation/presentation/views/donation_section.dart';
 import 'features/manage_cases/logic/cases_cubit.dart';
 import 'firebase_options.dart';
 import 'generated/l10n.dart';
@@ -41,10 +40,7 @@ class KitchenApp extends StatelessWidget {
       providers: [
         BlocProvider(create: (context) => CasesCubit()),
         BlocProvider(create: (context) => ExpenseCubit()),
-        BlocProvider(
-          create: (context) => DonationCubit(context.read<CasesCubit>()),
-          child: DonationSection(),
-        ),
+        BlocProvider(create: (context) => getIt<DonationCubit>()),
       ],
       child: MaterialApp(
         theme: ThemeData(

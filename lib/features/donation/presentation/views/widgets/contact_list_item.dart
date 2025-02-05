@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'action_button.dart';
 import 'contact_info_row.dart';
 import 'contact_person.dart';
@@ -29,11 +28,16 @@ class ContactListItem extends StatelessWidget {
               value: contact.formattedPhoneNumber,
             ),
             const SizedBox(height: 8),
-            ContactInfoRow(
-              label: 'اتصالات كاش ',
-              icon: Icons.payment_rounded,
-              value: contact.formattedPhoneNumber,
-            ),
+            if (contact.additionalPaymentInfo != null &&
+                contact.additionalPaymentInfo!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              ContactInfoRow(
+                label: 'اتصالات كاش',
+                icon: Icons.account_balance_wallet_rounded,
+                value: contact.formattedAdditionalPaymentInfo,
+              ),
+            ],
+            const SizedBox(height: 8),
             if (contact.bankAccount != null &&
                 contact.bankAccount!.isNotEmpty) ...[
               const SizedBox(height: 8),

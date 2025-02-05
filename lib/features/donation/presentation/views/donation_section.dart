@@ -8,7 +8,6 @@ import 'package:ramadan_kitchen_management/features/donation/presentation/views/
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/header_image.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/meal_title.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/section_title.dart';
-
 import '../cubit/donation_cubit.dart';
 
 class DonationSection extends StatelessWidget {
@@ -23,7 +22,6 @@ class DonationSection extends StatelessWidget {
               .map((e) => ContactPerson.fromMap(e))
               .toList();
           final carouselImages = [state.donationData['mealImageUrl']];
-
           return Scaffold(
             body: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -129,8 +127,6 @@ class DonationSection extends StatelessWidget {
                             ),
                           ),
                         ),
-                        // const SectionTitle(title: 'للتبرع للمطبخ'),
-                        // const SizedBox(height: 16),
                       ],
                     ),
                   ),

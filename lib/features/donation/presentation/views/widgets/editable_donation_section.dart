@@ -60,13 +60,11 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
     final pickedFile =
         await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
-
     final file = File(pickedFile.path);
     if (await file.length() > 10 * 1024 * 1024) {
       _showSnackbar('حجم الصورة لا يجب أن يتجاوز 10 ميجابايت');
       return;
     }
-
     setState(() {
       _pickedImage = file;
       _existingImageUrl = null;
@@ -75,30 +73,24 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
 
   Future<void> _saveChanges() async {
     if (!mounted) return;
-
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return _showSnackbar('يجب تسجيل الدخول أولاً');
     if (_mealTitleController.text.trim().isEmpty) {
       return _showSnackbar('يرجى إدخال عنوان الوجبة');
     }
-
     setState(() => _isUploading = true);
-
     try {
       String? imageUrl = _existingImageUrl;
       if (_pickedImage != null) {
         imageUrl = await _uploadImageToCloudinary(_pickedImage!);
         if (imageUrl == null) throw Exception('فشل تحميل الصورة');
       }
-
       final donationData = _prepareDonationData(user, imageUrl);
-
       final donationCubit = context.read<DonationCubit>();
       await donationCubit.updateDonation(
         documentId: widget.documentId,
         data: donationData,
       );
-
       _showSnackbar('تم حفظ التغييرات بنجاح');
       _safeNavigateBack();
     } on FirebaseException catch (e) {
@@ -125,7 +117,6 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
       final fileName =
           'meal_${DateTime.now().millisecondsSinceEpoch}${p.extension(image.path)}';
       final tempPath = '${image.path}_compressed.jpg';
-
       final compressedResult = await FlutterImageCompress.compressAndGetFile(
         image.path,
         tempPath,
@@ -133,10 +124,8 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
         minWidth: 1024,
         minHeight: 1024,
       );
-
       final finalFile =
           compressedResult != null ? File(compressedResult.path) : image;
-
       final cloudinary =
           CloudinaryPublic(cloudinaryCloudName, cloudinaryUploadPreset);
       final response = await cloudinary.uploadFile(
@@ -378,7 +367,8 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
                 name: 'Payment Method',
                 phoneNumber: '',
                 role: '',
-                bankAccount: ''))),
+                bankAccount: '',
+                additionalPaymentInfo: ''))),
           ),
         ),
       ],
@@ -460,22 +450,31 @@ class ContactEditor extends StatefulWidget {
 class _ContactEditorState extends State<ContactEditor> {
   late final TextEditingController _phoneController;
   late final TextEditingController _bankController;
+  late final TextEditingController _additionalPaymentController;
   late FocusNode _phoneFocusNode;
   late FocusNode _bankFocusNode;
+  late FocusNode _additionalPaymentFocusNode;
 
   @override
   void initState() {
     super.initState();
     _phoneController = TextEditingController(text: widget.contact.phoneNumber);
     _bankController = TextEditingController(text: widget.contact.bankAccount);
+    _additionalPaymentController =
+        TextEditingController(text: widget.contact.additionalPaymentInfo ?? '');
     _phoneFocusNode = FocusNode();
     _bankFocusNode = FocusNode();
+    _additionalPaymentFocusNode = FocusNode();
   }
 
   @override
   void dispose() {
     _phoneFocusNode.dispose();
     _bankFocusNode.dispose();
+    _additionalPaymentFocusNode.dispose();
+    _phoneController.dispose();
+    _bankController.dispose();
+    _additionalPaymentController.dispose();
     super.dispose();
   }
 
@@ -536,6 +535,13 @@ class _ContactEditorState extends State<ContactEditor> {
                   _bankFocusNode,
                   TextInputType.text,
                 ),
+                _buildPaymentField(
+                  _additionalPaymentController,
+                  'طريقة دفع إضافية',
+                  Icons.payment,
+                  _additionalPaymentFocusNode,
+                  TextInputType.text,
+                ),
               ],
             ),
           ],
@@ -561,6 +567,7 @@ class _ContactEditorState extends State<ContactEditor> {
         phoneNumber: _phoneController.text,
         role: widget.contact.role,
         bankAccount: _bankController.text,
+        additionalPaymentInfo: _additionalPaymentController.text,
       )),
       decoration: InputDecoration(
         labelText: label,
