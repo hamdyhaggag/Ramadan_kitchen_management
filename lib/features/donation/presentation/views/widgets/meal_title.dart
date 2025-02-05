@@ -22,7 +22,8 @@ class MealTitle extends StatelessWidget {
         Text(
           title,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
+                fontSize: 20,
                 color: AppColors.blackColor,
               ),
         ),

@@ -55,18 +55,18 @@ class DonationSection extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         MealTitle(title: state.donationData['mealTitle']),
                         const SizedBox(height: 12),
                         MealDescription(
                             description: state.donationData['mealDescription']),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 8),
                         Row(
                           children: [
                             SectionTitle(
                               title: 'عدد الأفراد لهذا اليوم:',
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 8),
                             Card(
                               color:
                                   AppColors.primaryColor.withValues(alpha: 0.1),
@@ -91,6 +91,15 @@ class DonationSection extends StatelessWidget {
                                         color: AppColors.blackColor,
                                       ),
                                 ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'فرد',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 20,
+                                color: AppColors.blackColor,
                               ),
                             ),
                           ],
@@ -164,11 +173,11 @@ class DonationSection extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             const Text(
-              'طرق التبرع',
+              'تقدر تتبرع من خلال',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: AppColors.primaryColor,
+                color: AppColors.blackColor,
               ),
             ),
             const SizedBox(height: 16),
