@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_cubit.dart';
-
 import '../../../manage_cases/logic/cases_state.dart';
 
 part 'donation_state.dart';
@@ -20,7 +19,6 @@ class DonationCubit extends Cubit<DonationState> {
   Future<void> _loadInitialData() async {
     try {
       final snapshot = await _firestore.collection('donations').limit(1).get();
-
       Map<String, dynamic> donationData = {};
       String documentId = '';
 
