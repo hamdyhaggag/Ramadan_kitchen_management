@@ -236,15 +236,18 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
                 const SizedBox(height: 8),
                 Expanded(
                   child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: DataTable(
-                      headingRowColor:
-                          WidgetStateProperty.all(Colors.grey.shade200),
-                      dataRowMinHeight: 40,
-                      dataRowMaxHeight: 60,
-                      columnSpacing: isPortrait ? 20 : 40,
-                      columns: _buildDataColumns(isPortrait),
-                      rows: _buildDataRows(isPortrait),
+                    scrollDirection: Axis.vertical,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: DataTable(
+                        headingRowColor:
+                            WidgetStateProperty.all(Colors.grey.shade200),
+                        dataRowMinHeight: 40,
+                        dataRowMaxHeight: 60,
+                        columnSpacing: isPortrait ? 20 : 40,
+                        columns: _buildDataColumns(isPortrait),
+                        rows: _buildDataRows(isPortrait),
+                      ),
                     ),
                   ),
                 ),
