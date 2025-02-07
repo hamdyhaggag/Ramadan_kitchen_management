@@ -34,6 +34,8 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
   File? _pickedImage;
   bool _isUploading = false;
   String? _existingImageUrl;
+  List<File> _pickedCarouselImages = [];
+  List<String> _existingCarouselImages = [];
 
   @override
   void initState() {
@@ -49,6 +51,9 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
     _numberOfIndividualsController = TextEditingController(
         text: widget.donationData['numberOfIndividuals']?.toString() ?? '0');
     _existingImageUrl = widget.donationData['mealImageUrl'];
+    _existingCarouselImages = widget.donationData['carouselImages'] != null
+        ? List<String>.from(widget.donationData['carouselImages'])
+        : [];
     _contacts = (widget.donationData['contacts'] as List<dynamic>)
         .map<ContactPerson>((e) {
       if (e is ContactPerson) return e;
@@ -72,6 +77,23 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
     });
   }
 
+  Future<void> _pickCarouselImages() async {
+    final pickedFiles = await ImagePicker().pickMultiImage();
+    if (pickedFiles.isEmpty) return;
+    for (var pickedFile in pickedFiles) {
+      final file = File(pickedFile.path);
+      if (await file.length() > 10 * 1024 * 1024) {
+        _showSnackbar('أحد الصور تجاوز الحد المسموح');
+        continue;
+      }
+      if ((_pickedCarouselImages.length + _existingCarouselImages.length) < 3) {
+        setState(() {
+          _pickedCarouselImages.add(file);
+        });
+      }
+    }
+  }
+
   Future<void> _saveChanges() async {
     if (!mounted) return;
     final user = FirebaseAuth.instance.currentUser;
@@ -85,12 +107,20 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
       if (_pickedImage != null) {
         imageUrl = await _uploadImageToCloudinary(_pickedImage!);
       }
+      List<String> carouselImageUrls = List.from(_existingCarouselImages);
+      for (var file in _pickedCarouselImages) {
+        final url = await _uploadImageToCloudinary(file);
+        if (url != null) {
+          carouselImageUrls.add(url);
+        }
+      }
       final donationData = {
         'mealImageUrl': imageUrl,
         'mealTitle': _mealTitleController.text.trim(),
         'mealDescription': _mealDescriptionController.text.trim(),
         'numberOfIndividuals':
             int.tryParse(_numberOfIndividualsController.text.trim()) ?? 0,
+        'carouselImages': carouselImageUrls,
         'contacts': _contacts.map((c) => c.toMap()).toList(),
         'updated_at': FieldValue.serverTimestamp(),
       };
@@ -128,6 +158,10 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
           _numberOfIndividualsController.text =
               data['numberOfIndividuals']?.toString() ?? '0';
           _existingImageUrl = data['mealImageUrl'];
+          _existingCarouselImages = data['carouselImages'] != null
+              ? List<String>.from(data['carouselImages'])
+              : [];
+          _pickedCarouselImages.clear();
           _contacts =
               (data['contacts'] as List<dynamic>).map<ContactPerson>((e) {
             if (e is ContactPerson) return e;
@@ -194,6 +228,8 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
             _buildSectionHeader('معلومات الوجبة ', Icons.fastfood_rounded),
             const SizedBox(height: 16),
             _buildImagePicker(),
+            const SizedBox(height: 16),
+            _buildCarouselImagesSection(),
             const SizedBox(height: 24),
             _buildTitleField(),
             const SizedBox(height: 24),
@@ -299,6 +335,108 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCarouselImagesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('صور الكاروسيل',
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.blackColor)),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 100,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _existingCarouselImages.length +
+                _pickedCarouselImages.length +
+                1,
+            itemBuilder: (context, index) {
+              if (index < _existingCarouselImages.length) {
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          _existingCarouselImages[index],
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: IconButton(
+                          icon: Icon(Icons.close, color: Colors.red, size: 20),
+                          onPressed: () {
+                            setState(() {
+                              _existingCarouselImages.removeAt(index);
+                            });
+                          },
+                        ),
+                      )
+                    ],
+                  ),
+                );
+              }
+              int newIndex = index - _existingCarouselImages.length;
+              if (newIndex < _pickedCarouselImages.length) {
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          _pickedCarouselImages[newIndex],
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: IconButton(
+                          icon: Icon(Icons.close, color: Colors.red, size: 20),
+                          onPressed: () {
+                            setState(() {
+                              _pickedCarouselImages.removeAt(newIndex);
+                            });
+                          },
+                        ),
+                      )
+                    ],
+                  ),
+                );
+              }
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: InkWell(
+                  onTap: _pickCarouselImages,
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.add,
+                        color: AppColors.primaryColor, size: 30),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

@@ -14,7 +14,6 @@ import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_sta
 
 class DonationSection extends StatelessWidget {
   const DonationSection({super.key});
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DonationCubit, DonationState>(
@@ -23,7 +22,9 @@ class DonationSection extends StatelessWidget {
           final contacts = (state.donations.first['contacts'] as List<dynamic>)
               .map((e) => ContactPerson.fromMap(e))
               .toList();
-          final carouselImages = [state.donations.first['mealImageUrl']];
+          final carouselImages = state.donations.first['carouselImages'] != null
+              ? List<String>.from(state.donations.first['carouselImages'])
+              : [state.donations.first['mealImageUrl']];
           return Scaffold(
             body: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -82,33 +83,34 @@ class DonationSection extends StatelessWidget {
                                 ),
                               ),
                               child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 8, horizontal: 16),
-                                  child: BlocBuilder<CasesCubit, CasesState>(
-                                    builder: (context, state) {
-                                      int totalIndividuals = 0;
-                                      if (state is CasesLoaded) {
-                                        totalIndividuals = state.cases.fold(
-                                          0,
-                                          (sum, e) =>
-                                              sum +
-                                              (e['عدد الأفراد'] is int
-                                                  ? e['عدد الأفراد'] as int
-                                                  : 0),
-                                        );
-                                      }
-                                      return Text(
-                                        '$totalIndividuals',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleLarge
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              color: AppColors.blackColor,
-                                            ),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 8, horizontal: 16),
+                                child: BlocBuilder<CasesCubit, CasesState>(
+                                  builder: (context, state) {
+                                    int totalIndividuals = 0;
+                                    if (state is CasesLoaded) {
+                                      totalIndividuals = state.cases.fold(
+                                        0,
+                                        (sum, e) =>
+                                            sum +
+                                            (e['عدد الأفراد'] is int
+                                                ? e['عدد الأفراد'] as int
+                                                : 0),
                                       );
-                                    },
-                                  )),
+                                    }
+                                    return Text(
+                                      '$totalIndividuals',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.blackColor,
+                                          ),
+                                    );
+                                  },
+                                ),
+                              ),
                             ),
                             const SizedBox(width: 4),
                             Text(
