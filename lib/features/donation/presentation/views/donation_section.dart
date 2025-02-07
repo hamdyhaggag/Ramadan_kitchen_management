@@ -157,6 +157,8 @@ class DonationSection extends StatelessWidget {
               ],
             ),
           );
+        } else if (state is DonationError) {
+          return Center(child: Text(state.message));
         }
         return const Center(
           child: CircularProgressIndicator(

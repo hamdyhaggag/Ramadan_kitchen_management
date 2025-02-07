@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_cubit.dart';
@@ -41,8 +42,14 @@ class DonationCubit extends Cubit<DonationState> {
           return {...doc.data(), 'id': doc.id};
         }).toList();
       }
+      if (kDebugMode) {
+        print('Donations loaded: ${donations.length}');
+      }
       emit(DonationLoaded(donations: donations));
     } catch (e) {
+      if (kDebugMode) {
+        print('Error loading donations: $e');
+      }
       emit(DonationError('Failed to load data: $e'));
     }
   }
