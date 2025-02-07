@@ -86,7 +86,7 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
         _showSnackbar('أحد الصور تجاوز الحد المسموح');
         continue;
       }
-      if ((_pickedCarouselImages.length + _existingCarouselImages.length) < 3) {
+      if ((_pickedCarouselImages.length + _existingCarouselImages.length) < 5) {
         setState(() {
           _pickedCarouselImages.add(file);
         });

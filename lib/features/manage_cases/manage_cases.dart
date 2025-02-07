@@ -418,7 +418,15 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
   }
 
   List<DataRow> _buildDataRows(bool isPortrait) {
-    return filteredCases.map((caseItem) {
+    List<Map<String, dynamic>> sortedCases = List.from(filteredCases);
+
+    sortedCases.sort((a, b) {
+      final numA = int.tryParse(a["الرقم"].toString()) ?? 0;
+      final numB = int.tryParse(b["الرقم"].toString()) ?? 0;
+      return numA.compareTo(numB);
+    });
+
+    return sortedCases.map((caseItem) {
       final caseData = Map<String, dynamic>.from(caseItem);
       return DataRow(
         cells: [
