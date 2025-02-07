@@ -35,7 +35,7 @@ class LoginViewBodyBlocConsumer extends StatelessWidget {
             children: [
               ModalProgressHUD(
                 inAsyncCall: state is LoginCubitLoading,
-                progressIndicator: const SizedBox(), // Placeholder
+                progressIndicator: const SizedBox(),
                 child: const LoginViewBody(),
               ),
               if (state is LoginCubitLoading)

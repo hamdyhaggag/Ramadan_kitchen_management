@@ -13,7 +13,6 @@ class RegisterCubit extends Cubit<RegisterCubitState> {
     required String name,
     required String phoneNumber,
   }) async {
-    // send loading state
     emit(RegisterCubitLoading());
     final result = await authRepo.createUserWithEmailAndPassword(
       email: email,

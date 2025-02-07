@@ -49,7 +49,6 @@ class CustomOtpField extends StatelessWidget {
         backgroundColor: Colors.white,
         enableActiveFill: true,
         onCompleted: (submitedCode) {
-          // otpCode = submitedCode;
           log("Completed");
         },
         // onChanged: (value) {

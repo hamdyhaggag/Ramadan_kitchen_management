@@ -16,13 +16,11 @@ import 'contact_person.dart';
 class EditableDonationSection extends StatefulWidget {
   final Map<String, dynamic> donationData;
   final String documentId;
-
   const EditableDonationSection({
     super.key,
     required this.donationData,
     required this.documentId,
   });
-
   @override
   State<EditableDonationSection> createState() =>
       _EditableDonationSectionState();
@@ -83,33 +81,61 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
       String? imageUrl = _existingImageUrl;
       if (_pickedImage != null) {
         imageUrl = await _uploadImageToCloudinary(_pickedImage!);
-        if (imageUrl == null) throw Exception('فشل تحميل الصورة');
       }
-      final donationData = _prepareDonationData(user, imageUrl);
-      final donationCubit = context.read<DonationCubit>();
-      await donationCubit.updateDonation(
-        documentId: widget.documentId,
-        data: donationData,
-      );
+      final donationData = {
+        'mealImageUrl': imageUrl,
+        'mealTitle': _mealTitleController.text.trim(),
+        'mealDescription': _mealDescriptionController.text.trim(),
+        'contacts': _contacts.map((c) => c.toMap()).toList(),
+        'updated_at': FieldValue.serverTimestamp(),
+      };
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+      final endOfDay = startOfDay
+          .add(const Duration(days: 1))
+          .subtract(const Duration(milliseconds: 1));
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('donations')
+          .where('created_at', isGreaterThanOrEqualTo: startOfDay)
+          .where('created_at', isLessThanOrEqualTo: endOfDay)
+          .get();
+      DocumentReference docRef;
+      if (querySnapshot.docs.isNotEmpty) {
+        docRef = querySnapshot.docs.first.reference;
+        await docRef.update(donationData);
+        if (querySnapshot.docs.length > 1) {
+          for (int i = 1; i < querySnapshot.docs.length; i++) {
+            await querySnapshot.docs[i].reference.delete();
+          }
+        }
+      } else {
+        donationData['created_at'] = FieldValue.serverTimestamp();
+        docRef = await FirebaseFirestore.instance
+            .collection('donations')
+            .add(donationData);
+      }
+      final updatedDoc = await docRef.get();
+      if (updatedDoc.exists) {
+        final data = updatedDoc.data() as Map<String, dynamic>;
+        setState(() {
+          _mealTitleController.text = data['mealTitle'] ?? '';
+          _mealDescriptionController.text = data['mealDescription'] ?? '';
+          _existingImageUrl = data['mealImageUrl'];
+          _contacts =
+              (data['contacts'] as List<dynamic>).map<ContactPerson>((e) {
+            if (e is ContactPerson) return e;
+            if (e is Map<String, dynamic>) return ContactPerson.fromMap(e);
+            throw Exception('Invalid contact type: ${e.runtimeType}');
+          }).toList();
+        });
+      }
+      context.read<DonationCubit>().getDonations();
       _showSnackbar('تم حفظ التغييرات بنجاح');
-      _safeNavigateBack();
-    } on FirebaseException catch (e) {
-      _showSnackbar('خطأ في قاعدة البيانات: ${e.code}');
     } catch (e) {
       _showSnackbar('حدث خطأ غير متوقع: ${e.toString()}');
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
-  }
-
-  Map<String, dynamic> _prepareDonationData(User user, String? imageUrl) {
-    return {
-      'mealImageUrl': imageUrl,
-      'mealTitle': _mealTitleController.text.trim(),
-      'mealDescription': _mealDescriptionController.text.trim(),
-      'contacts': _contacts.map((c) => c.toMap()).toList(),
-      'updated_at': FieldValue.serverTimestamp(),
-    };
   }
 
   Future<String?> _uploadImageToCloudinary(File image) async {
@@ -143,7 +169,7 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
     }
   }
 
-  void _safeNavigateBack() {
+  void safeNavigateBack() {
     if (mounted && Navigator.canPop(context)) {
       Navigator.pop(context);
     }
@@ -434,7 +460,6 @@ class ContactEditor extends StatefulWidget {
   final int index;
   final Function(ContactPerson) onChanged;
   final VoidCallback onRemove;
-
   const ContactEditor({
     super.key,
     required this.contact,
@@ -442,7 +467,6 @@ class ContactEditor extends StatefulWidget {
     required this.onChanged,
     required this.onRemove,
   });
-
   @override
   State<ContactEditor> createState() => _ContactEditorState();
 }

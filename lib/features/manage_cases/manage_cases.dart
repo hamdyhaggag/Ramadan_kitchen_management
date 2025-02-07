@@ -104,10 +104,18 @@ class _ManageCasesScreenState extends State<ManageCasesScreen>
                         BlocBuilder<DonationCubit, DonationState>(
                           builder: (context, state) {
                             if (state is DonationLoaded) {
-                              return EditableDonationSection(
-                                donationData: state.donationData,
-                                documentId: state.documentId,
-                              );
+                              if (state.donations.isNotEmpty) {
+                                final donationData = state.donations.first;
+                                final documentId = donationData['id'] as String;
+
+                                return EditableDonationSection(
+                                  donationData: donationData,
+                                  documentId: documentId,
+                                );
+                              } else {
+                                return const Center(
+                                    child: Text('No donations available'));
+                              }
                             }
                             if (state is DonationError) {
                               return Center(child: Text(state.message));

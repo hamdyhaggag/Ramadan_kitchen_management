@@ -18,10 +18,10 @@ class DonationSection extends StatelessWidget {
     return BlocBuilder<DonationCubit, DonationState>(
       builder: (context, state) {
         if (state is DonationLoaded) {
-          final contacts = (state.donationData['contacts'] as List<dynamic>)
+          final contacts = (state.donations.first['contacts'] as List<dynamic>)
               .map((e) => ContactPerson.fromMap(e))
               .toList();
-          final carouselImages = [state.donationData['mealImageUrl']];
+          final carouselImages = [state.donations.first['mealImageUrl']];
           return Scaffold(
             body: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -56,10 +56,11 @@ class DonationSection extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 12),
-                        MealTitle(title: state.donationData['mealTitle']),
+                        MealTitle(title: state.donations.first['mealTitle']),
                         const SizedBox(height: 12),
                         MealDescription(
-                            description: state.donationData['mealDescription']),
+                            description:
+                                state.donations.first['mealDescription']),
                         const SizedBox(height: 8),
                         Row(
                           children: [
@@ -82,7 +83,7 @@ class DonationSection extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(
                                     vertical: 8, horizontal: 16),
                                 child: Text(
-                                  '${state.donationData['numberOfIndividuals']}',
+                                  '${state.donations.first['numberOfIndividuals']}',
                                   style: Theme.of(context)
                                       .textTheme
                                       .titleLarge
@@ -106,7 +107,7 @@ class DonationSection extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         HeaderImage(
-                            imageUrl: state.donationData['mealImageUrl']),
+                            imageUrl: state.donations.first['mealImageUrl']),
                         const SizedBox(height: 24),
                         SizedBox(
                           width: double.infinity,

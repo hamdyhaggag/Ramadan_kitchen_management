@@ -7,14 +7,13 @@ import 'package:ramadan_kitchen_management/features/donation/presentation/cubit/
 
 class PreviousDaysScreen extends StatelessWidget {
   const PreviousDaysScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: BlocBuilder<DonationCubit, DonationState>(
         builder: (context, state) {
           if (state is DonationLoaded) {
-            final donation = state.donationData;
-            final donationDate = (donation['created_at'] as Timestamp).toDate();
             return CustomScrollView(
               slivers: [
                 SliverPadding(
@@ -29,16 +28,19 @@ class PreviousDaysScreen extends StatelessWidget {
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
+                        final donation = state.donations[index];
+                        final donationDate =
+                            (donation['created_at'] as Timestamp).toDate();
                         return _DonationDayCard(
                           date: donationDate,
-                          mealTitle: donation['mealTitle'],
-                          mealDescription: donation['mealDescription'],
-                          participants: donation['numberOfIndividuals'],
-                          imageUrl: donation['mealImageUrl'],
+                          mealTitle: donation['mealTitle'] ?? 'No Title',
+                          mealDescription: donation['mealDescription'] ?? '',
+                          participants: donation['numberOfIndividuals'] ?? 0,
+                          imageUrl: donation['mealImageUrl'] ?? '',
                           onTap: () {},
                         );
                       },
-                      childCount: 1,
+                      childCount: state.donations.length,
                     ),
                   ),
                 ),

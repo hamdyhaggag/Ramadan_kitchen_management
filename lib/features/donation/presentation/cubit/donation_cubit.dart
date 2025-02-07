@@ -18,36 +18,50 @@ class DonationCubit extends Cubit<DonationState> {
 
   Future<void> _loadInitialData() async {
     try {
-      final snapshot = await _firestore.collection('donations').limit(1).get();
-      Map<String, dynamic> donationData = {};
-      String documentId = '';
-
-      if (snapshot.docs.isNotEmpty) {
-        final doc = snapshot.docs.first;
-        donationData = doc.data();
-        documentId = doc.id;
-      } else {
+      final snapshot = await _firestore
+          .collection('donations')
+          .orderBy('created_at', descending: true)
+          .get();
+      List<Map<String, dynamic>> donations = [];
+      if (snapshot.docs.isEmpty) {
         final docRef = await _firestore.collection('donations').add({
           'mealImageUrl': 'https://example.com/default-image.jpg',
           'mealTitle': 'إفطار اليوم',
           'mealDescription': 'ساعد في توفير وجبات إفطار يومياَ للأسر المحتاجة',
           'contacts': [],
           'created_at': FieldValue.serverTimestamp(),
+          'numberOfIndividuals': _calculateTotalIndividuals(),
         });
-        documentId = docRef.id;
         final newDoc = await docRef.get();
-        donationData = newDoc.data() ?? {};
+        var data = newDoc.data()!;
+        data['id'] = newDoc.id;
+        donations.add(data);
+      } else {
+        donations = snapshot.docs.map((doc) {
+          return {...doc.data(), 'id': doc.id};
+        }).toList();
       }
-
-      final totalIndividuals = _calculateTotalIndividuals();
-      donationData['numberOfIndividuals'] = totalIndividuals;
-
-      emit(DonationLoaded(
-        donationData: donationData,
-        documentId: documentId,
-      ));
+      emit(DonationLoaded(donations: donations));
     } catch (e) {
       emit(DonationError('Failed to load data: $e'));
+    }
+  }
+
+  Future<void> getDonations() async {
+    await _loadInitialData();
+  }
+
+  Future<void> createNewDonation(Map<String, dynamic> data) async {
+    try {
+      final totalIndividuals = _calculateTotalIndividuals();
+      await _firestore.collection('donations').add({
+        ...data,
+        'numberOfIndividuals': totalIndividuals,
+        'created_at': FieldValue.serverTimestamp(),
+      });
+      _loadInitialData();
+    } catch (e) {
+      emit(DonationError('Failed to create donation: $e'));
     }
   }
 
