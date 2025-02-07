@@ -29,6 +29,7 @@ class EditableDonationSection extends StatefulWidget {
 class _EditableDonationSectionState extends State<EditableDonationSection> {
   late final TextEditingController _mealTitleController;
   late final TextEditingController _mealDescriptionController;
+  late final TextEditingController _numberOfIndividualsController;
   late List<ContactPerson> _contacts;
   File? _pickedImage;
   bool _isUploading = false;
@@ -45,6 +46,8 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
         TextEditingController(text: widget.donationData['mealTitle'] ?? '');
     _mealDescriptionController = TextEditingController(
         text: widget.donationData['mealDescription'] ?? '');
+    _numberOfIndividualsController = TextEditingController(
+        text: widget.donationData['numberOfIndividuals']?.toString() ?? '0');
     _existingImageUrl = widget.donationData['mealImageUrl'];
     _contacts = (widget.donationData['contacts'] as List<dynamic>)
         .map<ContactPerson>((e) {
@@ -86,6 +89,8 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
         'mealImageUrl': imageUrl,
         'mealTitle': _mealTitleController.text.trim(),
         'mealDescription': _mealDescriptionController.text.trim(),
+        'numberOfIndividuals':
+            int.tryParse(_numberOfIndividualsController.text.trim()) ?? 0,
         'contacts': _contacts.map((c) => c.toMap()).toList(),
         'updated_at': FieldValue.serverTimestamp(),
       };
@@ -120,6 +125,8 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
         setState(() {
           _mealTitleController.text = data['mealTitle'] ?? '';
           _mealDescriptionController.text = data['mealDescription'] ?? '';
+          _numberOfIndividualsController.text =
+              data['numberOfIndividuals']?.toString() ?? '0';
           _existingImageUrl = data['mealImageUrl'];
           _contacts =
               (data['contacts'] as List<dynamic>).map<ContactPerson>((e) {
@@ -144,23 +151,17 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
           'meal_${DateTime.now().millisecondsSinceEpoch}${p.extension(image.path)}';
       final tempPath = '${image.path}_compressed.jpg';
       final compressedResult = await FlutterImageCompress.compressAndGetFile(
-        image.path,
-        tempPath,
-        quality: 80,
-        minWidth: 1024,
-        minHeight: 1024,
-      );
+          image.path, tempPath,
+          quality: 80, minWidth: 1024, minHeight: 1024);
       final finalFile =
           compressedResult != null ? File(compressedResult.path) : image;
       final cloudinary =
           CloudinaryPublic(cloudinaryCloudName, cloudinaryUploadPreset);
       final response = await cloudinary.uploadFile(
-        CloudinaryFile.fromFile(
-          finalFile.path,
-          resourceType: CloudinaryResourceType.Image,
-          publicId: fileName,
-          folder: 'meal_images',
-        ),
+        CloudinaryFile.fromFile(finalFile.path,
+            resourceType: CloudinaryResourceType.Image,
+            publicId: fileName,
+            folder: 'meal_images'),
       );
       return response.secureUrl;
     } catch (e) {
@@ -197,6 +198,8 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
             _buildTitleField(),
             const SizedBox(height: 24),
             _buildDescriptionField(),
+            const SizedBox(height: 24),
+            _buildStatisticField(),
             const SizedBox(height: 32),
             _buildContactsSection(),
             const SizedBox(height: 32),
@@ -353,6 +356,33 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
     );
   }
 
+  Widget _buildStatisticField() {
+    return TextFormField(
+      controller: _numberOfIndividualsController,
+      keyboardType: TextInputType.number,
+      style: const TextStyle(fontSize: 16, color: AppColors.blackColor),
+      decoration: InputDecoration(
+        labelText: 'عدد الأفراد',
+        hintText: 'أدخل عدد الأفراد',
+        prefixIcon: Container(
+          margin: const EdgeInsets.all(12),
+          child: Icon(Icons.people_outline, color: Colors.grey[600]),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey[400]!),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide:
+              const BorderSide(color: AppColors.primaryColor, width: 1.5),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      ),
+    );
+  }
+
   Widget _buildContactsSection() {
     return Column(
       children: [
@@ -371,11 +401,8 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            icon: const Icon(
-              Icons.add_circle_outline_rounded,
-              size: 22,
-              color: AppColors.primaryColor,
-            ),
+            icon: const Icon(Icons.add_circle_outline_rounded,
+                size: 22, color: AppColors.primaryColor),
             label: const Text('إضافة طريقة دفع جديدة',
                 style: TextStyle(fontSize: 15, color: AppColors.primaryColor)),
             style: ElevatedButton.styleFrom(
@@ -408,8 +435,7 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
               width: 24,
               height: 24,
               child: CircularProgressIndicator(
-                  color: Colors.white, strokeWidth: 3),
-            )
+                  color: Colors.white, strokeWidth: 3))
           : const Icon(Icons.save_rounded, size: 24),
       onPressed: _isUploading ? null : _saveChanges,
       text: _isUploading ? 'جاري الحفظ...' : 'حفظ التغييرات',
@@ -420,9 +446,8 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
 
   Widget _buildImagePreview() {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Image.file(_pickedImage!, fit: BoxFit.cover),
-    );
+        borderRadius: BorderRadius.circular(16),
+        child: Image.file(_pickedImage!, fit: BoxFit.cover));
   }
 
   Widget _buildNetworkImage() {
@@ -523,17 +548,14 @@ class _ContactEditorState extends State<ContactEditor> {
               children: [
                 const Icon(Icons.payment_rounded, color: Colors.grey, size: 20),
                 const SizedBox(width: 8),
-                Text(
-                  'طريقة الدفع ${widget.index + 1}',
-                  style: TextStyle(
-                      color: Colors.grey[700], fontWeight: FontWeight.w600),
-                ),
+                Text('طريقة الدفع ${widget.index + 1}',
+                    style: TextStyle(
+                        color: Colors.grey[700], fontWeight: FontWeight.w600)),
                 const Spacer(),
                 IconButton(
-                  icon: Icon(Icons.close_rounded,
-                      color: Colors.grey[600], size: 22),
-                  onPressed: widget.onRemove,
-                ),
+                    icon: Icon(Icons.close_rounded,
+                        color: Colors.grey[600], size: 22),
+                    onPressed: widget.onRemove),
               ],
             ),
             const Divider(height: 24),
@@ -546,26 +568,23 @@ class _ContactEditorState extends State<ContactEditor> {
               childAspectRatio: 3,
               children: [
                 _buildPaymentField(
-                  _phoneController,
-                  'فودافون كاش',
-                  Icons.phone_iphone_rounded,
-                  _phoneFocusNode,
-                  TextInputType.phone,
-                ),
+                    _phoneController,
+                    'فودافون كاش',
+                    Icons.phone_iphone_rounded,
+                    _phoneFocusNode,
+                    TextInputType.phone),
                 _buildPaymentField(
-                  _bankController,
-                  'انستاباي',
-                  Icons.account_balance_wallet_rounded,
-                  _bankFocusNode,
-                  TextInputType.text,
-                ),
+                    _bankController,
+                    'انستاباي',
+                    Icons.account_balance_wallet_rounded,
+                    _bankFocusNode,
+                    TextInputType.text),
                 _buildPaymentField(
-                  _additionalPaymentController,
-                  'اتصالات كاش',
-                  Icons.payment,
-                  _additionalPaymentFocusNode,
-                  TextInputType.text,
-                ),
+                    _additionalPaymentController,
+                    'اتصالات كاش',
+                    Icons.payment,
+                    _additionalPaymentFocusNode,
+                    TextInputType.text),
               ],
             ),
           ],
@@ -574,13 +593,8 @@ class _ContactEditorState extends State<ContactEditor> {
     );
   }
 
-  Widget _buildPaymentField(
-    TextEditingController controller,
-    String label,
-    IconData icon,
-    FocusNode focusNode,
-    TextInputType keyboardType,
-  ) {
+  Widget _buildPaymentField(TextEditingController controller, String label,
+      IconData icon, FocusNode focusNode, TextInputType keyboardType) {
     return TextFormField(
       focusNode: focusNode,
       controller: controller,
@@ -596,16 +610,12 @@ class _ContactEditorState extends State<ContactEditor> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(
-          color: focusNode.hasFocus ? AppColors.primaryColor : Colors.grey,
-        ),
+            color: focusNode.hasFocus ? AppColors.primaryColor : Colors.grey),
         floatingLabelStyle: TextStyle(
-          color: focusNode.hasFocus ? AppColors.primaryColor : Colors.grey,
-        ),
-        prefixIcon: Icon(
-          icon,
-          size: 20,
-          color: focusNode.hasFocus ? AppColors.primaryColor : Colors.grey,
-        ),
+            color: focusNode.hasFocus ? AppColors.primaryColor : Colors.grey),
+        prefixIcon: Icon(icon,
+            size: 20,
+            color: focusNode.hasFocus ? AppColors.primaryColor : Colors.grey),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),

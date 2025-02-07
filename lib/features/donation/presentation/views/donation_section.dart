@@ -9,6 +9,8 @@ import 'package:ramadan_kitchen_management/features/donation/presentation/views/
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/meal_title.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/section_title.dart';
 import '../cubit/donation_cubit.dart';
+import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_cubit.dart';
+import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_state.dart';
 
 class DonationSection extends StatelessWidget {
   const DonationSection({super.key});
@@ -80,19 +82,33 @@ class DonationSection extends StatelessWidget {
                                 ),
                               ),
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 8, horizontal: 16),
-                                child: Text(
-                                  '${state.donations.first['numberOfIndividuals']}',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleLarge
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.blackColor,
-                                      ),
-                                ),
-                              ),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 8, horizontal: 16),
+                                  child: BlocBuilder<CasesCubit, CasesState>(
+                                    builder: (context, state) {
+                                      int totalIndividuals = 0;
+                                      if (state is CasesLoaded) {
+                                        totalIndividuals = state.cases.fold(
+                                          0,
+                                          (sum, e) =>
+                                              sum +
+                                              (e['عدد الأفراد'] is int
+                                                  ? e['عدد الأفراد'] as int
+                                                  : 0),
+                                        );
+                                      }
+                                      return Text(
+                                        '$totalIndividuals',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleLarge
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.blackColor,
+                                            ),
+                                      );
+                                    },
+                                  )),
                             ),
                             const SizedBox(width: 4),
                             Text(
