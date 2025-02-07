@@ -149,13 +149,16 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
 
   @override
   Widget build(BuildContext context) {
+    final sortedCases = List<Map<String, dynamic>>.from(widget.cases)
+      ..sort((a, b) => (a['الرقم'] as int).compareTo(b['الرقم'] as int));
+
     return Column(
       children: [
         Expanded(
           child: ListView.builder(
-            itemCount: widget.cases.length,
+            itemCount: sortedCases.length,
             itemBuilder: (context, index) {
-              final caseData = widget.cases[index];
+              final caseData = sortedCases[index];
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -164,7 +167,7 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withValues(alpha: 0.2),
+                      color: Colors.grey.withOpacity(0.2),
                       spreadRadius: 2,
                       blurRadius: 5,
                       offset: const Offset(0, 3),

@@ -12,12 +12,25 @@ class CasesCubit extends Cubit<CasesState> {
     loadCases();
   }
 
+  void _sortLocalCache() {
+    _localCache.sort((a, b) {
+      final numA = a['الرقم'] is int
+          ? a['الرقم'] as int
+          : int.tryParse(a['الرقم'].toString()) ?? 0;
+      final numB = b['الرقم'] is int
+          ? b['الرقم'] as int
+          : int.tryParse(b['الرقم'].toString()) ?? 0;
+      return numA.compareTo(numB);
+    });
+  }
+
   Future<void> loadCases() async {
     emit(CasesLoading());
     try {
       _firestore.collection('cases').snapshots().listen((snapshot) {
         _localCache =
             snapshot.docs.map((doc) => {...doc.data(), 'id': doc.id}).toList();
+        _sortLocalCache();
         emit(CasesLoaded(List.from(_localCache)));
       });
     } catch (e) {
@@ -42,6 +55,7 @@ class CasesCubit extends Cubit<CasesState> {
 
       _localCache = updatedCache;
       await batch.commit();
+      _sortLocalCache();
       emit(CasesLoaded(List.from(_localCache)));
     } catch (e) {
       emit(CasesError('Failed to reset cases: $e'));
@@ -59,6 +73,7 @@ class CasesCubit extends Cubit<CasesState> {
       _localCache[index] = updatedCase;
 
       await _firestore.collection('cases').doc(docId).update({field: newValue});
+      _sortLocalCache();
       emit(CasesLoaded(List.from(_localCache)));
     } catch (e) {
       emit(CasesError('Failed to update state: $e'));
@@ -71,6 +86,7 @@ class CasesCubit extends Cubit<CasesState> {
       final newCase = {...caseData, 'id': docId};
       _localCache = [..._localCache, newCase];
       await _firestore.collection('cases').doc(docId).set(caseData);
+      _sortLocalCache();
       emit(CasesLoaded(List.from(_localCache)));
     } catch (e) {
       _localCache.removeWhere((c) => c['id'] == caseData['الرقم'].toString());
@@ -87,6 +103,7 @@ class CasesCubit extends Cubit<CasesState> {
       _localCache[index] = updatedCase;
 
       await _firestore.collection('cases').doc(docId).update(updates);
+      _sortLocalCache();
       emit(CasesLoaded(List.from(_localCache)));
     } catch (e) {
       emit(CasesError('Failed to update case: $e'));
@@ -97,6 +114,7 @@ class CasesCubit extends Cubit<CasesState> {
     try {
       _localCache.removeWhere((c) => c['id'] == docId);
       await _firestore.collection('cases').doc(docId).delete();
+      _sortLocalCache();
       emit(CasesLoaded(List.from(_localCache)));
     } catch (e) {
       emit(CasesError('Failed to delete case: $e'));
