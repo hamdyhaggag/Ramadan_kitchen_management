@@ -7,7 +7,7 @@ import 'package:ramadan_kitchen_management/core/routes/app_routes.dart';
 import 'core/cache/prefs.dart';
 import 'core/routes/on_generate_route.dart';
 import 'core/services/service_locator.dart';
-import 'core/utils/app_colors.dart';
+import 'core/utils/app_theme.dart';
 import 'features/daily_expenses/logic/expense_cubit.dart';
 import 'features/donation/presentation/cubit/donation_cubit.dart';
 import 'features/manage_cases/logic/cases_cubit.dart';
@@ -43,13 +43,7 @@ class KitchenApp extends StatelessWidget {
         BlocProvider(create: (context) => getIt<DonationCubit>()),
       ],
       child: MaterialApp(
-        theme: ThemeData(
-          fontFamily: 'DIN',
-          scaffoldBackgroundColor: Colors.white,
-          appBarTheme: const AppBarTheme(
-            backgroundColor: AppColors.whiteColor,
-          ),
-        ),
+        theme: lightTheme,
         debugShowCheckedModeBanner: false,
         localizationsDelegates: const [
           S.delegate,
@@ -65,4 +59,3 @@ class KitchenApp extends StatelessWidget {
     );
   }
 }
-// this is develompent branch
