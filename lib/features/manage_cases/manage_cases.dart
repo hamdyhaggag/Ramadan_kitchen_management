@@ -6,11 +6,12 @@ import 'package:ramadan_kitchen_management/core/widgets/general_button.dart';
 import '../../core/services/service_locator.dart';
 import '../donation/presentation/cubit/donation_cubit.dart';
 import '../donation/presentation/views/widgets/editable_donation_section.dart';
-import 'case-details_screen.dart';
 import '../donation/presentation/views/donation_section.dart';
 import 'logic/cases_cubit.dart';
 import 'logic/cases_state.dart';
 import 'package:ramadan_kitchen_management/features/auth/data/repos/auth_repo.dart';
+
+import 'manage_case-details_screen.dart';
 
 class ManageCasesScreen extends StatefulWidget {
   const ManageCasesScreen({super.key});

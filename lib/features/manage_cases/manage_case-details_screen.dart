@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/utils/app_colors.dart';
 import '../../core/widgets/general_button.dart';
+import '../donation/presentation/views/case_details_screen.dart';
 import 'logic/cases_cubit.dart';
 import 'logic/cases_state.dart';
 
@@ -13,6 +14,7 @@ class ManageCaseDetailsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('إدارة الحالات'),
+        centerTitle: true,
       ),
       body: BlocBuilder<CasesCubit, CasesState>(
         builder: (context, state) {
@@ -44,9 +46,7 @@ class _ManageCaseDetailsContent extends StatefulWidget {
 class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
   void _addNewCase() {
     final currentState = context.read<CasesCubit>().state;
-
     if (currentState is! CasesLoaded) return;
-
     final currentCases = currentState.cases;
     final newNumber = currentCases.isEmpty
         ? 1
@@ -54,7 +54,6 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
                 .map((e) => e['الرقم'] as int)
                 .reduce((a, b) => a > b ? a : b)) +
             1;
-
     context.read<CasesCubit>().addCase({
       "الرقم": newNumber,
       "id": newNumber.toString(),
@@ -69,48 +68,53 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
     final caseData = widget.cases[index];
     if (caseData['id'] == null) return;
 
-    TextEditingController nameController =
-        TextEditingController(text: caseData["الاسم"]);
-    TextEditingController membersController =
+    final nameController = TextEditingController(text: caseData["الاسم"]);
+    final membersController =
         TextEditingController(text: caseData["عدد الأفراد"].toString());
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.0),
+          ),
           backgroundColor: AppColors.whiteColor,
           title: const Text("تعديل الحالة"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                cursorColor: AppColors.primaryColor,
-                decoration: InputDecoration(
-                  labelText: "الاسم",
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.primaryColor),
-                  ),
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.primaryColor),
-                  ),
-                ),
-              ),
-              TextField(
-                controller: membersController,
-                cursorColor: AppColors.primaryColor,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: "عدد الأفراد",
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.primaryColor),
-                  ),
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.primaryColor),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  cursorColor: AppColors.primaryColor,
+                  decoration: InputDecoration(
+                    labelText: "الاسم",
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: AppColors.primaryColor),
+                    ),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: AppColors.primaryColor),
+                    ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+                TextField(
+                  controller: membersController,
+                  cursorColor: AppColors.primaryColor,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: "عدد الأفراد",
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: AppColors.primaryColor),
+                    ),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: AppColors.primaryColor),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -156,30 +160,40 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
       children: [
         Expanded(
           child: ListView.builder(
+            physics: const BouncingScrollPhysics(),
             itemCount: sortedCases.length,
             itemBuilder: (context, index) {
               final caseData = sortedCases[index];
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
+              return Card(
+                color: AppColors.whiteColor,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
+                elevation: 3,
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
-                      spreadRadius: 2,
-                      blurRadius: 5,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
                 ),
                 child: ListTile(
-                  title: Text(caseData["الاسم"]),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  title: Text(
+                    caseData["الاسم"],
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   subtitle: Text("عدد الأفراد: ${caseData["عدد الأفراد"]}"),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      IconButton(
+                        icon: const Icon(Icons.info, color: Colors.green),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BlocProvider.value(
+                              value: BlocProvider.of<CasesCubit>(context),
+                              child: CaseDetailsScreen(caseData: caseData),
+                            ),
+                          ),
+                        ),
+                      ),
                       IconButton(
                         icon: const Icon(Icons.edit, color: Colors.blue),
                         onPressed: () => _editCase(index),
@@ -196,7 +210,7 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: GeneralButton(
             text: 'إضافة حالة جديدة',
             backgroundColor: AppColors.primaryColor,
@@ -205,7 +219,7 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.only(bottom: 16.0, left: 16.0, right: 16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: GeneralButton(
             text: 'رجوع',
             backgroundColor: AppColors.secondaryColor,
@@ -213,6 +227,7 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
             onPressed: () => Navigator.pop(context),
           ),
         ),
+        const SizedBox(height: 16),
       ],
     );
   }

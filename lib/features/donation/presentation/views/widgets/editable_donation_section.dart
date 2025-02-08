@@ -445,6 +445,8 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
       controller: _mealTitleController,
       style: const TextStyle(fontSize: 16, color: AppColors.blackColor),
       decoration: InputDecoration(
+        labelStyle: TextStyle(color: Colors.grey),
+        floatingLabelStyle: TextStyle(color: AppColors.primaryColor),
         labelText: 'عنوان الوجبة',
         hintText: 'أدخل عنواناً جذاباً للوجبة',
         prefixIcon: Container(
@@ -472,6 +474,8 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
       maxLines: 4,
       style: const TextStyle(fontSize: 16, color: AppColors.blackColor),
       decoration: InputDecoration(
+        labelStyle: TextStyle(color: Colors.grey),
+        floatingLabelStyle: TextStyle(color: AppColors.primaryColor),
         labelText: 'وصف الوجبة',
         hintText: 'صف مكونات الوجبة وأي تفاصيل مهمة',
         alignLabelWithHint: true,
@@ -500,6 +504,8 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
       keyboardType: TextInputType.number,
       style: const TextStyle(fontSize: 16, color: AppColors.blackColor),
       decoration: InputDecoration(
+        labelStyle: TextStyle(color: Colors.grey),
+        floatingLabelStyle: TextStyle(color: AppColors.primaryColor),
         labelText: 'عدد الأفراد',
         hintText: 'أدخل عدد الأفراد',
         prefixIcon: Container(
