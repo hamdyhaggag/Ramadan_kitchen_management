@@ -64,6 +64,7 @@ class _ManageCasesScreenState extends State<ManageCasesScreen>
               child: Column(
                 children: [
                   TabBar(
+                    dividerColor: Colors.transparent,
                     labelStyle: TextStyle(
                       color: AppColors.primaryColor,
                       fontFamily: 'DIN',
