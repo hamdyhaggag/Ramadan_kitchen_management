@@ -65,6 +65,8 @@ class _LoginFormState extends State<LoginForm> {
               backgroundColor: AppColors.primaryColor,
               textColor: AppColors.whiteColor,
               onPressed: () {
+                FocusScope.of(context).unfocus();
+
                 if (formKey.currentState!.validate()) {
                   formKey.currentState!.save();
                   context.read<LoginCubit>().login(
