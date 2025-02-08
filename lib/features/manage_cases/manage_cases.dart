@@ -166,6 +166,32 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
         .toList();
   }
 
+  void _showFilterModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: _FilterModalContent(
+          currentFilter: selectedFilter,
+          currentValue: selectedFilterValue,
+          onFilterChanged: (newFilter, newValue) {
+            setState(() {
+              selectedFilter = newFilter;
+              selectedFilterValue = newValue;
+            });
+          },
+          filterOptions: filterOptions,
+        ),
+      ),
+    );
+  }
+
   void _navigateToManageDetails() async {
     await Navigator.push(
         context,
@@ -250,6 +276,7 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: DataTable(
+                        dividerThickness: 0.2,
                         headingRowColor:
                             WidgetStateProperty.all(Colors.grey.shade200),
                         dataRowMinHeight: 40,
@@ -326,67 +353,45 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
   }
 
   Widget _buildFilterSection(bool isPortrait) {
-    return Wrap(
-      spacing: 16,
-      runSpacing: 16,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    return Row(
       children: [
-        SizedBox(
-          width: isPortrait ? double.infinity : 200,
-          child: DropdownButtonFormField<String?>(
-            value: selectedFilter,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppColors.greyColor)),
-              enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppColors.greyColor)),
-              focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppColors.greyColor)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+        Expanded(
+          child: OutlinedButton.icon(
+            icon: Icon(Icons.filter_list, color: AppColors.primaryColor),
+            label: Text(
+              selectedFilter == null
+                  ? "الفلتر"
+                  : "${filterOptions[selectedFilter]} - ${_getValueText(selectedFilterValue)}",
+              style: TextStyle(
+                color: AppColors.primaryColor,
+                fontSize: isPortrait ? 16 : 18,
+              ),
             ),
-            icon: Icon(Icons.arrow_drop_down, color: AppColors.greyColor),
-            hint: const Text("اختر نوع الفلتر"),
-            items: [
-              DropdownMenuItem(
-                  value: null,
-                  child: Text("إلغاء الفلتر",
-                      style: TextStyle(fontSize: isPortrait ? 14 : 16))),
-              ...filterOptions.entries.map((entry) => DropdownMenuItem(
-                    value: entry.key,
-                    child: Text(entry.value,
-                        style: TextStyle(fontSize: isPortrait ? 14 : 16)),
-                  )),
-            ],
-            onChanged: (value) => setState(() {
-              selectedFilter = value;
-              selectedFilterValue = null;
-            }),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+              side: BorderSide(color: AppColors.primaryColor),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: _showFilterModal,
           ),
         ),
         if (selectedFilter != null)
-          SizedBox(
-            width: isPortrait ? double.infinity : 150,
-            child: DropdownButtonFormField<bool?>(
-              value: selectedFilterValue,
-              decoration: InputDecoration(
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-              ),
-              hint: const Text("اختر القيمة"),
-              items: const [
-                DropdownMenuItem(value: null, child: Text("الكل")),
-                DropdownMenuItem(value: true, child: Text("نعم")),
-                DropdownMenuItem(value: false, child: Text("لا")),
-              ],
-              onChanged: (value) => setState(() => selectedFilterValue = value),
-            ),
+          IconButton(
+            icon: Icon(Icons.clear, color: Colors.red),
+            onPressed: () => setState(() {
+              selectedFilter = null;
+              selectedFilterValue = null;
+            }),
           ),
       ],
     );
+  }
+
+  String _getValueText(bool? value) {
+    if (value == null) return "الكل";
+    return value ? "نعم" : "لا";
   }
 
   List<DataColumn> _buildDataColumns(bool isPortrait) {
@@ -497,5 +502,270 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
         ],
       );
     }).toList();
+  }
+}
+
+class _FilterModalContent extends StatefulWidget {
+  final String? currentFilter;
+  final bool? currentValue;
+  final Function(String?, bool?) onFilterChanged;
+  final Map<String, String> filterOptions;
+
+  const _FilterModalContent({
+    required this.currentFilter,
+    required this.currentValue,
+    required this.onFilterChanged,
+    required this.filterOptions,
+  });
+
+  @override
+  State<_FilterModalContent> createState() => _FilterModalContentState();
+}
+
+class _FilterModalContentState extends State<_FilterModalContent> {
+  late String? selectedFilter;
+  late bool? selectedValue;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedFilter = widget.currentFilter;
+    selectedValue = widget.currentValue;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildHeader(theme),
+          const SizedBox(height: 24),
+          _buildFilterTypeSection(theme, isDarkMode),
+          const SizedBox(height: 16),
+          _buildValueSection(theme, isDarkMode),
+          const SizedBox(height: 24),
+          _buildActionButtons(),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(ThemeData theme) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Text(
+          "تصفية الحالات",
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: IconButton(
+            icon: Icon(Icons.close, color: theme.colorScheme.onSurface),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterTypeSection(ThemeData theme, bool isDarkMode) {
+    return Material(
+      elevation: 2,
+      borderRadius: BorderRadius.circular(12),
+      color: isDarkMode ? Colors.grey.shade900 : Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              "نوع الفلتر",
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          ...widget.filterOptions.entries.map((entry) => _buildFilterOption(
+                theme,
+                entry.key,
+                entry.value,
+                showDivider: true,
+              )),
+          _buildFilterOption(theme, null, "الكل", showDivider: false),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterOption(
+    ThemeData theme,
+    String? value,
+    String title, {
+    required bool showDivider,
+  }) {
+    return Column(
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => setState(() => selectedFilter = value),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      title,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: value == null
+                            ? theme.colorScheme.onSurface.withOpacity(0.6)
+                            : theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ),
+                Radio<String?>(
+                  value: value,
+                  groupValue: selectedFilter,
+                  activeColor: theme.colorScheme.primary,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  onChanged: (v) => setState(() => selectedFilter = v),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (showDivider)
+          Divider(height: 1, color: theme.dividerColor.withOpacity(0.1)),
+      ],
+    );
+  }
+
+  Widget _buildValueSection(ThemeData theme, bool isDarkMode) {
+    return Material(
+      elevation: 2,
+      borderRadius: BorderRadius.circular(12),
+      color: isDarkMode ? Colors.grey.shade900 : Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              "القيمة",
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          _buildValueOption(theme, null, "الكل"),
+          _buildValueOption(theme, true, "نعم"),
+          _buildValueOption(theme, false, "لا"),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildValueOption(ThemeData theme, bool? value, String title) {
+    final isEnabled = selectedFilter != null;
+    return Opacity(
+      opacity: isEnabled ? 1 : 0.5,
+      child: Column(
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap:
+                isEnabled ? () => setState(() => selectedValue = value) : null,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        title,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Radio<bool?>(
+                    value: value,
+                    groupValue: selectedValue,
+                    activeColor: theme.colorScheme.primary,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    onChanged: isEnabled
+                        ? (v) => setState(() => selectedValue = v)
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Divider(height: 1, color: theme.dividerColor.withOpacity(0.1)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: TextButton(
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text("إعادة تعيين",
+                style: TextStyle(color: AppColors.primaryColor)),
+            onPressed: () {
+              setState(() {
+                selectedFilter = null;
+                selectedValue = null;
+              });
+            },
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 2,
+              shadowColor: Colors.black12,
+            ),
+            onPressed: () {
+              widget.onFilterChanged(selectedFilter, selectedValue);
+              Navigator.pop(context);
+            },
+            child: const Text("تطبيق الفلتر"),
+          ),
+        ),
+      ],
+    );
   }
 }
