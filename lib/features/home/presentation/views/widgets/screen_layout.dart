@@ -7,12 +7,12 @@ import 'package:ramadan_kitchen_management/core/services/firebase_auth_service.d
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/features/daily_expenses/daily_expenses.dart';
 import 'package:ramadan_kitchen_management/features/manage_cases/manage_cases.dart';
-import 'package:ramadan_kitchen_management/features/reports/presentation/views/reports.dart';
 import 'package:ramadan_kitchen_management/features/statistics/statistics_screen.dart';
 import 'package:ramadan_kitchen_management/features/auth/data/repos/auth_repo.dart';
 import 'package:ramadan_kitchen_management/core/services/service_locator.dart';
 
 import '../../../../previous_days/presentation/views/previous_days_screen.dart';
+import '../../../../reports/reports.dart';
 
 class ScreenLayout extends StatefulWidget {
   const ScreenLayout({super.key});

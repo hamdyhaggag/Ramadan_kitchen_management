@@ -10,7 +10,7 @@ import '../../features/daily_expenses/daily_expenses.dart';
 import '../../features/home/presentation/views/home_view.dart';
 import '../../features/manage_cases/manage_cases.dart';
 import '../../features/on_boarding/presentation/views/login_or_register_view.dart';
-import '../../features/reports/presentation/views/reports.dart';
+import '../../features/reports/reports.dart';
 import '../../features/statistics/statistics_screen.dart';
 
 Route<dynamic> onGenerateRoutes(RouteSettings settings) {
