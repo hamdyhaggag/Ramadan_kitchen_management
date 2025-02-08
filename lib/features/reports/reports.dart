@@ -140,7 +140,7 @@ class ReportsScreenState extends State<ReportsScreen>
                       Text('${entry.value.length} مصروفات',
                           style: TextStyle(color: Colors.grey[700])),
                       const SizedBox(width: 8),
-                      Text(total.toStringAsFixed(2),
+                      Text('${total.toStringAsFixed(0)} جنيه',
                           style: TextStyle(
                               color: AppColors.primaryColor,
                               fontWeight: FontWeight.bold)),
@@ -175,7 +175,7 @@ class ReportsScreenState extends State<ReportsScreen>
                                 children: [
                                   const SizedBox(height: 4),
                                   Text(
-                                      'المبلغ: ${expense.amount.toStringAsFixed(2)} ج.م',
+                                      'المبلغ: ${expense.amount.toStringAsFixed(0)} ج.م',
                                       style: TextStyle(
                                           color: Colors.grey[700],
                                           fontSize: 13)),
@@ -299,7 +299,7 @@ class ReportsScreenState extends State<ReportsScreen>
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(8),
                         child: pw.Text(
-                            '${expense.amount.toStringAsFixed(2)} ج.م',
+                            '${expense.amount.toStringAsFixed(0)} ج.م',
                             style: pw.TextStyle(font: arabicFont),
                             textDirection: pw.TextDirection.rtl,
                             textAlign: pw.TextAlign.right),
@@ -411,6 +411,7 @@ class ReportsScreenState extends State<ReportsScreen>
             ),
           ],
           bottom: const TabBar(
+            dividerColor: Colors.transparent,
             tabs: [
               Tab(text: 'جميع المصروفات'),
               Tab(text: 'غير المدفوعة'),
