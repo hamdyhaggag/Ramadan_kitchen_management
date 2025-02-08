@@ -1,48 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/cubit/donation_cubit.dart';
 
-class PreviousDaysScreen extends StatelessWidget {
+import '../widgets/card_of_previous.dart';
+
+class PreviousDaysScreen extends StatefulWidget {
   const PreviousDaysScreen({super.key});
+
+  @override
+  State<PreviousDaysScreen> createState() => _PreviousDaysScreenState();
+}
+
+class _PreviousDaysScreenState extends State<PreviousDaysScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('الأيام السابقة'),
+        centerTitle: true,
+        elevation: 0,
+      ),
       body: BlocBuilder<DonationCubit, DonationState>(
         builder: (context, state) {
           if (state is DonationLoaded) {
-            return CustomScrollView(
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.all(16),
-                  sliver: SliverGrid(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
-                      childAspectRatio: 0.65,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final donation = state.donations[index];
-                        final donationDate =
-                            (donation['created_at'] as Timestamp).toDate();
-                        return _DonationDayCard(
-                          date: donationDate,
-                          mealTitle: donation['mealTitle'] ?? 'No Title',
-                          mealDescription: donation['mealDescription'] ?? '',
-                          participants: donation['numberOfIndividuals'] ?? 0,
-                          imageUrl: donation['mealImageUrl'] ?? '',
-                          onTap: () {},
-                        );
-                      },
-                      childCount: state.donations.length,
-                    ),
-                  ),
+            final filteredDonations = state.donations.where((donation) {
+              final title =
+                  donation['mealTitle']?.toString().toLowerCase() ?? '';
+              return title.contains(_searchQuery.trim().toLowerCase());
+            }).toList();
+
+            return Column(
+              children: [
+                _buildSearchBar(),
+                Expanded(
+                  child: _buildDonationList(filteredDonations),
                 ),
               ],
             );
@@ -54,108 +55,69 @@ class PreviousDaysScreen extends StatelessWidget {
       ),
     );
   }
-}
 
-class _DonationDayCard extends StatelessWidget {
-  final DateTime date;
-  final String mealTitle;
-  final String mealDescription;
-  final int participants;
-  final String imageUrl;
-  final VoidCallback onTap;
-  const _DonationDayCard({
-    required this.date,
-    required this.mealTitle,
-    required this.mealDescription,
-    required this.participants,
-    required this.imageUrl,
-    required this.onTap,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: Image.network(
-                    imageUrl,
-                    height: 140,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                Positioned(
-                  left: 8,
-                  top: 8,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryColor.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      DateFormat('dd MMM').format(date),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.grey[100],
+          hintStyle: const TextStyle(color: Colors.grey),
+          hintText: 'بتدور على إفطار يوم معين ؟ .. ',
+          prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: Icon(Icons.clear, color: Colors.grey[600]),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
                 )
-              ],
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      mealTitle,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      mealDescription,
-                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.people_outline,
-                            size: 16, color: Colors.grey[600]),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$participants أفراد',
-                          style:
-                              TextStyle(fontSize: 14, color: Colors.grey[600]),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            )
-          ],
+              : null,
         ),
+        onChanged: (value) => setState(() => _searchQuery = value),
       ),
+    );
+  }
+
+  Widget _buildDonationList(List<dynamic> donations) {
+    if (donations.isEmpty) {
+      return Center(
+        child: Text(
+          _searchQuery.isEmpty
+              ? 'لا يوجد إفطارات سابقة'
+              : 'لا يوجد إفطارات سابقة باسم "$_searchQuery"',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: donations.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 16),
+      itemBuilder: (context, index) {
+        final donation = donations[index];
+        final date = (donation['created_at'] as Timestamp).toDate();
+        return DonationCardOfPrevious(
+          date: date,
+          mealTitle: donation['mealTitle'] ?? 'Untitled Meal',
+          description: donation['mealDescription'] ?? '',
+          participants: donation['numberOfIndividuals'] ?? 0,
+          imageUrl: donation['mealImageUrl'] ?? '',
+        );
+      },
     );
   }
 }

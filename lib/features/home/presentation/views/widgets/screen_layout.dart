@@ -63,7 +63,7 @@ class _ScreenLayoutState extends State<ScreenLayout> {
                 ),
               ],
             )
-          : _currentIndex == 2 || _currentIndex == 3
+          : _currentIndex == 1 || _currentIndex == 2 || _currentIndex == 3
               ? null
               : AppBar(
                   title: _getAppBarTitle(),
