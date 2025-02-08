@@ -192,6 +192,7 @@ class _ScreenLayoutState extends State<ScreenLayout> {
       selectedItemColor: AppColors.primaryColor,
       currentIndex: _currentIndex,
       onTap: (index) => setState(() => _currentIndex = index),
+      type: BottomNavigationBarType.fixed,
     );
   }
 }
