@@ -16,21 +16,20 @@ ThemeData lightTheme = ThemeData(
     backgroundColor: AppColors.whiteColor,
     surfaceTintColor: AppColors.whiteColor,
   ),
-  // inputDecorationTheme: InputDecorationTheme(
-  //   border: OutlineInputBorder(
-  //     borderRadius: BorderRadius.circular(16),
-  //     borderSide: BorderSide(color: AppColors.greyColor.withAlpha(128)),
-  //   ),
-  //   focusedBorder: OutlineInputBorder(
-  //     borderRadius: BorderRadius.circular(16),
-  //     borderSide: const BorderSide(color: AppColors.primaryColor),
-  //   ),
-  //   enabledBorder: OutlineInputBorder(
-  //     borderRadius: BorderRadius.circular(16),
-  //     borderSide: BorderSide(color: AppColors.greyColor.withAlpha(128)),
-  //   ),
-  //   floatingLabelStyle: AppStyles.dinRegular14,
-  // ),
+  inputDecorationTheme: InputDecorationTheme(
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(16),
+      borderSide: BorderSide(color: AppColors.greyColor.withAlpha(128)),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(16),
+      borderSide: const BorderSide(color: AppColors.primaryColor),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(16),
+      borderSide: BorderSide(color: AppColors.greyColor.withAlpha(128)),
+    ),
+  ),
   // textButtonTheme: TextButtonThemeData(
   //   style: TextButton.styleFrom(
   //     shape: RoundedRectangleBorder(
