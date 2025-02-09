@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_cubit.dart';
 import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_state.dart';
+import 'package:ramadan_kitchen_management/features/statistics/presentation/views/widgets/total_statistics_content.dart';
 
 class StatisticsScreen extends StatelessWidget {
   const StatisticsScreen({super.key});
@@ -87,7 +88,7 @@ class _AdminStatisticsViewState extends State<_AdminStatisticsView>
             controller: _tabController,
             children: [
               _StatisticsContent(cases: widget.cases),
-              _TotalStatisticsContent(),
+              TotalStatisticsContent(),
             ],
           ),
         ),
@@ -330,14 +331,5 @@ class _StatisticsContentState extends State<_StatisticsContent> {
         ],
       ),
     );
-  }
-}
-
-class _TotalStatisticsContent extends StatelessWidget {
-  const _TotalStatisticsContent();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('Statistics')));
   }
 }

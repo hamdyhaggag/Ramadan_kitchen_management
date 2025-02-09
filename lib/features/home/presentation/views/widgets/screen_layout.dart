@@ -7,7 +7,7 @@ import 'package:ramadan_kitchen_management/core/services/firebase_auth_service.d
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/features/daily_expenses/daily_expenses.dart';
 import 'package:ramadan_kitchen_management/features/manage_cases/manage_cases.dart';
-import 'package:ramadan_kitchen_management/features/statistics/statistics_screen.dart';
+import 'package:ramadan_kitchen_management/features/statistics/presentation/views/statistics_screen.dart';
 import 'package:ramadan_kitchen_management/features/auth/data/repos/auth_repo.dart';
 import 'package:ramadan_kitchen_management/core/services/service_locator.dart';
 
