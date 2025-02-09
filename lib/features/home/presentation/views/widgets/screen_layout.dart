@@ -50,8 +50,7 @@ class _ScreenLayoutState extends State<ScreenLayout> {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: IconButton(
-                    icon:
-                        const Icon(Icons.logout, color: AppColors.primaryColor),
+                    icon: const Icon(Icons.logout, color: AppColors.blackColor),
                     onPressed: () => _showCreativeLogoutDialog(context),
                   ),
                 ),
