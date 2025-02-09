@@ -123,28 +123,60 @@ class ReportsScreenState extends State<ReportsScreen>
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               title: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Icon(Icons.calendar_today,
-                          color: AppColors.primaryColor.withAlpha(200)),
-                      const SizedBox(width: 8),
-                      Text(formatDateString(entry.key),
-                          style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold)),
-                    ],
+                  // Date Section
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          color: AppColors.primaryColor.withAlpha(200),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            formatDateString(entry.key),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  Row(
-                    children: [
-                      Text('${entry.value.length} مصروفات',
-                          style: TextStyle(color: Colors.grey[700])),
-                      const SizedBox(width: 8),
-                      Text('${total.toStringAsFixed(0)} جنيه',
-                          style: TextStyle(
+                  // Total Section
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Flexible(
+                          flex: 2,
+                          child: Text(
+                            '${entry.value.length} مصروفات',
+                            style: TextStyle(color: Colors.grey[700]),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            textAlign: TextAlign.end,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          flex: 1,
+                          child: Text(
+                            '${total.toStringAsFixed(0)} جنيه',
+                            style: TextStyle(
                               color: AppColors.primaryColor,
-                              fontWeight: FontWeight.bold)),
-                    ],
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
