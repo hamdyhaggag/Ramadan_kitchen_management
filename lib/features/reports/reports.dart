@@ -410,7 +410,14 @@ class ReportsScreenState extends State<ReportsScreen>
               onPressed: () => setState(() => _isAscending = !_isAscending),
             ),
           ],
-          bottom: const TabBar(
+          bottom: TabBar(
+            splashFactory: NoSplash.splashFactory,
+            overlayColor: WidgetStateProperty.resolveWith<Color?>(
+                (Set<WidgetState> states) {
+              return states.contains(WidgetState.focused)
+                  ? null
+                  : Colors.transparent;
+            }),
             dividerColor: Colors.transparent,
             tabs: [
               Tab(text: 'جميع المصروفات'),

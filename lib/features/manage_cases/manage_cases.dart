@@ -64,6 +64,14 @@ class _ManageCasesScreenState extends State<ManageCasesScreen>
               child: Column(
                 children: [
                   TabBar(
+                    unselectedLabelColor: AppColors.greyColor,
+                    splashFactory: NoSplash.splashFactory,
+                    overlayColor: WidgetStateProperty.resolveWith<Color?>(
+                        (Set<WidgetState> states) {
+                      return states.contains(WidgetState.focused)
+                          ? null
+                          : Colors.transparent;
+                    }),
                     dividerColor: Colors.transparent,
                     labelStyle: TextStyle(
                       color: AppColors.primaryColor,
@@ -537,234 +545,204 @@ class _FilterModalContentState extends State<_FilterModalContent> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
+    final hasFilterSelected = selectedFilter != null;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    return Container(
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.grey[900] : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildHeader(theme),
+          _buildModalHeader(theme),
           const SizedBox(height: 24),
           _buildFilterTypeSection(theme, isDarkMode),
-          const SizedBox(height: 16),
-          _buildValueSection(theme, isDarkMode),
           const SizedBox(height: 24),
-          _buildActionButtons(),
+          _buildValueSection(theme, hasFilterSelected),
+          const SizedBox(height: 32),
+          _buildActionButtons(theme),
           const SizedBox(height: 8),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(ThemeData theme) {
-    return Stack(
-      alignment: Alignment.center,
+  Widget _buildModalHeader(ThemeData theme) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          "تصفية الحالات",
+          'تصفية الحالات',
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
             color: theme.colorScheme.primary,
           ),
         ),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: IconButton(
-            icon: Icon(Icons.close, color: theme.colorScheme.onSurface),
-            onPressed: () => Navigator.pop(context),
-          ),
+        IconButton(
+          icon: Icon(Icons.close, size: 24, color: theme.colorScheme.onSurface),
+          onPressed: () => Navigator.pop(context),
         ),
       ],
     );
   }
 
   Widget _buildFilterTypeSection(ThemeData theme, bool isDarkMode) {
-    return Material(
-      elevation: 2,
-      borderRadius: BorderRadius.circular(12),
-      color: isDarkMode ? Colors.grey.shade900 : Colors.white,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text(
-              "نوع الفلتر",
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          ...widget.filterOptions.entries.map((entry) => _buildFilterOption(
-                theme,
-                entry.key,
-                entry.value,
-                showDivider: true,
-              )),
-          _buildFilterOption(theme, null, "الكل", showDivider: false),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterOption(
-    ThemeData theme,
-    String? value,
-    String title, {
-    required bool showDivider,
-  }) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: () => setState(() => selectedFilter = value),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Text(
-                      title,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: value == null
-                            ? theme.colorScheme.onSurface.withOpacity(0.6)
-                            : theme.colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                ),
-                Radio<String?>(
-                  value: value,
-                  groupValue: selectedFilter,
-                  activeColor: theme.colorScheme.primary,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  onChanged: (v) => setState(() => selectedFilter = v),
-                ),
-              ],
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(
+            'اختر نوع التصفية',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.primary.withValues(alpha: 0.8),
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),
-        if (showDivider)
-          Divider(height: 1, color: theme.dividerColor.withOpacity(0.1)),
+        SegmentedButton<String?>(
+          segments: [
+            ...widget.filterOptions.entries.map((e) => ButtonSegment(
+                  value: e.key,
+                  label: Text(e.value),
+                  icon: const Icon(Icons.filter_alt_outlined),
+                )),
+            const ButtonSegment(
+              value: null,
+              label: Text('الكل'),
+              icon: Icon(Icons.all_inclusive),
+            ),
+          ],
+          selected: {selectedFilter},
+          onSelectionChanged: (Set<String?> newSelection) {
+            setState(() {
+              selectedFilter = newSelection.first;
+              if (selectedFilter == null) selectedValue = null;
+            });
+          },
+          style: ButtonStyle(
+            backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+              if (states.contains(WidgetState.selected)) {
+                return theme.colorScheme.primary.withValues(alpha: 0.1);
+              }
+              return Colors.transparent;
+            }),
+            shape: WidgetStateProperty.all(
+              RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          multiSelectionEnabled: false,
+        ),
       ],
     );
   }
 
-  Widget _buildValueSection(ThemeData theme, bool isDarkMode) {
-    return Material(
-      elevation: 2,
-      borderRadius: BorderRadius.circular(12),
-      color: isDarkMode ? Colors.grey.shade900 : Colors.white,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text(
-              "القيمة",
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          _buildValueOption(theme, null, "الكل"),
-          _buildValueOption(theme, true, "نعم"),
-          _buildValueOption(theme, false, "لا"),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildValueOption(ThemeData theme, bool? value, String title) {
-    final isEnabled = selectedFilter != null;
-    return Opacity(
-      opacity: isEnabled ? 1 : 0.5,
-      child: Column(
-        children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap:
-                isEnabled ? () => setState(() => selectedValue = value) : null,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Text(
-                        title,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
+  Widget _buildValueSection(ThemeData theme, bool hasFilterSelected) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: hasFilterSelected
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    'اختر القيمة',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.8),
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  Radio<bool?>(
-                    value: value,
-                    groupValue: selectedValue,
-                    activeColor: theme.colorScheme.primary,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    onChanged: isEnabled
-                        ? (v) => setState(() => selectedValue = v)
-                        : null,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Divider(height: 1, color: theme.dividerColor.withOpacity(0.1)),
-        ],
-      ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      selectedValue == null
+                          ? 'عرض الكل'
+                          : selectedValue!
+                              ? 'نعم'
+                              : 'لا',
+                      style: theme.textTheme.bodyLarge,
+                    ),
+                    Row(
+                      children: [
+                        ToggleButtons(
+                          isSelected: [
+                            selectedValue == true,
+                            selectedValue == false,
+                            selectedValue == null,
+                          ],
+                          onPressed: (index) {
+                            setState(() {
+                              selectedValue = index == 0
+                                  ? true
+                                  : index == 1
+                                      ? false
+                                      : null;
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          constraints: const BoxConstraints(
+                            minHeight: 40,
+                            minWidth: 56,
+                          ),
+                          children: const [
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 12),
+                              child: Text('نعم'),
+                            ),
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 12),
+                              child: Text('لا'),
+                            ),
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 12),
+                              child: Text('الكل'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            )
+          : const SizedBox.shrink(),
     );
   }
 
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons(ThemeData theme) {
     return Row(
       children: [
         Expanded(
-          child: TextButton(
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: Text("إعادة تعيين",
-                style: TextStyle(color: AppColors.primaryColor)),
-            onPressed: () {
-              setState(() {
-                selectedFilter = null;
-                selectedValue = null;
-              });
-            },
-          ),
+          child: GeneralButton(
+              onPressed: () {
+                setState(() {
+                  selectedFilter = null;
+                  selectedValue = null;
+                });
+              },
+              text: 'إعادة تعيين',
+              backgroundColor: AppColors.primaryColor.withValues(alpha: 0.5),
+              textColor: AppColors.whiteColor),
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
+          child: GeneralButton(
+              onPressed: () {
+                widget.onFilterChanged(selectedFilter, selectedValue);
+                Navigator.pop(context);
+              },
+              text: 'تطبيق التصفية',
               backgroundColor: AppColors.primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              elevation: 2,
-              shadowColor: Colors.black12,
-            ),
-            onPressed: () {
-              widget.onFilterChanged(selectedFilter, selectedValue);
-              Navigator.pop(context);
-            },
-            child: const Text("تطبيق الفلتر"),
-          ),
-        ),
+              textColor: AppColors.whiteColor),
+        )
       ],
     );
   }
