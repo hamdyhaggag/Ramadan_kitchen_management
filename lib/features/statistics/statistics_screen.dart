@@ -31,7 +31,7 @@ class StatisticsScreen extends StatelessWidget {
           if (state is CasesLoaded) {
             return isAdmin
                 ? _AdminStatisticsView(cases: state.cases)
-                : _StatisticsContent(cases: state.cases);
+                : _TotalStatisticsContent(cases: state.cases);
           }
           return const Center(child: Text('No statistics available'));
         },
