@@ -13,14 +13,41 @@ class TotalStatisticsContent extends StatefulWidget {
   State<TotalStatisticsContent> createState() => _TotalStatisticsContentState();
 }
 
-class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
+class _TotalStatisticsContentState extends State<TotalStatisticsContent>
+    with TickerProviderStateMixin {
   int _totalIndividuals = 0;
   bool _isLoading = true;
+  late AnimationController _waveController;
+  late AnimationController _rotationController;
+  late AnimationController _particleController;
 
   @override
   void initState() {
     super.initState();
     _loadDonationData();
+
+    _waveController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+
+    _rotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 20),
+    )..repeat();
+
+    _particleController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _waveController.dispose();
+    _rotationController.dispose();
+    _particleController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadDonationData() async {
@@ -62,67 +89,20 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
     return Scaffold(
       body: Stack(
         children: [
-          Positioned(
-            right: -MediaQuery.of(context).size.width * 0.3,
-            top: -MediaQuery.of(context).size.width * 0.2,
-            child: Opacity(
-              opacity: 0.05,
-              child: Image.asset(
-                'assets/images/logo.png',
-                width: MediaQuery.of(context).size.width * 2.2,
-                height: MediaQuery.of(context).size.width * 2.6,
-              ),
-            ),
-          ),
+          _buildAnimatedBackground(),
           _isLoading
-              ? _buildShimmerLoading()
+              ? _buildEnhancedShimmerLoading()
               : Center(
                   child: Padding(
                     padding: const EdgeInsets.all(20.0),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Positioned(
-                              child: CustomPaint(
-                                painter: _RadialPainter(),
-                                size: const Size(350, 350),
-                              ),
-                            ),
-                            Column(
-                              children: [
-                                Text(
-                                  'إجمالي الأفراد',
-                                  style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey[700],
-                                  ),
-                                ),
-                                AnimatedCount(
-                                  count: _totalIndividuals,
-                                  duration: const Duration(seconds: 1),
-                                  style: TextStyle(
-                                    fontSize: 48,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.customColors[4],
-                                  ),
-                                ),
-                                Text(
-                                  'تم إطعامهم',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                        _buildAnimatedRadialProgress(),
+                        const SizedBox(height: 40),
+                        _buildAnimatedProgressWave(),
                         const SizedBox(height: 30),
-                        _buildProgressWave(),
+                        _buildFloatingParticles(),
                       ],
                     ),
                   ),
@@ -132,96 +112,169 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
     );
   }
 
-  Widget _buildProgressWave() {
-    return Container(
-      height: 20,
-      width: 200,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        color: Colors.grey[200],
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.3),
-            blurRadius: 5,
-            offset: const Offset(0, 3),
+  Widget _buildAnimatedBackground() {
+    return AnimatedBuilder(
+      animation: _particleController,
+      builder: (context, child) {
+        return CustomPaint(
+          painter: ParticlePainter(_particleController.value),
+          size: Size.infinite,
+        );
+      },
+    );
+  }
+
+  Widget _buildAnimatedRadialProgress() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        RotationTransition(
+          turns: Tween(begin: 0.0, end: 1.0).animate(_rotationController),
+          child: CustomPaint(
+            painter: _AnimatedRadialPainter(),
+            size: const Size(350, 350),
           ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              return AnimatedContainer(
-                duration: const Duration(seconds: 1),
-                width: constraints.maxWidth * (_totalIndividuals / 1000),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.secondaryColor, AppColors.primaryColor],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primaryColor.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          Center(
+        ),
+        Column(
+          children: [
+            Text(
+              'إجمالي الأفراد',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[700],
+                shadows: [
+                  Shadow(
+                    blurRadius: 2,
+                    color: Colors.black.withOpacity(0.1),
+                    offset: const Offset(1, 1),
+                  )
+                ],
+              ),
+            ),
+            AnimatedCount(
+              count: _totalIndividuals,
+              duration: const Duration(seconds: 1),
+              style: TextStyle(
+                fontSize: 52,
+                fontWeight: FontWeight.bold,
+                foreground: Paint()
+                  ..shader = LinearGradient(
+                    colors: [
+                      AppColors.primaryColor,
+                      AppColors.secondaryColor,
+                    ],
+                  ).createShader(const Rect.fromLTWH(0, 0, 200, 70)),
+              ),
+            ),
+            Text(
+              'تم إطعامهم',
+              style: TextStyle(
+                fontSize: 20,
+                color: Colors.grey[600],
+                letterSpacing: 1.1,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAnimatedProgressWave() {
+    return AnimatedBuilder(
+      animation: _waveController,
+      builder: (context, child) {
+        return CustomPaint(
+          painter: WavePainter(_waveController.value),
+          child: Container(
+            height: 30,
+            width: 250,
+            alignment: Alignment.center,
             child: Text(
               '${(_totalIndividuals / 1000 * 100).toStringAsFixed(1)}% من الهدف',
               style: const TextStyle(
                 color: AppColors.whiteColor,
                 fontWeight: FontWeight.bold,
+                fontSize: 14,
               ),
             ),
           ),
-        ],
+        );
+      },
+    );
+  }
+
+  Widget _buildEnhancedShimmerLoading() {
+    return Center(
+      child: Shimmer.fromColors(
+        baseColor: Colors.grey[300]!,
+        highlightColor: Colors.grey[100]!,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(100),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.3),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  )
+                ],
+              ),
+            ),
+            const SizedBox(height: 30),
+            Container(
+              width: 200,
+              height: 20,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildShimmerLoading() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: AppColors.whiteColor,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(height: 30),
-          Container(
-            width: 200,
-            height: 100,
-            color: AppColors.whiteColor,
-          ),
-          const SizedBox(height: 30),
-          Container(
-            width: 200,
-            height: 20,
-            color: AppColors.whiteColor,
-          ),
-        ],
+  Widget _buildFloatingParticles() {
+    return SizedBox(
+      width: 200,
+      height: 50,
+      child: AnimatedBuilder(
+        animation: _particleController,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: FloatingParticlePainter(_particleController.value),
+          );
+        },
       ),
     );
   }
 }
 
-class _RadialPainter extends CustomPainter {
+class _AnimatedRadialPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
+    final gradient = SweepGradient(
+      colors: [
+        AppColors.primaryColor.withOpacity(0.2),
+        AppColors.secondaryColor.withOpacity(0.2),
+      ],
+      stops: const [0.0, 0.8],
+    );
+
     final paint = Paint()
-      ..color = AppColors.primaryColor.withOpacity(0.1)
+      ..shader = gradient.createShader(Rect.fromCircle(
+        center: size.center(Offset.zero),
+        radius: size.width / 2,
+      ))
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
 
@@ -241,7 +294,88 @@ class _RadialPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class WavePainter extends CustomPainter {
+  final double animationValue;
+
+  WavePainter(this.animationValue);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..style = PaintingStyle.fill
+      ..shader = LinearGradient(
+        colors: [AppColors.primaryColor, AppColors.secondaryColor],
+      ).createShader(Rect.fromLTRB(0, 0, size.width, size.height));
+
+    final path = Path();
+    final waveHeight = 10.0;
+    final waveLength = 100.0;
+    final phase = animationValue * 2 * pi;
+
+    path.moveTo(0, size.height / 2);
+    for (double x = 0; x <= size.width; x++) {
+      final y = waveHeight * sin((x / waveLength) * 2 * pi + phase);
+      path.lineTo(x, size.height / 2 + y);
+    }
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant WavePainter oldDelegate) => true;
+}
+
+class ParticlePainter extends CustomPainter {
+  final double animationValue;
+
+  ParticlePainter(this.animationValue);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final random = Random(0);
+    final paint = Paint()
+      ..color = AppColors.primaryColor.withOpacity(0.05)
+      ..style = PaintingStyle.fill;
+
+    for (int i = 0; i < 50; i++) {
+      final x = random.nextDouble() * size.width;
+      final y = random.nextDouble() * size.height;
+      final radius = random.nextDouble() * 3 + 1;
+      final offset = Offset(x, y + sin(animationValue * 2 * pi) * 10);
+      canvas.drawCircle(offset, radius, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class FloatingParticlePainter extends CustomPainter {
+  final double animationValue;
+
+  FloatingParticlePainter(this.animationValue);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppColors.primaryColor.withOpacity(0.3)
+      ..style = PaintingStyle.fill;
+
+    for (int i = 0; i < 5; i++) {
+      final x = i * 40.0;
+      final y = sin(animationValue * 2 * pi + i) * 10;
+      canvas.drawCircle(Offset(x, size.height / 2 + y), 4, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 class AnimatedCount extends ImplicitlyAnimatedWidget {
