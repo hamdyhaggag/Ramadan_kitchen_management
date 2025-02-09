@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/app_styles.dart';
@@ -18,6 +19,20 @@ class TermsAncConditions extends StatefulWidget {
 
 class _TermsAncConditionsState extends State<TermsAncConditions> {
   bool isTermsAccepted = false;
+  late TapGestureRecognizer _termsTapRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _termsTapRecognizer = TapGestureRecognizer();
+  }
+
+  @override
+  void dispose() {
+    _termsTapRecognizer.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -35,32 +50,56 @@ class _TermsAncConditionsState extends State<TermsAncConditions> {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text.rich(TextSpan(
-              children: [
-                TextSpan(
-                  text: AppTexts.fromCreatinganAccount,
-                  style: AppStyles.dinRegular16.copyWith(
-                    color: AppColors.blackColor,
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: AppTexts.fromCreatinganAccount,
+                    style: AppStyles.dinRegular16.copyWith(
+                      color: AppColors.blackColor,
+                    ),
                   ),
-                ),
-                TextSpan(
-                  text: AppTexts.youAreAccept,
-                  style: AppStyles.dinRegular16.copyWith(
-                    color: AppColors.blackColor,
+                  TextSpan(
+                    text: AppTexts.youAreAccept,
+                    style: AppStyles.dinRegular16.copyWith(
+                      color: AppColors.blackColor,
+                    ),
                   ),
-                ),
-                const TextSpan(
-                  text: AppTexts.termsAndConditions,
-                  style: AppStyles.dinRegular16,
-                ),
-                TextSpan(
-                  text: AppTexts.privacyPolicy,
-                  style: AppStyles.dinRegular16.copyWith(
-                    color: AppColors.blackColor,
+                  TextSpan(
+                    text: AppTexts.termsAndConditions,
+                    style: AppStyles.dinRegular16.copyWith(
+                      color: AppColors.primaryColor,
+                    ),
+                    recognizer: _termsTapRecognizer
+                      ..onTap = () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: Text(AppTexts.titleOfShroot),
+                              content: const SingleChildScrollView(
+                                child: Text(AppTexts.shorrot),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: Text(AppTexts.close),
+                                )
+                              ],
+                            );
+                          },
+                        );
+                      },
                   ),
-                ),
-              ],
-            )),
+                  TextSpan(
+                    text: AppTexts.privacyPolicy,
+                    style: AppStyles.dinRegular16.copyWith(
+                      color: AppColors.blackColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
