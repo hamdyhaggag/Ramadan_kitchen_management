@@ -34,17 +34,14 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
           .get();
 
       if (snapshot.docs.isNotEmpty) {
-        // Get the latest document for today
         final latestDoc = snapshot.docs.first;
         final dailyValue = latestDoc['numberOfIndividuals'] as int? ?? 0;
 
-        // Get historical data (previous days)
         final historicalSnapshot = await FirebaseFirestore.instance
             .collection('donations')
             .where('created_at', isLessThan: startOfDay)
             .get();
 
-        // Sum historical values
         int historicalTotal = historicalSnapshot.docs.fold(
           0,
           (sum, doc) => sum + (doc['numberOfIndividuals'] as int? ?? 0),
@@ -63,100 +60,127 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _isLoading
-          ? _buildShimmerLoading()
-          : Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Stack(
-                      alignment: Alignment.center,
+      body: Stack(
+        children: [
+          Positioned(
+            right: -MediaQuery.of(context).size.width * 0.3,
+            top: -MediaQuery.of(context).size.width * 0.2,
+            child: Opacity(
+              opacity: 0.05,
+              child: Image.asset(
+                'assets/images/logo.png',
+                width: MediaQuery.of(context).size.width * 2.2,
+                height: MediaQuery.of(context).size.width * 2.6,
+              ),
+            ),
+          ),
+          _isLoading
+              ? _buildShimmerLoading()
+              : Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Positioned(
-                          child: CustomPaint(
-                            painter: _RadialPainter(),
-                            size: const Size(350, 350),
-                          ),
-                        ),
-                        Column(
+                        Stack(
+                          alignment: Alignment.center,
                           children: [
-                            Text(
-                              'إجمالي الأفراد',
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey[700],
+                            Positioned(
+                              child: CustomPaint(
+                                painter: _RadialPainter(),
+                                size: const Size(350, 350),
                               ),
                             ),
-                            AnimatedCount(
-                              count: _totalIndividuals,
-                              duration: const Duration(seconds: 1),
-                              style: TextStyle(
-                                fontSize: 48,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.customColors[4], // 10% shade
-                              ),
-                            ),
-                            Text(
-                              'تم إطعامهم',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.grey[600],
-                              ),
+                            Column(
+                              children: [
+                                Text(
+                                  'إجمالي الأفراد',
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                                AnimatedCount(
+                                  count: _totalIndividuals,
+                                  duration: const Duration(seconds: 1),
+                                  style: TextStyle(
+                                    fontSize: 48,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.customColors[4],
+                                  ),
+                                ),
+                                Text(
+                                  'تم إطعامهم',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
+                        const SizedBox(height: 30),
+                        _buildProgressWave(),
                       ],
                     ),
+                  ),
+                ),
+        ],
+      ),
+    );
+  }
 
-                    const SizedBox(height: 30),
-
-                    // Progress wave animation
-                    Container(
-                      height: 20,
-                      width: 200,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        color: Colors.grey[200],
-                      ),
-                      child: Stack(
-                        children: [
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              return AnimatedContainer(
-                                duration: const Duration(seconds: 1),
-                                width: constraints.maxWidth *
-                                    (_totalIndividuals / 1000),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      AppColors.secondaryColor,
-                                      AppColors.primaryColor
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              );
-                            },
-                          ),
-                          Center(
-                            child: Text(
-                              '${(_totalIndividuals / 1000 * 100).toStringAsFixed(1)}% من الهدف',
-                              style: const TextStyle(
-                                color: AppColors.whiteColor,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+  Widget _buildProgressWave() {
+    return Container(
+      height: 20,
+      width: 200,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: Colors.grey[200],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.3),
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return AnimatedContainer(
+                duration: const Duration(seconds: 1),
+                width: constraints.maxWidth * (_totalIndividuals / 1000),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.secondaryColor, AppColors.primaryColor],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryColor.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
+              );
+            },
+          ),
+          Center(
+            child: Text(
+              '${(_totalIndividuals / 1000 * 100).toStringAsFixed(1)}% من الهدف',
+              style: const TextStyle(
+                color: AppColors.whiteColor,
+                fontWeight: FontWeight.bold,
               ),
             ),
+          ),
+        ],
+      ),
     );
   }
 
