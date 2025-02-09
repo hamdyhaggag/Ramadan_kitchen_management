@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:ramadan_kitchen_management/core/services/service_locator.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
+import 'package:ramadan_kitchen_management/features/auth/data/repos/auth_repo.dart';
 import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_cubit.dart';
 import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_state.dart';
 
@@ -10,24 +12,93 @@ class StatisticsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authRepo = getIt<AuthRepo>();
+    final isAdmin = authRepo.currentUser?.role == 'admin';
+
     return Scaffold(
       body: BlocBuilder<CasesCubit, CasesState>(
         builder: (context, state) {
           if (state is CasesLoading) {
             return const Center(
-                child: CircularProgressIndicator(
-              color: AppColors.primaryColor,
-            ));
+              child: CircularProgressIndicator(
+                color: AppColors.primaryColor,
+              ),
+            );
           }
           if (state is CasesError) {
             return Center(child: Text(state.message));
           }
           if (state is CasesLoaded) {
-            return _StatisticsContent(cases: state.cases);
+            return isAdmin
+                ? _AdminStatisticsView(cases: state.cases)
+                : _StatisticsContent(cases: state.cases);
           }
           return const Center(child: Text('No statistics available'));
         },
       ),
+    );
+  }
+}
+
+class _AdminStatisticsView extends StatefulWidget {
+  final List<Map<String, dynamic>> cases;
+  const _AdminStatisticsView({required this.cases});
+
+  @override
+  State<_AdminStatisticsView> createState() => _AdminStatisticsViewState();
+}
+
+class _AdminStatisticsViewState extends State<_AdminStatisticsView>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        TabBar(
+          unselectedLabelColor: AppColors.greyColor,
+          splashFactory: NoSplash.splashFactory,
+          overlayColor: WidgetStateProperty.resolveWith<Color?>(
+              (Set<WidgetState> states) {
+            return states.contains(WidgetState.focused)
+                ? null
+                : Colors.transparent;
+          }),
+          dividerColor: Colors.transparent,
+          labelStyle: TextStyle(
+            color: AppColors.primaryColor,
+            fontFamily: 'DIN',
+          ),
+          indicatorColor: AppColors.primaryColor,
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'الإحصائيات العامة'),
+            Tab(text: 'الإحصائيات التفصيلية'),
+          ],
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _StatisticsContent(cases: widget.cases),
+              _TotalStatisticsContent(cases: widget.cases),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -186,6 +257,28 @@ class _StatisticsContentState extends State<_StatisticsContent> {
                   ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TotalStatisticsContent extends StatelessWidget {
+  final List<Map<String, dynamic>> cases;
+  const _TotalStatisticsContent({required this.cases});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Text(
+          'الإحصائيات التفصيلية للمسؤولين',
+          style: TextStyle(
+            fontSize: 18,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
