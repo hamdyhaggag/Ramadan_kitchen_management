@@ -1,5 +1,7 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../../../core/utils/app_colors.dart';
 import 'details_of_previous_days.dart';
@@ -92,24 +94,73 @@ class DonationCardOfPrevious extends StatelessWidget {
       tag: imageUrl,
       child: Stack(
         children: [
-          Container(
-            height: 160,
-            decoration: BoxDecoration(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(12)),
-              image: DecorationImage(
-                image: NetworkImage(imageUrl),
-                fit: BoxFit.cover,
+          CachedNetworkImage(
+            imageUrl: imageUrl,
+            imageBuilder: (context, imageProvider) => Container(
+              height: 160,
+              decoration: BoxDecoration(
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
+                image: DecorationImage(
+                  image: imageProvider,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.6),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
               ),
             ),
-            child: Container(
+            placeholder: (context, url) => Shimmer.fromColors(
+              baseColor: Colors.grey[300]!,
+              highlightColor: Colors.grey[100]!,
+              child: Container(
+                height: 160,
+                decoration: BoxDecoration(
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(12)),
+                  color: Colors.grey[300],
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.image, size: 40, color: Colors.grey[700]),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Loading...",
+                        style: TextStyle(
+                          color: Colors.grey[700],
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            errorWidget: (context, url, error) => Container(
+              height: 160,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.6),
-                    Colors.transparent,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
+                color: Colors.grey[200],
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.error, color: Colors.red, size: 40),
+                    SizedBox(height: 8),
+                    Text("لا يوجد اتصال بالانترنت"),
                   ],
                 ),
               ),
