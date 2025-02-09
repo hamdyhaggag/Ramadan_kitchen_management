@@ -64,6 +64,7 @@ dependencies:
   cloudinary_public: ^0.23.1
   carousel_slider: ^5.0.0
   shimmer: ^3.0.0
+  device_preview_plus: ^2.0.0
 
   flutter_localizations:
     sdk: flutter

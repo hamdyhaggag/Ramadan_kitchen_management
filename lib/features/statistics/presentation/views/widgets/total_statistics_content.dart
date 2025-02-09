@@ -146,7 +146,7 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent>
                 shadows: [
                   Shadow(
                     blurRadius: 2,
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     offset: const Offset(1, 1),
                   )
                 ],
@@ -221,7 +221,7 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent>
                 borderRadius: BorderRadius.circular(100),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.3),
+                    color: Colors.grey.withValues(alpha: 0.3),
                     blurRadius: 10,
                     spreadRadius: 2,
                   )
@@ -264,8 +264,8 @@ class _AnimatedRadialPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final gradient = SweepGradient(
       colors: [
-        AppColors.primaryColor.withOpacity(0.2),
-        AppColors.secondaryColor.withOpacity(0.2),
+        AppColors.primaryColor.withValues(alpha: 0.2),
+        AppColors.secondaryColor.withValues(alpha: 0.2),
       ],
       stops: const [0.0, 0.8],
     );
@@ -340,7 +340,7 @@ class ParticlePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final random = Random(0);
     final paint = Paint()
-      ..color = AppColors.primaryColor.withOpacity(0.05)
+      ..color = AppColors.primaryColor.withValues(alpha: 0.05)
       ..style = PaintingStyle.fill;
 
     for (int i = 0; i < 50; i++) {
@@ -364,7 +364,7 @@ class FloatingParticlePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.primaryColor.withOpacity(0.3)
+      ..color = AppColors.primaryColor.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill;
 
     for (int i = 0; i < 5; i++) {
