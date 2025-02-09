@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:ramadan_kitchen_management/core/services/service_locator.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
+import 'package:ramadan_kitchen_management/features/auth/data/repos/auth_repo.dart';
 import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_cubit.dart';
 import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_state.dart';
 import 'package:ramadan_kitchen_management/features/statistics/presentation/views/widgets/total_statistics_content.dart';
@@ -11,6 +13,9 @@ class StatisticsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authRepo = getIt<AuthRepo>();
+    final isAdmin = authRepo.currentUser?.role == 'admin';
+
     return Scaffold(
       body: BlocBuilder<CasesCubit, CasesState>(
         builder: (context, state) {
@@ -23,7 +28,9 @@ class StatisticsScreen extends StatelessWidget {
             return Center(child: Text(state.message));
           }
           if (state is CasesLoaded) {
-            return _AdminStatisticsView(cases: state.cases);
+            return isAdmin
+                ? _AdminStatisticsView(cases: state.cases)
+                : TotalStatisticsContent();
           }
           return const Center(child: Text('No statistics available'));
         },
@@ -146,7 +153,7 @@ class _StatisticsContentState extends State<_StatisticsContent> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     spreadRadius: 8,
                     blurRadius: 12,
                     offset: const Offset(0, 4))
@@ -279,7 +286,7 @@ class _StatisticsContentState extends State<_StatisticsContent> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 2,
             blurRadius: 8,
             offset: const Offset(0, 2),
