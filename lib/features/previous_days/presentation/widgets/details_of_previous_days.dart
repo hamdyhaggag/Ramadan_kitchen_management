@@ -108,21 +108,25 @@ class DetailsOfPreviousDay extends StatelessWidget {
         Text(
           mealTitle,
           style: const TextStyle(
-            fontSize: 28,
+            fontSize: 22,
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            _buildMetaChip(
-              icon: Icons.calendar_month,
-              label: DateFormat('EEE, d MMM , y').format(date),
+            Expanded(
+              child: _buildMetaChip(
+                icon: Icons.calendar_month,
+                label: DateFormat('EEE, d MMM , y').format(date),
+              ),
             ),
             const SizedBox(width: 12),
-            _buildMetaChip(
-              icon: Icons.people_alt_outlined,
-              label: '$participants فرد تم إفطارهم',
+            Expanded(
+              child: _buildMetaChip(
+                icon: Icons.people_alt_outlined,
+                label: '$participants فرد تم إفطارهم',
+              ),
             ),
           ],
         ),
@@ -145,7 +149,7 @@ class DetailsOfPreviousDay extends StatelessWidget {
         Text(
           description.isNotEmpty ? description : 'لا يوجد وصف متوفر',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 15,
             height: 1.5,
             color: Colors.grey[700],
           ),
@@ -167,11 +171,15 @@ class DetailsOfPreviousDay extends StatelessWidget {
         children: [
           Icon(icon, size: 18, color: AppColors.primaryColor),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[800],
-              fontWeight: FontWeight.w500,
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.grey[800],
+                fontWeight: FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
             ),
           ),
         ],
