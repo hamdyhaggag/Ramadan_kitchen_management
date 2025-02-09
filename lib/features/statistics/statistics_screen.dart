@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:ramadan_kitchen_management/core/services/service_locator.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
-import 'package:ramadan_kitchen_management/features/auth/data/repos/auth_repo.dart';
 import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_cubit.dart';
 import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_state.dart';
 
@@ -12,26 +10,19 @@ class StatisticsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authRepo = getIt<AuthRepo>();
-    final isAdmin = authRepo.currentUser?.role == 'admin';
-
     return Scaffold(
       body: BlocBuilder<CasesCubit, CasesState>(
         builder: (context, state) {
           if (state is CasesLoading) {
             return const Center(
-              child: CircularProgressIndicator(
-                color: AppColors.primaryColor,
-              ),
-            );
+                child:
+                    CircularProgressIndicator(color: AppColors.primaryColor));
           }
           if (state is CasesError) {
             return Center(child: Text(state.message));
           }
           if (state is CasesLoaded) {
-            return isAdmin
-                ? _AdminStatisticsView(cases: state.cases)
-                : _TotalStatisticsContent(cases: state.cases);
+            return _AdminStatisticsView(cases: state.cases);
           }
           return const Center(child: Text('No statistics available'));
         },
@@ -59,42 +50,44 @@ class _AdminStatisticsViewState extends State<_AdminStatisticsView>
   }
 
   @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        TabBar(
-          unselectedLabelColor: AppColors.greyColor,
-          splashFactory: NoSplash.splashFactory,
-          overlayColor: WidgetStateProperty.resolveWith<Color?>(
-              (Set<WidgetState> states) {
-            return states.contains(WidgetState.focused)
-                ? null
-                : Colors.transparent;
-          }),
-          dividerColor: Colors.transparent,
-          labelStyle: TextStyle(
-            color: AppColors.primaryColor,
-            fontFamily: 'DIN',
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(16),
           ),
-          indicatorColor: AppColors.primaryColor,
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'الإحصائيات العامة'),
-            Tab(text: 'الإحصائيات التفصيلية'),
-          ],
+          child: TabBar(
+            unselectedLabelColor: AppColors.greyColor,
+            splashFactory: NoSplash.splashFactory,
+            overlayColor: WidgetStateProperty.resolveWith<Color?>(
+                (Set<WidgetState> states) {
+              return states.contains(WidgetState.focused)
+                  ? null
+                  : Colors.transparent;
+            }),
+            dividerColor: Colors.transparent,
+            labelStyle: TextStyle(
+                color: AppColors.primaryColor,
+                fontFamily: 'DIN',
+                fontSize: 16,
+                fontWeight: FontWeight.w500),
+            indicatorColor: AppColors.primaryColor,
+            controller: _tabController,
+            tabs: const [
+              Tab(text: 'الإحصائيات العامة'),
+              Tab(text: 'التفاصيل اليومية')
+            ],
+          ),
         ),
         Expanded(
           child: TabBarView(
             controller: _tabController,
             children: [
               _StatisticsContent(cases: widget.cases),
-              _TotalStatisticsContent(cases: widget.cases),
+              _TotalStatisticsContent(),
             ],
           ),
         ),
@@ -123,29 +116,16 @@ class _StatisticsContentState extends State<_StatisticsContent> {
     _calculateStatistics();
   }
 
-  @override
-  void didUpdateWidget(covariant _StatisticsContent oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.cases != oldWidget.cases) {
-      _calculateStatistics();
-    }
-  }
-
   void _calculateStatistics() {
-    totalIndividuals = widget.cases.fold(0, (sum, e) {
-      final individuals = e['عدد الأفراد'] is int ? e['عدد الأفراد'] as int : 0;
-      return sum + individuals;
-    });
-
-    totalCheckedIndividuals = widget.cases.fold(0, (sum, e) {
-      if (e['جاهزة'] == true) {
-        final individuals =
-            e['عدد الأفراد'] is int ? e['عدد الأفراد'] as int : 0;
-        return sum + individuals;
-      }
-      return sum;
-    });
-
+    totalIndividuals = widget.cases.fold(
+        0,
+        (sum, e) =>
+            sum + (e['عدد الأفراد'] is int ? e['عدد الأفراد'] as int : 0));
+    totalCheckedIndividuals = widget.cases.fold(
+        0,
+        (sum, e) => e['جاهزة'] == true
+            ? sum + (e['عدد الأفراد'] is int ? e['عدد الأفراد'] as int : 0)
+            : sum);
     totalUndistributed = totalIndividuals - totalCheckedIndividuals;
     progressPercentage = totalIndividuals > 0
         ? (totalCheckedIndividuals / totalIndividuals) * 100
@@ -154,108 +134,169 @@ class _StatisticsContentState extends State<_StatisticsContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 30),
-            _buildPieChart(),
-            const SizedBox(height: 45),
-            _buildStatisticsCard('إجمالي عدد الأفراد', totalIndividuals),
-            _buildStatisticsCard(
-              'نسبة الإكتمال',
-              progressPercentage,
-              percentage: true,
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 8,
+                    blurRadius: 12,
+                    offset: const Offset(0, 4))
+              ],
             ),
-            _buildStatisticsCard(
-              'عدد الشنط المتبقية',
-              widget.cases.where((e) => e['جاهزة'] != true).length,
+            child: Column(
+              children: [
+                Text('توزيع الشنط الغذائية',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.customColors[10])),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 200,
+                  child: PieChart(
+                    PieChartData(
+                      sections: [
+                        PieChartSectionData(
+                          value: totalCheckedIndividuals.toDouble(),
+                          color: AppColors.customColors[0],
+                          radius: 28,
+                          titleStyle: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white),
+                        ),
+                        PieChartSectionData(
+                          value: totalUndistributed.toDouble(),
+                          color: Colors.blue[100],
+                          radius: 24,
+                          titleStyle: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[800]),
+                        ),
+                      ],
+                      centerSpaceRadius: 56,
+                      sectionsSpace: 2,
+                      startDegreeOffset: -90,
+                      borderData: FlBorderData(show: false),
+                      centerSpaceColor: Colors.transparent,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(
+                                color: AppColors.primaryColor,
+                                shape: BoxShape.circle)),
+                        const SizedBox(width: 8),
+                        Text('تم التسليم',
+                            style: TextStyle(
+                                color: Colors.grey[700],
+                                fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                    const SizedBox(width: 24),
+                    Row(
+                      children: [
+                        Container(
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(
+                                color: Colors.blue[100]!,
+                                shape: BoxShape.circle)),
+                        const SizedBox(width: 8),
+                        Text('قيد الانتظار',
+                            style: TextStyle(
+                                color: Colors.grey[700],
+                                fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
             ),
-            _buildStatisticsCard('عدد الأفراد المتبقي', totalUndistributed),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPieChart() {
-    return Container(
-      height: 250,
-      padding: const EdgeInsets.all(8.0),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(15),
-        color: Colors.grey[200],
-      ),
-      child: PieChart(
-        PieChartData(
-          sections: [
-            PieChartSectionData(
-              value: totalCheckedIndividuals.toDouble(),
-              title: 'تم التوزيع\n$totalCheckedIndividuals',
-              color: AppColors.primaryColor,
-              radius: 100,
-              titleStyle: const TextStyle(
-                color: AppColors.whiteColor,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            PieChartSectionData(
-              value: totalUndistributed.toDouble(),
-              title: 'لم يتم التوزيع\n$totalUndistributed',
-              color: Colors.grey[350],
-              radius: 100,
-              titleStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-          centerSpaceRadius: 60,
-          borderData: FlBorderData(show: false),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatisticsCard(String title, dynamic value,
-      {bool percentage = false}) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.2),
-            spreadRadius: 2,
-            blurRadius: 5,
-            offset: const Offset(0, 3),
+          ),
+          const SizedBox(height: 32),
+          GridView(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 1.4,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16),
+            children: [
+              _buildMetricCard(
+                  title: 'إجمالي الأفراد',
+                  value: totalIndividuals,
+                  icon: Icons.people_alt_rounded,
+                  color: Colors.purple.shade200),
+              _buildMetricCard(
+                  title: 'تم التوزيع',
+                  value: totalCheckedIndividuals,
+                  icon: Icons.check_circle_rounded,
+                  color: Colors.green),
+              _buildMetricCard(
+                  title: 'النسبة المئوية',
+                  value: '${progressPercentage.toStringAsFixed(1)}%',
+                  icon: Icons.percent_rounded,
+                  color: Colors.blue.shade400),
+              _buildMetricCard(
+                  title: 'المتبقي',
+                  value: totalUndistributed,
+                  icon: Icons.pending_actions_rounded,
+                  color: Colors.orange.shade800),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMetricCard(
+      {required String title,
+      required dynamic value,
+      required IconData icon,
+      required Color color}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 2,
+              blurRadius: 8,
+              offset: const Offset(0, 2))
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            Text(
-              percentage ? '${value.toStringAsFixed(2)}%' : '$value',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: percentage ? AppColors.primaryColor : Colors.black,
-                  ),
-            ),
+            Icon(icon, size: 28, color: color),
+            const Spacer(),
+            Text(title,
+                style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+            const SizedBox(height: 4),
+            Text('$value',
+                style: TextStyle(
+                    fontSize: 24, fontWeight: FontWeight.bold, color: color)),
           ],
         ),
       ),
@@ -264,23 +305,10 @@ class _StatisticsContentState extends State<_StatisticsContent> {
 }
 
 class _TotalStatisticsContent extends StatelessWidget {
-  final List<Map<String, dynamic>> cases;
-  const _TotalStatisticsContent({required this.cases});
+  const _TotalStatisticsContent();
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Text(
-          'الإحصائيات التفصيلية للمسؤولين',
-          style: TextStyle(
-            fontSize: 18,
-            color: Colors.grey.shade600,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
+    return const Scaffold(body: Center(child: Text('Statistics')));
   }
 }
