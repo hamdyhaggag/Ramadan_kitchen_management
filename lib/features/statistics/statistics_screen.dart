@@ -135,7 +135,7 @@ class _StatisticsContentState extends State<_StatisticsContent> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
           Container(
@@ -153,20 +153,16 @@ class _StatisticsContentState extends State<_StatisticsContent> {
             ),
             child: Column(
               children: [
-                Text('توزيع الشنط الغذائية',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.customColors[10])),
-                const SizedBox(height: 16),
                 SizedBox(
-                  height: 200,
+                  height: 220,
                   child: PieChart(
                     PieChartData(
                       sections: [
                         PieChartSectionData(
                           value: totalCheckedIndividuals.toDouble(),
                           color: AppColors.customColors[0],
-                          radius: 28,
+                          radius: 45,
+                          title: '$totalCheckedIndividuals',
                           titleStyle: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -175,7 +171,8 @@ class _StatisticsContentState extends State<_StatisticsContent> {
                         PieChartSectionData(
                           value: totalUndistributed.toDouble(),
                           color: Colors.blue[100],
-                          radius: 24,
+                          radius: 45,
+                          title: '$totalUndistributed',
                           titleStyle: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -190,7 +187,7 @@ class _StatisticsContentState extends State<_StatisticsContent> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -236,9 +233,10 @@ class _StatisticsContentState extends State<_StatisticsContent> {
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: 1.4,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16),
+                childAspectRatio: 1.0,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8),
+            padding: const EdgeInsets.only(bottom: 16),
             children: [
               _buildMetricCard(
                   title: 'إجمالي الأفراد',
@@ -267,38 +265,69 @@ class _StatisticsContentState extends State<_StatisticsContent> {
     );
   }
 
-  Widget _buildMetricCard(
-      {required String title,
-      required dynamic value,
-      required IconData icon,
-      required Color color}) {
+  Widget _buildMetricCard({
+    required String title,
+    required dynamic value,
+    required IconData icon,
+    required Color color,
+  }) {
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 2,
-              blurRadius: 8,
-              offset: const Offset(0, 2))
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 2,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 28, color: color),
-            const Spacer(),
-            Text(title,
-                style: TextStyle(color: Colors.grey[600], fontSize: 14)),
-            const SizedBox(height: 4),
-            Text('$value',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withValues(alpha: 0.1),
+            ),
+            child: Center(
+              child: Icon(
+                icon,
+                color: color,
+                size: 24,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Column(
+            children: [
+              Center(
+                child: Text(
+                  '$value',
+                  style: TextStyle(
+                    fontSize: 35,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                title,
                 style: TextStyle(
-                    fontSize: 24, fontWeight: FontWeight.bold, color: color)),
-          ],
-        ),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
