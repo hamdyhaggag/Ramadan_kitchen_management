@@ -124,7 +124,6 @@ class ReportsScreenState extends State<ReportsScreen>
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               title: Row(
                 children: [
-                  // Date Section
                   Expanded(
                     child: Row(
                       children: [
@@ -147,7 +146,6 @@ class ReportsScreenState extends State<ReportsScreen>
                       ],
                     ),
                   ),
-                  // Total Section
                   Expanded(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -447,9 +445,8 @@ class ReportsScreenState extends State<ReportsScreen>
           builder: (context, state) {
             if (state is ExpenseLoading) {
               return const Center(
-                  child: CircularProgressIndicator(
-                color: AppColors.primaryColor,
-              ));
+                  child:
+                      CircularProgressIndicator(color: AppColors.primaryColor));
             }
             if (state is ExpenseError) {
               return Center(child: Text(state.message));
@@ -465,22 +462,20 @@ class ReportsScreenState extends State<ReportsScreen>
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: TabBar(
+                      controller: _tabController,
                       unselectedLabelColor: AppColors.greyColor,
                       splashFactory: NoSplash.splashFactory,
                       overlayColor: WidgetStateProperty.resolveWith<Color?>(
-                          (Set<WidgetState> states) {
-                        return states.contains(WidgetState.focused)
-                            ? null
-                            : Colors.transparent;
-                      }),
+                        (Set<WidgetState> states) => Colors.transparent,
+                      ),
                       dividerColor: Colors.transparent,
                       labelStyle: TextStyle(
-                          color: AppColors.primaryColor,
-                          fontFamily: 'DIN',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500),
+                        color: AppColors.primaryColor,
+                        fontFamily: 'DIN',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
                       indicatorColor: AppColors.primaryColor,
-                      controller: _tabController,
                       tabs: const [
                         Tab(text: 'جميع المصروفات'),
                         Tab(text: 'غير المدفوعة'),
@@ -489,13 +484,14 @@ class ReportsScreenState extends State<ReportsScreen>
                   ),
                   Expanded(
                     child: TabBarView(
+                      controller: _tabController,
                       children: [
                         _buildExpensesList(groupExpensesByDate(state.expenses)),
                         _buildExpensesList(groupExpensesByDate(state.expenses,
                             unpaidOnly: true)),
                       ],
                     ),
-                  )
+                  ),
                 ],
               );
             }
