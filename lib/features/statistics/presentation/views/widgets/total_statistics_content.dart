@@ -63,7 +63,6 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent>
 
       bool isNewDay = cachedDate.isBefore(startOfDay);
 
-      // Handle day transition
       if (isNewDay) {
         historicalTotal += dailyValue;
         dailyValue = 0;
@@ -76,16 +75,30 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent>
       final isOnline = await _checkConnectivity();
 
       if (isOnline) {
-        final snapshot = await FirebaseFirestore.instance
+        final currentDaySnapshot = await FirebaseFirestore.instance
             .collection('donations')
             .where('created_at', isGreaterThanOrEqualTo: startOfDay)
             .get();
 
-        dailyValue = snapshot.docs.isNotEmpty
-            ? (snapshot.docs.first['numberOfIndividuals'] as int? ?? 0)
+        dailyValue = currentDaySnapshot.docs.isNotEmpty
+            ? (currentDaySnapshot.docs.first['numberOfIndividuals'] as int? ??
+                0)
             : 0;
 
+        if (historicalTotal == 0) {
+          final previousDaysSnapshot = await FirebaseFirestore.instance
+              .collection('donations')
+              .where('created_at', isLessThan: startOfDay)
+              .get();
+
+          historicalTotal = previousDaysSnapshot.docs.fold(
+            0,
+            (sum, doc) => sum + (doc['numberOfIndividuals'] as int? ?? 0),
+          );
+        }
+
         await prefs.setInt('dailyValue', dailyValue);
+        await prefs.setInt('historicalTotal', historicalTotal);
         await prefs.setInt('lastUpdated', now.millisecondsSinceEpoch);
       }
 
