@@ -169,21 +169,21 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent>
         ),
         Column(
           children: [
-            Text(
-              'إجمالي الأفراد',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[700],
-                shadows: [
-                  Shadow(
-                    blurRadius: 2,
-                    color: Colors.black.withValues(alpha: 0.1),
-                    offset: const Offset(1, 1),
-                  )
-                ],
-              ),
-            ),
+            // Text(
+            //   'إجمالي الأفراد',
+            //   style: TextStyle(
+            //     fontSize: 24,
+            //     fontWeight: FontWeight.bold,
+            //     color: Colors.grey[700],
+            //     shadows: [
+            //       Shadow(
+            //         blurRadius: 2,
+            //         color: Colors.black.withValues(alpha: 0.1),
+            //         offset: const Offset(1, 1),
+            //       )
+            //     ],
+            //   ),
+            // ),
             AnimatedCount(
               count: _totalIndividuals,
               duration: const Duration(seconds: 1),
@@ -200,7 +200,7 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent>
               ),
             ),
             Text(
-              'تم إطعامهم',
+              'تم إفطارهم حتى الان',
               style: TextStyle(
                 fontSize: 20,
                 color: Colors.grey[600],
