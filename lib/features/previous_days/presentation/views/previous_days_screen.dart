@@ -34,9 +34,12 @@ class _PreviousDaysScreenState extends State<PreviousDaysScreen> {
         builder: (context, state) {
           if (state is DonationLoaded) {
             final filteredDonations = state.donations.where((donation) {
+              final query = _searchQuery.trim().toLowerCase();
               final title =
                   donation['mealTitle']?.toString().toLowerCase() ?? '';
-              return title.contains(_searchQuery.trim().toLowerCase());
+              final description =
+                  donation['mealDescription']?.toString().toLowerCase() ?? '';
+              return title.contains(query) || description.contains(query);
             }).toList();
 
             return Column(
