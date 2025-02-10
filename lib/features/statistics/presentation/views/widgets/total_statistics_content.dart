@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../../../../core/utils/app_colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class TotalStatisticsContent extends StatefulWidget {
   const TotalStatisticsContent({super.key});
@@ -25,7 +27,10 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent>
   void initState() {
     super.initState();
     _loadDonationData();
+    _initializeAnimations();
+  }
 
+  void _initializeAnimations() {
     _waveController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -42,46 +47,60 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent>
     )..repeat();
   }
 
-  @override
-  void dispose() {
-    _waveController.dispose();
-    _rotationController.dispose();
-    _particleController.dispose();
-    super.dispose();
-  }
-
   Future<void> _loadDonationData() async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      int historicalTotal = prefs.getInt('historicalTotal') ?? 0;
+      int dailyValue = prefs.getInt('dailyValue') ?? 0;
+      int cachedDateMillis = prefs.getInt('lastUpdated') ?? 0;
+
+      DateTime cachedDate = cachedDateMillis == 0
+          ? DateTime(1970)
+          : DateTime.fromMillisecondsSinceEpoch(cachedDateMillis);
+
       final now = DateTime.now();
       final startOfDay = DateTime(now.year, now.month, now.day);
 
-      final snapshot = await FirebaseFirestore.instance
-          .collection('donations')
-          .where('created_at', isGreaterThanOrEqualTo: startOfDay)
-          .get();
+      bool isNewDay = cachedDate.isBefore(startOfDay);
 
-      if (snapshot.docs.isNotEmpty) {
-        final latestDoc = snapshot.docs.first;
-        final dailyValue = latestDoc['numberOfIndividuals'] as int? ?? 0;
+      // Handle day transition
+      if (isNewDay) {
+        historicalTotal += dailyValue;
+        dailyValue = 0;
+        cachedDate = startOfDay;
+        await prefs.setInt('historicalTotal', historicalTotal);
+        await prefs.setInt('dailyValue', dailyValue);
+        await prefs.setInt('lastUpdated', startOfDay.millisecondsSinceEpoch);
+      }
 
-        final historicalSnapshot = await FirebaseFirestore.instance
+      final isOnline = await _checkConnectivity();
+
+      if (isOnline) {
+        final snapshot = await FirebaseFirestore.instance
             .collection('donations')
-            .where('created_at', isLessThan: startOfDay)
+            .where('created_at', isGreaterThanOrEqualTo: startOfDay)
             .get();
 
-        int historicalTotal = historicalSnapshot.docs.fold(
-          0,
-          (sum, doc) => sum + (doc['numberOfIndividuals'] as int? ?? 0),
-        );
+        dailyValue = snapshot.docs.isNotEmpty
+            ? (snapshot.docs.first['numberOfIndividuals'] as int? ?? 0)
+            : 0;
 
-        setState(() {
-          _totalIndividuals = historicalTotal + dailyValue;
-          _isLoading = false;
-        });
+        await prefs.setInt('dailyValue', dailyValue);
+        await prefs.setInt('lastUpdated', now.millisecondsSinceEpoch);
       }
+
+      setState(() {
+        _totalIndividuals = historicalTotal + dailyValue;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() => _isLoading = false);
     }
+  }
+
+  Future<bool> _checkConnectivity() async {
+    final result = await Connectivity().checkConnectivity();
+    return result != ConnectivityResult.none;
   }
 
   @override

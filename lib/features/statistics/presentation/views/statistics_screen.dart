@@ -162,7 +162,7 @@ class _StatisticsContentState extends State<_StatisticsContent> {
             child: Column(
               children: [
                 SizedBox(
-                  height: 220,
+                  height: 185,
                   child: PieChart(
                     PieChartData(
                       sections: [
