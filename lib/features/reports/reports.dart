@@ -442,33 +442,6 @@ class ReportsScreenState extends State<ReportsScreen>
               onPressed: () => setState(() => _isAscending = !_isAscending),
             ),
           ],
-          bottom: TabBar(
-            splashFactory: NoSplash.splashFactory,
-            overlayColor: WidgetStateProperty.resolveWith<Color?>(
-                (Set<WidgetState> states) {
-              return states.contains(WidgetState.focused)
-                  ? null
-                  : Colors.transparent;
-            }),
-            dividerColor: Colors.transparent,
-            tabs: [
-              Tab(text: 'جميع المصروفات'),
-              Tab(text: 'غير المدفوعة'),
-            ],
-            indicatorColor: AppColors.primaryColor,
-            labelColor: AppColors.primaryColor,
-            unselectedLabelColor: Colors.grey,
-            labelStyle: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontFamily: 'DIN',
-              color: AppColors.primaryColor,
-            ),
-            unselectedLabelStyle: TextStyle(
-              fontWeight: FontWeight.normal,
-              fontFamily: 'DIN',
-              color: Colors.grey,
-            ),
-          ),
         ),
         body: BlocBuilder<ExpenseCubit, ExpenseState>(
           builder: (context, state) {
@@ -482,11 +455,47 @@ class ReportsScreenState extends State<ReportsScreen>
               return Center(child: Text(state.message));
             }
             if (state is ExpenseLoaded) {
-              return TabBarView(
+              return Column(
                 children: [
-                  _buildExpensesList(groupExpensesByDate(state.expenses)),
-                  _buildExpensesList(
-                      groupExpensesByDate(state.expenses, unpaidOnly: true)),
+                  Container(
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: TabBar(
+                      unselectedLabelColor: AppColors.greyColor,
+                      splashFactory: NoSplash.splashFactory,
+                      overlayColor: WidgetStateProperty.resolveWith<Color?>(
+                          (Set<WidgetState> states) {
+                        return states.contains(WidgetState.focused)
+                            ? null
+                            : Colors.transparent;
+                      }),
+                      dividerColor: Colors.transparent,
+                      labelStyle: TextStyle(
+                          color: AppColors.primaryColor,
+                          fontFamily: 'DIN',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500),
+                      indicatorColor: AppColors.primaryColor,
+                      controller: _tabController,
+                      tabs: const [
+                        Tab(text: 'جميع المصروفات'),
+                        Tab(text: 'غير المدفوعة'),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        _buildExpensesList(groupExpensesByDate(state.expenses)),
+                        _buildExpensesList(groupExpensesByDate(state.expenses,
+                            unpaidOnly: true)),
+                      ],
+                    ),
+                  )
                 ],
               );
             }

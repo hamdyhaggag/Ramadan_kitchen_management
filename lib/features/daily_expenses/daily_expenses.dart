@@ -144,7 +144,7 @@ class _DailyExpensesScreenState extends State<DailyExpensesScreen> {
                                 AppColors.customColors.length],
                         radius: 100,
                         titleStyle: const TextStyle(
-                            fontSize: 12,
+                            fontSize: 8,
                             fontWeight: FontWeight.bold,
                             color: Colors.white),
                       ))

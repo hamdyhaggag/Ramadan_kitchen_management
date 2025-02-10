@@ -63,28 +63,41 @@ class _ManageCasesScreenState extends State<ManageCasesScreen>
           ? SafeArea(
               child: Column(
                 children: [
-                  TabBar(
-                    unselectedLabelColor: AppColors.greyColor,
-                    splashFactory: NoSplash.splashFactory,
-                    overlayColor: WidgetStateProperty.resolveWith<Color?>(
-                        (Set<WidgetState> states) {
-                      return states.contains(WidgetState.focused)
-                          ? null
-                          : Colors.transparent;
-                    }),
-                    dividerColor: Colors.transparent,
-                    labelStyle: TextStyle(
-                      color: AppColors.primaryColor,
-                      fontFamily: 'DIN',
+                  Container(
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    indicatorColor: AppColors.primaryColor,
-                    controller: _tabController,
-                    tabs: const [
-                      Tab(icon: Icon(Icons.assignment), text: 'الحالات'),
-                      Tab(
-                          icon: Icon(Icons.volunteer_activism),
-                          text: 'التبرعات'),
-                    ],
+                    child: TabBar(
+                      unselectedLabelColor: AppColors.greyColor,
+                      splashFactory: NoSplash.splashFactory,
+                      overlayColor: WidgetStateProperty.resolveWith<Color?>(
+                          (Set<WidgetState> states) {
+                        return states.contains(WidgetState.focused)
+                            ? null
+                            : Colors.transparent;
+                      }),
+                      dividerColor: Colors.transparent,
+                      labelStyle: TextStyle(
+                          color: AppColors.primaryColor,
+                          fontFamily: 'DIN',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500),
+                      indicatorColor: AppColors.primaryColor,
+                      controller: _tabController,
+                      tabs: const [
+                        Tab(
+                          text: 'الحالات',
+                          // icon: Icon(Icons.assignment),
+                        ),
+                        Tab(
+                          text: 'التبرعات',
+                          // icon: Icon(Icons.volunteer_activism),
+                        ),
+                      ],
+                    ),
                   ),
                   Expanded(
                     child: TabBarView(

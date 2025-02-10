@@ -85,8 +85,8 @@ class _AdminStatisticsViewState extends State<_AdminStatisticsView>
             indicatorColor: AppColors.primaryColor,
             controller: _tabController,
             tabs: const [
+              Tab(text: 'التفاصيل اليومية'),
               Tab(text: 'الإحصائيات العامة'),
-              Tab(text: 'التفاصيل اليومية')
             ],
           ),
         ),
