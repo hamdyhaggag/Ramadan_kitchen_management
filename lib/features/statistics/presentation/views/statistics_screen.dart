@@ -208,7 +208,7 @@ class _StatisticsContentState extends State<_StatisticsContent> {
                                 color: AppColors.primaryColor,
                                 shape: BoxShape.circle)),
                         const SizedBox(width: 8),
-                        Text('تم التسليم',
+                        Text('تم التجهيز',
                             style: TextStyle(
                                 color: Colors.grey[700],
                                 fontWeight: FontWeight.w500)),
@@ -252,7 +252,7 @@ class _StatisticsContentState extends State<_StatisticsContent> {
                   icon: Icons.people_alt_rounded,
                   color: Colors.purple.shade200),
               _buildMetricCard(
-                  title: 'تم التوزيع',
+                  title: 'تم التجهيز',
                   value: totalCheckedIndividuals,
                   icon: Icons.check_circle_rounded,
                   color: Colors.green),
