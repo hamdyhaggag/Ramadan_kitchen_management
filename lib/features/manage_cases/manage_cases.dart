@@ -10,7 +10,6 @@ import '../donation/presentation/views/donation_section.dart';
 import 'logic/cases_cubit.dart';
 import 'logic/cases_state.dart';
 import 'package:ramadan_kitchen_management/features/auth/data/repos/auth_repo.dart';
-
 import 'manage_case-details_screen.dart';
 
 class ManageCasesScreen extends StatefulWidget {
@@ -29,7 +28,6 @@ class _ManageCasesScreenState extends State<ManageCasesScreen>
   void initState() {
     super.initState();
     isAdmin = false;
-
     _checkAdminStatus();
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
@@ -88,14 +86,8 @@ class _ManageCasesScreenState extends State<ManageCasesScreen>
                       indicatorColor: AppColors.primaryColor,
                       controller: _tabController,
                       tabs: const [
-                        Tab(
-                          text: 'الحالات',
-                          // icon: Icon(Icons.assignment),
-                        ),
-                        Tab(
-                          text: 'التبرعات',
-                          // icon: Icon(Icons.volunteer_activism),
-                        ),
+                        Tab(text: 'الحالات'),
+                        Tab(text: 'التبرعات'),
                       ],
                     ),
                   ),
@@ -130,7 +122,6 @@ class _ManageCasesScreenState extends State<ManageCasesScreen>
                               if (state.donations.isNotEmpty) {
                                 final donationData = state.donations.first;
                                 final documentId = donationData['id'] as String;
-
                                 return EditableDonationSection(
                                   donationData: donationData,
                                   documentId: documentId,
@@ -172,19 +163,28 @@ class _ManageCasesContent extends StatefulWidget {
 
 class _ManageCasesContentState extends State<_ManageCasesContent> {
   String? selectedFilter;
-  bool? selectedFilterValue;
+  dynamic selectedFilterValue;
   final Map<String, String> filterOptions = {
     "جاهزة": "جاهزة للتوزيع",
-    "هنا؟": "الشنطة هنا؟"
+    "هنا؟": "الشنطة هنا؟",
+    "عدد الأفراد": "عدد الأفراد"
   };
 
   List<Map<String, dynamic>> get filteredCases {
     if (selectedFilter == null || selectedFilterValue == null) {
       return widget.cases;
     }
-    return widget.cases
-        .where((caseItem) => caseItem[selectedFilter] == selectedFilterValue)
-        .toList();
+    return widget.cases.where((caseItem) {
+      final caseValue = caseItem[selectedFilter];
+      if (selectedFilter == "عدد الأفراد") {
+        final filterNumber = selectedFilterValue as int?;
+        final caseNumber =
+            caseValue is int ? caseValue : int.tryParse(caseValue.toString());
+        return caseNumber == filterNumber;
+      } else {
+        return caseValue == selectedFilterValue;
+      }
+    }).toList();
   }
 
   void _showFilterModal() {
@@ -192,23 +192,16 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-        ),
-        padding: const EdgeInsets.all(20),
-        child: _FilterModalContent(
-          currentFilter: selectedFilter,
-          currentValue: selectedFilterValue,
-          onFilterChanged: (newFilter, newValue) {
-            setState(() {
-              selectedFilter = newFilter;
-              selectedFilterValue = newValue;
-            });
-          },
-          filterOptions: filterOptions,
-        ),
+      builder: (context) => _FilterModalContent(
+        currentFilter: selectedFilter,
+        currentValue: selectedFilterValue,
+        onFilterChanged: (newFilter, newValue) {
+          setState(() {
+            selectedFilter = newFilter;
+            selectedFilterValue = newValue;
+          });
+        },
+        filterOptions: filterOptions,
       ),
     );
   }
@@ -222,7 +215,7 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
   }
 
   void _showConfirmationDialog(
-      String name, String field, bool currentValue, VoidCallback onConfirm) {
+      String name, String field, dynamic currentValue, VoidCallback onConfirm) {
     showDialog(
       context: context,
       builder: (BuildContext context) => AlertDialog(
@@ -358,7 +351,7 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       decoration: BoxDecoration(
-        color: AppColors.primaryColor.withValues(alpha: 0.1),
+        color: AppColors.primaryColor.withAlpha(25),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: AppColors.primaryColor),
       ),
@@ -410,9 +403,14 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
     );
   }
 
-  String _getValueText(bool? value) {
+  String _getValueText(dynamic value) {
     if (value == null) return "الكل";
-    return value ? "نعم" : "لا";
+    if (value is bool) {
+      return value ? "نعم" : "لا";
+    } else if (value is int) {
+      return value.toString();
+    }
+    return "الكل";
   }
 
   List<DataColumn> _buildDataColumns(bool isPortrait) {
@@ -447,7 +445,6 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
 
   List<DataRow> _buildDataRows(bool isPortrait) {
     List<Map<String, dynamic>> sortedCases = List.from(filteredCases);
-
     sortedCases.sort((a, b) {
       final numA = int.tryParse(a["الرقم"].toString()) ?? 0;
       final numB = int.tryParse(b["الرقم"].toString()) ?? 0;
@@ -528,8 +525,8 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
 
 class _FilterModalContent extends StatefulWidget {
   final String? currentFilter;
-  final bool? currentValue;
-  final Function(String?, bool?) onFilterChanged;
+  final dynamic currentValue;
+  final Function(String?, dynamic) onFilterChanged;
   final Map<String, String> filterOptions;
 
   const _FilterModalContent({
@@ -545,40 +542,61 @@ class _FilterModalContent extends StatefulWidget {
 
 class _FilterModalContentState extends State<_FilterModalContent> {
   late String? selectedFilter;
-  late bool? selectedValue;
+  late dynamic selectedValue;
+  final TextEditingController _textController = TextEditingController();
+  final FocusNode _textFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     selectedFilter = widget.currentFilter;
     selectedValue = widget.currentValue;
+    if (selectedFilter == "عدد الأفراد" && selectedValue != null) {
+      _textController.text = selectedValue.toString();
+    }
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    _textFocusNode.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
-    final hasFilterSelected = selectedFilter != null;
+    final viewInsets = MediaQuery.of(context).viewInsets;
 
     return Container(
+      constraints: BoxConstraints(
+        minHeight: MediaQuery.of(context).size.height * 0.4,
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
       decoration: BoxDecoration(
-        color: isDarkMode ? Colors.grey[900] : Colors.white,
+        color: theme.colorScheme.background,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildModalHeader(theme),
-          const SizedBox(height: 24),
-          _buildFilterTypeSection(theme, isDarkMode),
-          const SizedBox(height: 24),
-          _buildValueSection(theme, hasFilterSelected),
-          const SizedBox(height: 32),
-          _buildActionButtons(theme),
-          const SizedBox(height: 8),
-        ],
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 16,
+        bottom: viewInsets.bottom + 16,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildModalHeader(theme),
+            const SizedBox(height: 24),
+            _buildFilterTypeSection(theme),
+            const SizedBox(height: 24),
+            _buildValueSection(theme),
+            const SizedBox(height: 32),
+            _buildActionButtons(theme),
+          ],
+        ),
       ),
     );
   }
@@ -602,7 +620,7 @@ class _FilterModalContentState extends State<_FilterModalContent> {
     );
   }
 
-  Widget _buildFilterTypeSection(ThemeData theme, bool isDarkMode) {
+  Widget _buildFilterTypeSection(ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -611,119 +629,146 @@ class _FilterModalContentState extends State<_FilterModalContent> {
           child: Text(
             'اختر نوع التصفية',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.primary.withValues(alpha: 0.8),
+              color: theme.colorScheme.primary.withAlpha(200),
               fontWeight: FontWeight.w500,
             ),
           ),
         ),
         SegmentedButton<String?>(
-          segments: [
-            ...widget.filterOptions.entries.map((e) => ButtonSegment(
-                  value: e.key,
-                  label: Text(e.value),
-                  icon: const Icon(Icons.filter_alt_outlined),
-                )),
-            const ButtonSegment(
-              value: null,
-              label: Text('الكل'),
-              icon: Icon(Icons.all_inclusive),
-            ),
-          ],
-          selected: {selectedFilter},
-          onSelectionChanged: (Set<String?> newSelection) {
-            setState(() {
-              selectedFilter = newSelection.first;
-              if (selectedFilter == null) selectedValue = null;
-            });
-          },
-          style: ButtonStyle(
-            backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-              if (states.contains(WidgetState.selected)) {
-                return theme.colorScheme.primary.withValues(alpha: 0.1);
-              }
-              return Colors.transparent;
-            }),
-            shape: WidgetStateProperty.all(
-              RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+            segments: [
+              ...widget.filterOptions.entries.map((e) => ButtonSegment(
+                    value: e.key,
+                    label: Text(e.value),
+                  )),
+              const ButtonSegment(
+                value: null,
+                label: Text('الكل'),
+                icon: Icon(Icons.all_inclusive),
               ),
-            ),
-          ),
-          multiSelectionEnabled: false,
-        ),
+            ],
+            selected: {
+              selectedFilter
+            },
+            onSelectionChanged: (Set<String?> newSelection) {
+              setState(() {
+                selectedFilter = newSelection.first;
+                if (selectedFilter == null) selectedValue = null;
+                if (selectedFilter == "عدد الأفراد" && selectedValue != null) {
+                  _textController.text = selectedValue.toString();
+                }
+              });
+            },
+            style: ButtonStyle(
+              backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+                return states.contains(WidgetState.selected)
+                    ? theme.colorScheme.primary.withAlpha(25)
+                    : Colors.transparent;
+              }),
+              shape: WidgetStateProperty.all(
+                RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            )),
       ],
     );
   }
 
-  Widget _buildValueSection(ThemeData theme, bool hasFilterSelected) {
+  Widget _buildValueSection(ThemeData theme) {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
-      child: hasFilterSelected
+      child: selectedFilter != null
           ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              key: ValueKey(selectedFilter),
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
                     'اختر القيمة',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.8),
+                      color: theme.colorScheme.primary.withAlpha(200),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      selectedValue == null
-                          ? 'عرض الكل'
-                          : selectedValue!
-                              ? 'نعم'
-                              : 'لا',
-                      style: theme.textTheme.bodyLarge,
+                if (selectedFilter == "عدد الأفراد")
+                  SizedBox(
+                    height: 80,
+                    child: TextField(
+                      controller: _textController,
+                      focusNode: _textFocusNode,
+                      keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.done,
+                      decoration: const InputDecoration(
+                        hintText: 'أدخل عدد الأفراد',
+                        border: OutlineInputBorder(),
+                        contentPadding:
+                            EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedValue = int.tryParse(value);
+                        });
+                      },
                     ),
-                    Row(
+                  )
+                else
+                  SizedBox(
+                    height: 60,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        ToggleButtons(
-                          isSelected: [
-                            selectedValue == true,
-                            selectedValue == false,
-                            selectedValue == null,
-                          ],
-                          onPressed: (index) {
-                            setState(() {
-                              selectedValue = index == 0
-                                  ? true
-                                  : index == 1
-                                      ? false
-                                      : null;
-                            });
-                          },
-                          borderRadius: BorderRadius.circular(8),
-                          constraints: const BoxConstraints(
-                            minHeight: 40,
-                            minWidth: 56,
+                        Expanded(
+                          child: Text(
+                            selectedValue == null
+                                ? 'عرض الكل'
+                                : (selectedValue is bool
+                                    ? (selectedValue! ? 'نعم' : 'لا')
+                                    : 'الكل'),
+                            style: theme.textTheme.bodyLarge,
                           ),
-                          children: const [
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 12),
-                              child: Text('نعم'),
+                        ),
+                        Flexible(
+                          child: ToggleButtons(
+                            isSelected: [
+                              selectedValue == true,
+                              selectedValue == false,
+                              selectedValue == null,
+                            ],
+                            onPressed: (index) {
+                              setState(() {
+                                selectedValue = index == 0
+                                    ? true
+                                    : index == 1
+                                        ? false
+                                        : null;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            constraints: const BoxConstraints(
+                              minHeight: 40,
+                              minWidth: 56,
                             ),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 12),
-                              child: Text('لا'),
-                            ),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 12),
-                              child: Text('الكل'),
-                            ),
-                          ],
+                            children: const [
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 12),
+                                child: Text('نعم'),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 12),
+                                child: Text('لا'),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 12),
+                                child: Text('الكل'),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
               ],
             )
           : const SizedBox.shrink(),
@@ -739,10 +784,11 @@ class _FilterModalContentState extends State<_FilterModalContent> {
                 setState(() {
                   selectedFilter = null;
                   selectedValue = null;
+                  _textController.clear();
                 });
               },
               text: 'إعادة تعيين',
-              backgroundColor: AppColors.primaryColor.withValues(alpha: 0.5),
+              backgroundColor: AppColors.primaryColor.withAlpha(125),
               textColor: AppColors.whiteColor),
         ),
         const SizedBox(width: 16),
