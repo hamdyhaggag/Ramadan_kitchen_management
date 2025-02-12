@@ -44,6 +44,39 @@ class _ManageCaseDetailsContent extends StatefulWidget {
 }
 
 class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
+  late ScrollController _scrollController;
+  int _previousCasesLength = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _previousCasesLength = widget.cases.length;
+  }
+
+  @override
+  void didUpdateWidget(covariant _ManageCaseDetailsContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.cases.length > _previousCasesLength) {
+      _previousCasesLength = widget.cases.length;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   void _addNewCase() {
     final currentState = context.read<CasesCubit>().state;
     if (currentState is! CasesLoaded) return;
@@ -62,16 +95,18 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
       "جاهزة": false,
       "هنا؟": false,
     });
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('تمت إضافة حالة جديدة بنجاح'),
+      duration: Duration(seconds: 2),
+    ));
   }
 
   void _editCase(int index) {
     final caseData = widget.cases[index];
     if (caseData['id'] == null) return;
-
     final nameController = TextEditingController(text: caseData["الاسم"]);
     final membersController =
         TextEditingController(text: caseData["عدد الأفراد"].toString());
-
     showDialog(
       context: context,
       builder: (context) {
@@ -146,9 +181,27 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
     );
   }
 
-  void _deleteCase(int index) {
-    final docId = widget.cases[index]['id'];
-    context.read<CasesCubit>().deleteCase(docId);
+  void _confirmDelete(String docId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('حذف الحالة'),
+        content: const Text('هل أنت متأكد من رغبتك في حذف هذه الحالة؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<CasesCubit>().deleteCase(docId);
+            },
+            child: const Text('حذف', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -160,6 +213,7 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
       children: [
         Expanded(
           child: ListView.builder(
+            controller: _scrollController,
             physics: const BouncingScrollPhysics(),
             itemCount: sortedCases.length,
             itemBuilder: (context, index) {
@@ -200,7 +254,7 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => _deleteCase(index),
+                        onPressed: () => _confirmDelete(caseData['id']),
                       ),
                     ],
                   ),
