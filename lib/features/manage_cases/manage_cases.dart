@@ -460,22 +460,36 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
                   style: TextStyle(fontSize: isPortrait ? 18 : 20)))),
           DataCell(
             widget.isAdmin
-                ? Text(caseData["الاسم"],
+                ? Text(
+                    caseData["الاسم"],
                     style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: isPortrait ? 16 : 20))
+                      fontWeight: FontWeight.w600,
+                      fontSize: isPortrait ? 16 : 20,
+                      decoration: caseData["جاهزة"]
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
+                      decorationStyle: TextDecorationStyle.solid,
+                      color: caseData["جاهزة"] ? Colors.grey : Colors.black,
+                    ),
+                  )
                 : Row(
                     children: [
-                      Text("•••••",
-                          style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: isPortrait ? 16 : 20,
-                              fontWeight: FontWeight.w600)),
+                      Text(
+                        "•••••",
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: isPortrait ? 16 : 20,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       Tooltip(
                         message: "مطلوب صلاحيات إدارية لعرض الأسماء",
-                        child: Icon(Icons.lock_outline,
-                            color: Colors.grey.shade600, size: 16),
+                        child: Icon(
+                          Icons.lock_outline,
+                          color: Colors.grey.shade600,
+                          size: 16,
+                        ),
                       )
                     ],
                   ),
@@ -574,7 +588,7 @@ class _FilterModalContentState extends State<_FilterModalContent> {
         maxHeight: MediaQuery.of(context).size.height * 0.8,
       ),
       decoration: BoxDecoration(
-        color: theme.colorScheme.background,
+        color: theme.colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.only(
