@@ -89,7 +89,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     bool connected = await _isConnected();
     if (!connected) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
             content: Text(
                 'No internet connection. Image will be uploaded when online.')),
       );
@@ -130,7 +130,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
         jsonEncode(updatedData),
       );
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
             content: Text(
                 'No internet connection. Changes have been cached locally.')),
       );
@@ -138,9 +138,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     }
 
     context.read<CasesCubit>().updateCase(widget.caseData['id'], updatedData);
-
     await Prefs.removeData(key: 'cached_case_${widget.caseData['id']}');
-
     Navigator.pop(context);
   }
 
@@ -163,7 +161,6 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
       );
       return response.secureUrl;
     } catch (e) {
-      print('Cloudinary Error: ${e.toString()}');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('فشل الرفع: ${e.toString()}')),
       );
@@ -188,9 +185,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('تفاصيل الحالة'),
-      ),
+      appBar: AppBar(title: const Text('تفاصيل الحالة')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -236,9 +231,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
         labelText: label,
         labelStyle: const TextStyle(color: Colors.grey),
         floatingLabelStyle: TextStyle(color: AppColors.primaryColor),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: AppColors.primaryColor),
@@ -264,9 +257,30 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
               children: [
                 if (_pickedImage != null) _buildImagePreview(),
                 if (_pickedImage == null && _existingImageUrl != null)
-                  _buildNetworkImage(),
+                  Image.network(
+                    _existingImageUrl!,
+                    width: double.infinity,
+                    height: 200,
+                    fit: BoxFit.cover,
+                  ),
                 if (_pickedImage == null && _existingImageUrl == null)
-                  _buildImagePlaceholder(),
+                  Container(
+                    width: double.infinity,
+                    height: 200,
+                    color: Colors.grey[200],
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.add_a_photo,
+                              size: 40, color: Colors.grey),
+                          const SizedBox(height: 8),
+                          const Text('اضغط لرفع صورة',
+                              style: TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+                  ),
                 if (_pickedImage != null || _existingImageUrl != null)
                   Positioned(
                     top: 12,
@@ -290,6 +304,43 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                       }),
                     ),
                   ),
+                if (_pickedImage != null || _existingImageUrl != null)
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: IconButton(
+                      icon: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.fullscreen_rounded,
+                          color: AppColors.primaryColor,
+                          size: 24,
+                        ),
+                      ),
+                      onPressed: () {
+                        if (_existingImageUrl != null || _pickedImage != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => Scaffold(
+                                appBar: AppBar(
+                                    title: const Text('صورة بطاقة الهوية')),
+                                body: Center(
+                                  child: _existingImageUrl != null
+                                      ? Image.network(_existingImageUrl!)
+                                      : Image.file(_pickedImage!),
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
               ],
             ),
           ),
@@ -307,33 +358,6 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     );
   }
 
-  Widget _buildNetworkImage() {
-    return Image.network(
-      _existingImageUrl!,
-      width: double.infinity,
-      height: 200,
-      fit: BoxFit.cover,
-    );
-  }
-
-  Widget _buildImagePlaceholder() {
-    return Container(
-      width: double.infinity,
-      height: 200,
-      color: Colors.grey[200],
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.add_a_photo, size: 40, color: Colors.grey),
-            const SizedBox(height: 8),
-            Text('اضغط لرفع صورة', style: TextStyle(color: Colors.grey)),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildAgeFieldsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -348,7 +372,8 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
             Chip(
               label: Text(
                 '${_ageControllers.length}',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
               ),
               backgroundColor: AppColors.primaryColor.withValues(alpha: 0.2),
             ),
@@ -366,9 +391,8 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
                 labelText: 'عمر الفرد ${index + 1}',
                 labelStyle: const TextStyle(color: Colors.grey),
                 floatingLabelStyle: TextStyle(color: AppColors.primaryColor),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: AppColors.primaryColor),
