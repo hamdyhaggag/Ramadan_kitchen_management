@@ -1,0 +1,2 @@
+E:/Coding/ramadan_kitchen_management/android/app/.cxx/RelWithDebInfo/493q6l1w/arm64-v8a/CMakeFiles/edit_cache.dir
+E:/Coding/ramadan_kitchen_management/android/app/.cxx/RelWithDebInfo/493q6l1w/arm64-v8a/CMakeFiles/rebuild_cache.dir

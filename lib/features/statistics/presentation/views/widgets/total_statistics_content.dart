@@ -66,7 +66,6 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent>
       if (isNewDay) {
         historicalTotal += dailyValue;
         dailyValue = 0;
-        cachedDate = startOfDay;
         await prefs.setInt('historicalTotal', historicalTotal);
         await prefs.setInt('dailyValue', dailyValue);
         await prefs.setInt('lastUpdated', startOfDay.millisecondsSinceEpoch);
@@ -80,22 +79,20 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent>
             .where('created_at', isGreaterThanOrEqualTo: startOfDay)
             .get();
 
-        dailyValue = currentDaySnapshot.docs.isNotEmpty
-            ? (currentDaySnapshot.docs.first['numberOfIndividuals'] as int? ??
-                0)
-            : 0;
+        dailyValue = currentDaySnapshot.docs.fold(
+          0,
+          (sum, doc) => sum + (doc['numberOfIndividuals'] as int? ?? 0),
+        );
 
-        if (historicalTotal == 0) {
-          final previousDaysSnapshot = await FirebaseFirestore.instance
-              .collection('donations')
-              .where('created_at', isLessThan: startOfDay)
-              .get();
+        final previousDaysSnapshot = await FirebaseFirestore.instance
+            .collection('donations')
+            .where('created_at', isLessThan: startOfDay)
+            .get();
 
-          historicalTotal = previousDaysSnapshot.docs.fold(
-            0,
-            (sum, doc) => sum + (doc['numberOfIndividuals'] as int? ?? 0),
-          );
-        }
+        historicalTotal = previousDaysSnapshot.docs.fold(
+          0,
+          (sum, doc) => sum + (doc['numberOfIndividuals'] as int? ?? 0),
+        );
 
         await prefs.setInt('dailyValue', dailyValue);
         await prefs.setInt('historicalTotal', historicalTotal);
@@ -169,21 +166,6 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent>
         ),
         Column(
           children: [
-            // Text(
-            //   'إجمالي الأفراد',
-            //   style: TextStyle(
-            //     fontSize: 24,
-            //     fontWeight: FontWeight.bold,
-            //     color: Colors.grey[700],
-            //     shadows: [
-            //       Shadow(
-            //         blurRadius: 2,
-            //         color: Colors.black.withValues(alpha: 0.1),
-            //         offset: const Offset(1, 1),
-            //       )
-            //     ],
-            //   ),
-            // ),
             AnimatedCount(
               count: _totalIndividuals,
               duration: const Duration(seconds: 1),
