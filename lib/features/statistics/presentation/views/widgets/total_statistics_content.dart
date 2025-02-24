@@ -206,7 +206,7 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent>
             width: 250,
             alignment: Alignment.center,
             child: Text(
-              '${(_totalIndividuals / 9000 * 100).toStringAsFixed(1)}% من الهدف (9000 وجبة إفطار)',
+              '${(_totalIndividuals / 8500 * 100).toStringAsFixed(1)}% من الهدف (8500 وجبة إفطار)',
               style: const TextStyle(
                 color: AppColors.whiteColor,
                 fontWeight: FontWeight.bold,
