@@ -150,9 +150,7 @@ class _ScreenLayoutState extends State<ScreenLayout> {
             height: 28,
           ),
           activeIcon: SvgPicture.asset(
-            isAdmin
-                ? 'assets/icons/wallet.svg'
-                : 'assets/icons/previous_days.svg',
+            isAdmin ? 'assets/icons/wallet.svg' : 'assets/icons/calendar.svg',
             colorFilter:
                 const ColorFilter.mode(AppColors.primaryColor, BlendMode.srcIn),
             width: 28,

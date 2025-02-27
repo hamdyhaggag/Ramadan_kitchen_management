@@ -1,12 +1,11 @@
 import 'dart:math';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
-
-import '../../../../../core/utils/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+
+import '../../../../../core/utils/app_colors.dart';
 
 class TotalStatisticsContent extends StatefulWidget {
   const TotalStatisticsContent({super.key});
@@ -28,6 +27,14 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent>
     super.initState();
     _loadDonationData();
     _initializeAnimations();
+  }
+
+  @override
+  void dispose() {
+    _waveController.dispose();
+    _rotationController.dispose();
+    _particleController.dispose();
+    super.dispose();
   }
 
   void _initializeAnimations() {
