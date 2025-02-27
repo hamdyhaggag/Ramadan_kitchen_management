@@ -163,6 +163,8 @@ class _ManageCasesContent extends StatefulWidget {
 
 class _ManageCasesContentState extends State<_ManageCasesContent> {
   String? selectedFilter;
+  String searchQuery = '';
+
   dynamic selectedFilterValue;
   final Map<String, String> filterOptions = {
     "جاهزة": "جاهزة للتوزيع",
@@ -171,20 +173,30 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
   };
 
   List<Map<String, dynamic>> get filteredCases {
-    if (selectedFilter == null || selectedFilterValue == null) {
-      return widget.cases;
+    List<Map<String, dynamic>> filtered = widget.cases;
+
+    if (selectedFilter != null && selectedFilterValue != null) {
+      filtered = filtered.where((caseItem) {
+        final caseValue = caseItem[selectedFilter];
+        if (selectedFilter == "عدد الأفراد") {
+          final filterNumber = selectedFilterValue as int?;
+          final caseNumber =
+              caseValue is int ? caseValue : int.tryParse(caseValue.toString());
+          return caseNumber == filterNumber;
+        } else {
+          return caseValue == selectedFilterValue;
+        }
+      }).toList();
     }
-    return widget.cases.where((caseItem) {
-      final caseValue = caseItem[selectedFilter];
-      if (selectedFilter == "عدد الأفراد") {
-        final filterNumber = selectedFilterValue as int?;
-        final caseNumber =
-            caseValue is int ? caseValue : int.tryParse(caseValue.toString());
-        return caseNumber == filterNumber;
-      } else {
-        return caseValue == selectedFilterValue;
-      }
-    }).toList();
+
+    if (searchQuery.isNotEmpty) {
+      filtered = filtered.where((caseItem) {
+        final name = caseItem["الاسم"].toString().toLowerCase();
+        return name.contains(searchQuery.toLowerCase());
+      }).toList();
+    }
+
+    return filtered;
   }
 
   void _showFilterModal() {
@@ -280,6 +292,8 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _buildSearchField(),
+                const SizedBox(height: 16),
                 _buildFilterSection(isPortrait),
                 const SizedBox(height: 16),
                 if (!widget.isAdmin) _buildPermissionBanner(),
@@ -362,6 +376,25 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
           Text("بعض المعلومات مخفية بسبب الصلاحيات المحدودة",
               style: TextStyle(color: AppColors.primaryColor, fontSize: 14)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: TextField(
+        onChanged: (value) => setState(() => searchQuery = value.trim()),
+        decoration: InputDecoration(
+          hintStyle: TextStyle(color: Colors.grey.shade600),
+          hintText: 'ابحث بالإسم ...',
+          suffixIcon: Icon(Icons.search, color: Colors.grey.shade600),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12.0),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+        ),
       ),
     );
   }
@@ -474,23 +507,15 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
                   )
                 : Row(
                     children: [
-                      Text(
-                        "•••••",
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: isPortrait ? 16 : 20,
-                          fontWeight: FontWeight.w600,
+                      Tooltip(
+                        message: caseData["الاسم"],
+                        child: Text(
+                          "•••••",
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Tooltip(
-                        message: "مطلوب صلاحيات إدارية لعرض الأسماء",
-                        child: Icon(
-                          Icons.lock_outline,
-                          color: Colors.grey.shade600,
-                          size: 16,
-                        ),
-                      )
+                      Text(
+                        "•••••",
+                      ),
                     ],
                   ),
           ),
