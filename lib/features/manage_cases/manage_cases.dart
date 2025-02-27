@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/core/widgets/general_button.dart';
 import '../../core/services/service_locator.dart';
@@ -27,24 +28,16 @@ class _ManageCasesScreenState extends State<ManageCasesScreen>
   @override
   void initState() {
     super.initState();
-    isAdmin = false;
-    _checkAdminStatus();
+    final authRepo = getIt<AuthRepo>();
+    isAdmin = authRepo.currentUser?.role == 'admin';
+    if (isAdmin) {
+      _tabController = TabController(length: 2, vsync: this);
+    }
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
-  }
-
-  Future<void> _checkAdminStatus() async {
-    final authRepo = getIt<AuthRepo>();
-    final bool adminStatus = authRepo.currentUser?.role == 'admin';
-    setState(() {
-      isAdmin = adminStatus;
-      if (isAdmin) {
-        _tabController = TabController(length: 2, vsync: this);
-      }
-    });
   }
 
   @override
@@ -98,9 +91,21 @@ class _ManageCasesScreenState extends State<ManageCasesScreen>
                         BlocBuilder<CasesCubit, CasesState>(
                           builder: (context, state) {
                             if (state is CasesLoading) {
-                              return const Center(
-                                child: CircularProgressIndicator(
-                                  color: AppColors.primaryColor,
+                              return Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    LoadingAnimationWidget.staggeredDotsWave(
+                                      color: Theme.of(context).primaryColor,
+                                      size: 50,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'جاري تحميل الحالات...',
+                                      style:
+                                          Theme.of(context).textTheme.bodyLarge,
+                                    )
+                                  ],
                                 ),
                               );
                             }
