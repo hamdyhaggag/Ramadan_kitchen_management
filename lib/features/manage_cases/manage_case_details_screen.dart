@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import '../../core/utils/app_colors.dart';
 import '../../core/widgets/general_button.dart';
 import '../donation/presentation/views/case_details_screen.dart';
@@ -19,7 +20,22 @@ class ManageCaseDetailsScreen extends StatelessWidget {
       body: BlocBuilder<CasesCubit, CasesState>(
         builder: (context, state) {
           if (state is CasesLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  LoadingAnimationWidget.staggeredDotsWave(
+                    color: Theme.of(context).primaryColor,
+                    size: 50,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'جاري تحميل الحالات...',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  )
+                ],
+              ),
+            );
           }
           if (state is CasesError) {
             return Center(child: Text(state.message));
