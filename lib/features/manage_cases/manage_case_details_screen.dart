@@ -81,24 +81,103 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
     final currentState = context.read<CasesCubit>().state;
     if (currentState is! CasesLoaded) return;
     final currentCases = currentState.cases;
-    final newNumber = currentCases.isEmpty
-        ? 1
-        : (currentCases
-                .map((e) => e['الرقم'] as int)
-                .reduce((a, b) => a > b ? a : b)) +
-            1;
-    context.read<CasesCubit>().addCase({
-      "الرقم": newNumber,
-      "id": newNumber.toString(),
-      "الاسم": "",
-      "عدد الأفراد": '',
-      "جاهزة": false,
-      "هنا؟": false,
-    });
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text('تمت إضافة حالة جديدة بنجاح'),
-      duration: Duration(seconds: 2),
-    ));
+
+    final numberController = TextEditingController();
+    final nameController = TextEditingController();
+    final membersController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("إضافة حالة جديدة"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: numberController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: "الرقم",
+                    hintText: "أدخل الرقم يدويًا",
+                    hintStyle: TextStyle(color: Colors.grey[600]),
+                  ),
+                ),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: "الاسم",
+                    hintStyle: TextStyle(color: Colors.grey[600]),
+                  ),
+                ),
+                TextField(
+                  controller: membersController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: "عدد الأفراد",
+                    hintStyle: TextStyle(color: Colors.grey[600]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("إلغاء"),
+            ),
+            TextButton(
+              onPressed: () {
+                final number = int.tryParse(numberController.text);
+                final members = int.tryParse(membersController.text) ?? 0;
+
+                if (number == null || number <= 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("الرجاء إدخال رقم صحيح موجب")),
+                  );
+                  return;
+                }
+
+                if (currentCases.any((c) => c['الرقم'] == number)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("رقم الحالة موجود مسبقًا")),
+                  );
+                  return;
+                }
+
+                if (nameController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("الرجاء إدخال اسم الحالة")),
+                  );
+                  return;
+                }
+
+                if (members <= 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text("الرجاء إدخال عدد أفراد صحيح")),
+                  );
+                  return;
+                }
+
+                context.read<CasesCubit>().addCase({
+                  "الرقم": number,
+                  "id": number.toString(),
+                  "الاسم": nameController.text,
+                  "عدد الأفراد": members,
+                  "جاهزة": false,
+                  "هنا؟": false,
+                });
+
+                Navigator.pop(context);
+              },
+              child: const Text("حفظ"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _editCase(int index) {
@@ -208,7 +287,6 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
   Widget build(BuildContext context) {
     final sortedCases = List<Map<String, dynamic>>.from(widget.cases)
       ..sort((a, b) => (a['الرقم'] as int).compareTo(b['الرقم'] as int));
-
     return Column(
       children: [
         Expanded(
