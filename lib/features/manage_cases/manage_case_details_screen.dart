@@ -104,12 +104,18 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
                     hintStyle: TextStyle(color: Colors.grey[600]),
                   ),
                 ),
+                SizedBox(
+                  height: 8,
+                ),
                 TextField(
                   controller: nameController,
                   decoration: InputDecoration(
                     labelText: "الاسم",
                     hintStyle: TextStyle(color: Colors.grey[600]),
                   ),
+                ),
+                SizedBox(
+                  height: 8,
                 ),
                 TextField(
                   controller: membersController,
@@ -348,15 +354,6 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
             backgroundColor: AppColors.primaryColor,
             textColor: AppColors.whiteColor,
             onPressed: _addNewCase,
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: GeneralButton(
-            text: 'رجوع',
-            backgroundColor: AppColors.secondaryColor,
-            textColor: AppColors.whiteColor,
-            onPressed: () => Navigator.pop(context),
           ),
         ),
         const SizedBox(height: 16),
