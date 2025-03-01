@@ -385,15 +385,45 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
     );
   }
 
+// Declare the TextEditingController in your State class
+  late TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Widget _buildSearchField() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: TextField(
+        controller: _searchController,
         onChanged: (value) => setState(() => searchQuery = value.trim()),
         decoration: InputDecoration(
           hintStyle: TextStyle(color: Colors.grey.shade600),
           hintText: 'ابحث بالإسم ...',
-          suffixIcon: Icon(Icons.search, color: Colors.grey.shade600),
+          suffixIcon: _searchController.text.isEmpty
+              ? IconButton(
+                  icon: Icon(Icons.search),
+                  color: Colors.grey.shade600,
+                  disabledColor: Colors.grey.shade600,
+                  onPressed: null,
+                )
+              : IconButton(
+                  icon: Icon(Icons.clear),
+                  color: Colors.grey.shade600,
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => searchQuery = '');
+                  },
+                ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12.0),
           ),

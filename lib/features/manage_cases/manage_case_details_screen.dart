@@ -62,12 +62,15 @@ class _ManageCaseDetailsContent extends StatefulWidget {
 class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
   late ScrollController _scrollController;
   int _previousCasesLength = 0;
+  late TextEditingController _searchController;
+  String searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
     _previousCasesLength = widget.cases.length;
+    _searchController = TextEditingController();
   }
 
   @override
@@ -90,6 +93,7 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -120,9 +124,7 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
                     hintStyle: TextStyle(color: Colors.grey[600]),
                   ),
                 ),
-                SizedBox(
-                  height: 8,
-                ),
+                const SizedBox(height: 8),
                 TextField(
                   controller: nameController,
                   decoration: InputDecoration(
@@ -130,9 +132,7 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
                     hintStyle: TextStyle(color: Colors.grey[600]),
                   ),
                 ),
-                SizedBox(
-                  height: 8,
-                ),
+                const SizedBox(height: 8),
                 TextField(
                   controller: membersController,
                   keyboardType: TextInputType.number,
@@ -305,12 +305,53 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
     );
   }
 
+  Widget _buildSearchField() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) => setState(() => searchQuery = value.trim()),
+        decoration: InputDecoration(
+          hintStyle: TextStyle(color: Colors.grey.shade600),
+          hintText: 'ابحث بالإسم ...',
+          suffixIcon: _searchController.text.isEmpty
+              ? IconButton(
+                  icon: Icon(Icons.search),
+                  color: Colors.grey.shade600,
+                  disabledColor: Colors.grey.shade600,
+                  onPressed: null,
+                )
+              : IconButton(
+                  icon: Icon(Icons.clear),
+                  color: Colors.grey.shade600,
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => searchQuery = '');
+                  },
+                ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12.0),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final sortedCases = List<Map<String, dynamic>>.from(widget.cases)
+    List<Map<String, dynamic>> filteredCases = widget.cases.where((caseItem) {
+      final name = caseItem["الاسم"].toString().toLowerCase();
+      return name.contains(searchQuery.toLowerCase());
+    }).toList();
+
+    List<Map<String, dynamic>> sortedCases = filteredCases
       ..sort((a, b) => (a['الرقم'] as int).compareTo(b['الرقم'] as int));
+
     return Column(
       children: [
+        _buildSearchField(),
         Expanded(
           child: ListView.builder(
             controller: _scrollController,
