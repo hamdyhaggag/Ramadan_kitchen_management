@@ -41,6 +41,7 @@ class AddExpenseScreenState extends State<AddExpenseScreen> {
     'قسم المواد الإضافية': ['بهارات', 'طرشي', 'طحينة'],
     'قسم الأدوات والمستلزمات': ['فويل', 'فوم', 'أكياس'],
     'قسم الوقود ': ['غاز'],
+    'قسم التجهيزات ': ['تكلفة التجهيز'],
   };
 
   @override
@@ -131,7 +132,7 @@ class AddExpenseScreenState extends State<AddExpenseScreen> {
     return DropdownButtonFormField<String>(
       value: _selectedUnitType,
       decoration: _inputDecoration('الوحدة'),
-      items: ['كيلوجرام', 'لتر', 'قطعة'].map((String value) {
+      items: ['كيلوجرام', 'لتر', 'قطعة', 'فرد'].map((String value) {
         return DropdownMenuItem(
           value: value,
           child: Text(value),

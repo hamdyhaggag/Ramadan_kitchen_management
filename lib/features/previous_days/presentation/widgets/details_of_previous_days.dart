@@ -1,9 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../../../core/utils/app_colors.dart';
+import '../../../daily_expenses/logic/expense_cubit.dart';
+import '../../../daily_expenses/logic/expense_state.dart';
 
 class DetailsOfPreviousDay extends StatelessWidget {
   final DateTime date;
@@ -41,9 +44,7 @@ class DetailsOfPreviousDay extends StatelessWidget {
                     child: Container(
                       width: double.infinity,
                       height: 280,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                      ),
+                      decoration: BoxDecoration(color: Colors.grey[300]),
                       child: Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -115,23 +116,60 @@ class DetailsOfPreviousDay extends StatelessWidget {
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(
-              child: _buildMetaChip(
-                icon: Icons.calendar_month,
-                label: DateFormat('EEE, d MMM , y').format(date),
-              ),
-            ),
+            _buildDateChip(),
             const SizedBox(width: 12),
-            Expanded(
-              child: _buildMetaChip(
-                icon: Icons.people_alt_outlined,
-                label: '$participants فرد تم إفطارهم',
-              ),
-            ),
+            _buildParticipantsChip(),
           ],
         ),
+        const SizedBox(height: 12),
+        _buildCostPerMealChip(),
       ],
     );
+  }
+
+  Widget _buildDateChip() {
+    return Expanded(
+      child: _buildMetaChip(
+        icon: Icons.calendar_month,
+        label: DateFormat('EEE, d MMM , y').format(date),
+      ),
+    );
+  }
+
+  Widget _buildParticipantsChip() {
+    return Expanded(
+      child: _buildMetaChip(
+        icon: Icons.people_alt_outlined,
+        label: '$participants فرد تم إفطارهم',
+      ),
+    );
+  }
+
+  Widget _buildCostPerMealChip() {
+    return BlocBuilder<ExpenseCubit, ExpenseState>(
+      builder: (context, state) {
+        if (state is ExpenseLoaded) {
+          final totalExpenses = _calculateDailyExpenses(state);
+          final costPerMeal =
+              participants > 0 ? totalExpenses / participants : 0.0;
+          return _buildMetaChip(
+            icon: Icons.attach_money,
+            label: '${costPerMeal.toStringAsFixed(2)} ج.م/وجبة',
+          );
+        }
+        return _buildMetaChip(
+          icon: Icons.attach_money,
+          label: '0.00 ج.م/وجبة',
+        );
+      },
+    );
+  }
+
+  double _calculateDailyExpenses(ExpenseLoaded state) {
+    final dateString = DateFormat('yyyy-MM-dd').format(date);
+    return state.expenses
+        .where((expense) => expense.date == dateString)
+        .fold(0.0, (sum, expense) => sum + expense.amount);
   }
 
   Widget _buildDetailSection() {
@@ -155,6 +193,7 @@ class DetailsOfPreviousDay extends StatelessWidget {
           ),
           textAlign: TextAlign.justify,
         ),
+        const SizedBox(height: 16),
       ],
     );
   }
@@ -163,7 +202,7 @@ class DetailsOfPreviousDay extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.primaryColor.withValues(alpha: 0.1),
+        color: AppColors.primaryColor.withAlpha(25),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(

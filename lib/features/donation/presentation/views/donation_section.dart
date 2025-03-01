@@ -139,7 +139,7 @@ class DonationSection extends StatelessWidget {
                                       '$totalIndividuals',
                                       style: Theme.of(context)
                                           .textTheme
-                                          .titleLarge
+                                          .titleMedium
                                           ?.copyWith(
                                             fontWeight: FontWeight.bold,
                                             color: AppColors.blackColor,
@@ -163,7 +163,7 @@ class DonationSection extends StatelessWidget {
                         const SizedBox(height: 16),
                         Row(
                           children: [
-                            const SectionTitle(title: 'تكلفة وجبة اليوم:'),
+                            const SectionTitle(title: 'تكلفة الفرد:'),
                             const SizedBox(width: 8),
                             BlocBuilder<ExpenseCubit, ExpenseState>(
                               builder: (context, expenseState) {
@@ -195,7 +195,7 @@ class DonationSection extends StatelessWidget {
                                         : 0.0;
                                     return Card(
                                       color: AppColors.primaryColor
-                                          .withOpacity(0.1),
+                                          .withValues(alpha: 0.1),
                                       elevation: 0,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(16),
@@ -211,7 +211,7 @@ class DonationSection extends StatelessWidget {
                                           '${costPerMeal.toStringAsFixed(2)} ج.م',
                                           style: Theme.of(context)
                                               .textTheme
-                                              .titleLarge
+                                              .titleMedium
                                               ?.copyWith(
                                                 fontWeight: FontWeight.bold,
                                                 color: AppColors.blackColor,

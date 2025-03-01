@@ -1,9 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
-
 import '../../../../core/utils/app_colors.dart';
+import '../../../daily_expenses/logic/expense_cubit.dart';
+import '../../../daily_expenses/logic/expense_state.dart';
 import 'details_of_previous_days.dart';
 
 class DonationCardOfPrevious extends StatelessWidget {
@@ -62,7 +64,42 @@ class DonationCardOfPrevious extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 4),
+                    BlocBuilder<ExpenseCubit, ExpenseState>(
+                      builder: (context, state) {
+                        if (state is ExpenseLoaded) {
+                          final dateString =
+                              DateFormat('yyyy-MM-dd').format(date);
+                          final totalExpenses = state.expenses
+                              .where((expense) => expense.date == dateString)
+                              .fold(
+                                  0.0, (sum, expense) => sum + expense.amount);
+                          final costPerMeal = participants > 0
+                              ? totalExpenses / participants
+                              : 0.0;
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Row(
+                              children: [
+                                Icon(Icons.attach_money,
+                                    size: 16, color: AppColors.primaryColor),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'التكلفة للفرد: ${costPerMeal.toStringAsFixed(2)} ج.م',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        return const SizedBox();
+                      },
+                    ),
+                    const SizedBox(height: 6),
                     _buildMetaDataRow(),
                   ],
                 ),
@@ -112,7 +149,7 @@ class DonationCardOfPrevious extends StatelessWidget {
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                     colors: [
-                      Colors.black.withValues(alpha: 0.6),
+                      Colors.black.withOpacity(0.6),
                       Colors.transparent,
                     ],
                   ),
@@ -129,22 +166,6 @@ class DonationCardOfPrevious extends StatelessWidget {
                       const BorderRadius.vertical(top: Radius.circular(12)),
                   color: Colors.grey[300],
                 ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.image, size: 40, color: Colors.grey[700]),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Loading...",
-                        style: TextStyle(
-                          color: Colors.grey[700],
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
             ),
             errorWidget: (context, url, error) => Container(
@@ -154,15 +175,8 @@ class DonationCardOfPrevious extends StatelessWidget {
                     const BorderRadius.vertical(top: Radius.circular(12)),
                 color: Colors.grey[200],
               ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.error, color: Colors.red, size: 40),
-                    SizedBox(height: 8),
-                    Text("لا يوجد اتصال بالانترنت"),
-                  ],
-                ),
+              child: const Center(
+                child: Icon(Icons.error, color: Colors.red, size: 40),
               ),
             ),
           ),
@@ -193,7 +207,7 @@ class DonationCardOfPrevious extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.4),
+        color: Colors.black.withOpacity(0.4),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
