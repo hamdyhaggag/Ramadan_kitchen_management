@@ -3,19 +3,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
+import 'package:ramadan_kitchen_management/features/daily_expenses/logic/expense_cubit.dart';
+import 'package:ramadan_kitchen_management/features/daily_expenses/model/expense_model.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/contact_list_item.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/contact_person.dart';
-import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/meal_description.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/header_image.dart';
+import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/meal_description.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/meal_title.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/section_title.dart';
-import '../cubit/donation_cubit.dart';
 import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_cubit.dart';
 import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_state.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../../daily_expenses/logic/expense_state.dart';
+import '../cubit/donation_cubit.dart';
+
 class DonationSection extends StatelessWidget {
   const DonationSection({super.key});
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DonationCubit, DonationState>(
@@ -100,13 +105,12 @@ class DonationSection extends StatelessWidget {
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            SectionTitle(
+                            const SectionTitle(
                               title: 'عدد الأفراد لهذا اليوم:',
                             ),
                             const SizedBox(width: 8),
                             Card(
-                              color:
-                                  AppColors.primaryColor.withValues(alpha: 0.1),
+                              color: AppColors.primaryColor.withOpacity(0.1),
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
@@ -157,6 +161,71 @@ class DonationSection extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            const SectionTitle(title: 'تكلفة وجبة اليوم:'),
+                            const SizedBox(width: 8),
+                            BlocBuilder<ExpenseCubit, ExpenseState>(
+                              builder: (context, expenseState) {
+                                double totalExpenses = 0.0;
+                                if (expenseState is ExpenseLoaded) {
+                                  final today = DateTime.now()
+                                      .toIso8601String()
+                                      .split('T')[0];
+                                  totalExpenses = expenseState.expenses
+                                      .where((expense) => expense.date == today)
+                                      .fold(
+                                          0.0,
+                                          (sum, expense) =>
+                                              sum + expense.amount);
+                                }
+                                return BlocBuilder<CasesCubit, CasesState>(
+                                  builder: (context, casesState) {
+                                    int totalIndividuals = 0;
+                                    if (casesState is CasesLoaded) {
+                                      totalIndividuals = casesState.cases.fold(
+                                        0,
+                                        (sum, caseItem) =>
+                                            sum +
+                                            (caseItem['عدد الأفراد'] as int),
+                                      );
+                                    }
+                                    double costPerMeal = totalIndividuals > 0
+                                        ? totalExpenses / totalIndividuals
+                                        : 0.0;
+                                    return Card(
+                                      color: AppColors.primaryColor
+                                          .withOpacity(0.1),
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        side: BorderSide(
+                                          color: AppColors.whiteColor,
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 8, horizontal: 16),
+                                        child: Text(
+                                          '${costPerMeal.toStringAsFixed(2)} ج.م',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.blackColor,
+                                              ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
                         HeaderImage(
                             imageUrl: state.donations.first['mealImageUrl']),
                         const SizedBox(height: 24),
@@ -181,7 +250,7 @@ class DonationSection extends StatelessWidget {
                               ),
                             ),
                           ),
-                        ),
+                        )
                       ],
                     ),
                   ),
