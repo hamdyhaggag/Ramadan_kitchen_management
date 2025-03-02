@@ -4,17 +4,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/features/daily_expenses/logic/expense_cubit.dart';
-import 'package:ramadan_kitchen_management/features/daily_expenses/model/expense_model.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/contact_list_item.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/contact_person.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/header_image.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/meal_description.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/meal_title.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/section_title.dart';
-import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_cubit.dart';
-import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_state.dart';
 import 'package:shimmer/shimmer.dart';
-
 import '../../../daily_expenses/logic/expense_state.dart';
 import '../cubit/donation_cubit.dart';
 
@@ -57,23 +53,6 @@ class DonationSection extends StatelessWidget {
                                   color: Colors.grey[300],
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.image,
-                                          size: 40, color: Colors.grey[700]),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        "Loading...",
-                                        style: TextStyle(
-                                          color: Colors.grey[700],
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
                               ),
                             ),
                             errorWidget: (context, url, error) =>
@@ -110,7 +89,8 @@ class DonationSection extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Card(
-                              color: AppColors.primaryColor.withOpacity(0.1),
+                              color:
+                                  AppColors.primaryColor.withValues(alpha: 0.1),
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
@@ -122,30 +102,15 @@ class DonationSection extends StatelessWidget {
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
                                     vertical: 8, horizontal: 16),
-                                child: BlocBuilder<CasesCubit, CasesState>(
-                                  builder: (context, state) {
-                                    int totalIndividuals = 0;
-                                    if (state is CasesLoaded) {
-                                      totalIndividuals = state.cases.fold(
-                                        0,
-                                        (sum, e) =>
-                                            sum +
-                                            (e['عدد الأفراد'] is int
-                                                ? e['عدد الأفراد'] as int
-                                                : 0),
-                                      );
-                                    }
-                                    return Text(
-                                      '$totalIndividuals',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.blackColor,
-                                          ),
-                                    );
-                                  },
+                                child: Text(
+                                  '${state.donations.first['numberOfIndividuals']}',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.blackColor,
+                                      ),
                                 ),
                               ),
                             ),
@@ -179,47 +144,31 @@ class DonationSection extends StatelessWidget {
                                           (sum, expense) =>
                                               sum + expense.amount);
                                 }
-                                return BlocBuilder<CasesCubit, CasesState>(
-                                  builder: (context, casesState) {
-                                    int totalIndividuals = 0;
-                                    if (casesState is CasesLoaded) {
-                                      totalIndividuals = casesState.cases.fold(
-                                        0,
-                                        (sum, caseItem) =>
-                                            sum +
-                                            (caseItem['عدد الأفراد'] as int),
-                                      );
-                                    }
-                                    double costPerMeal = totalIndividuals > 0
-                                        ? totalExpenses / totalIndividuals
-                                        : 0.0;
-                                    return Card(
-                                      color: AppColors.primaryColor
-                                          .withValues(alpha: 0.1),
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                        side: BorderSide(
-                                          color: AppColors.whiteColor,
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 8, horizontal: 16),
-                                        child: Text(
-                                          '${costPerMeal.toStringAsFixed(2)} ج.م',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleMedium
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                                color: AppColors.blackColor,
-                                              ),
-                                        ),
-                                      ),
-                                    );
-                                  },
+                                return Card(
+                                  color: AppColors.primaryColor
+                                      .withValues(alpha: 0.1),
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    side: BorderSide(
+                                      color: AppColors.whiteColor,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 8, horizontal: 16),
+                                    child: Text(
+                                      '${(totalExpenses / (state.donations.first['numberOfIndividuals'] as int)).toStringAsFixed(2)} ج.م',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.blackColor,
+                                          ),
+                                    ),
+                                  ),
                                 );
                               },
                             ),
