@@ -85,18 +85,35 @@ class _ManageCasesScreenState extends State<ManageCasesScreen>
                           stream: getCaseGroupsStream(),
                           builder: (context, snapshot) {
                             if (!snapshot.hasData) {
-                              return const Center(
-                                  child: CircularProgressIndicator());
+                              return Center(
+                                child: LoadingAnimationWidget.staggeredDotsWave(
+                                  color: AppColors.primaryColor,
+                                  size: 50,
+                                ),
+                              );
                             }
-                            return _ManageCasesContent(
-                              cases: (context.read<CasesCubit>().state
-                                      is CasesLoaded
-                                  ? (context.read<CasesCubit>().state
-                                          as CasesLoaded)
-                                      .cases
-                                  : []),
-                              isAdmin: isAdmin,
-                              caseGroups: snapshot.data!,
+                            return BlocBuilder<CasesCubit, CasesState>(
+                              builder: (context, state) {
+                                if (state is CasesLoading) {
+                                  return Center(
+                                    child: LoadingAnimationWidget
+                                        .staggeredDotsWave(
+                                      color: AppColors.primaryColor,
+                                      size: 50,
+                                    ),
+                                  );
+                                } else if (state is CasesLoaded) {
+                                  return _ManageCasesContent(
+                                    cases: state.cases,
+                                    isAdmin: isAdmin,
+                                    caseGroups: snapshot.data!,
+                                  );
+                                } else if (state is CasesError) {
+                                  return Center(child: Text(state.message));
+                                } else {
+                                  return Container();
+                                }
+                              },
                             );
                           },
                         ),

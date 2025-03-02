@@ -196,8 +196,7 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
     );
   }
 
-  void _editCase(int index) {
-    final caseData = widget.cases[index];
+  void _editCase(Map<String, dynamic> caseData) {
     if (caseData['id'] == null) return;
     final nameController = TextEditingController(text: caseData["الاسم"]);
     final membersController =
@@ -362,7 +361,7 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.edit, color: Colors.blue),
-                        onPressed: () => _editCase(index),
+                        onPressed: () => _editCase(caseData),
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
