@@ -69,7 +69,8 @@ class DonationCardOfPrevious extends StatelessWidget {
                       builder: (context, state) {
                         if (state is ExpenseLoaded) {
                           final dateString =
-                              DateFormat('yyyy-MM-dd').format(date);
+                              date.toIso8601String().split('T')[0];
+
                           final totalExpenses = state.expenses
                               .where((expense) => expense.date == dateString)
                               .fold(
