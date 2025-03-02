@@ -11,4 +11,6 @@ abstract class AppRoutes {
   static const String statistics = 'statisticsView';
   static const String reports = 'reportsView';
   static const String layout = 'ScreenLayout';
+  static const String donationSection = 'donationSection';
+  static const String previousDailyExpenses = 'previousDailyExpenses';
 }

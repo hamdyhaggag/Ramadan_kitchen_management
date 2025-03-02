@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:ramadan_kitchen_management/core/routes/app_routes.dart';
 import 'package:ramadan_kitchen_management/features/auth/presentation/views/register_view.dart';
+import 'package:ramadan_kitchen_management/features/donation/presentation/views/donation_section.dart';
 import 'package:ramadan_kitchen_management/features/home/presentation/views/widgets/screen_layout.dart';
 import 'package:ramadan_kitchen_management/features/on_boarding/presentation/views/on_boarding_view.dart';
+import 'package:ramadan_kitchen_management/features/previous_days/presentation/views/previous_days_screen.dart';
 import 'package:ramadan_kitchen_management/features/splash/presentation/views/splash_view.dart';
 import '../../features/auth/presentation/views/forget_password_view.dart';
 import '../../features/auth/presentation/views/login_view.dart';
@@ -56,6 +58,14 @@ Route<dynamic> onGenerateRoutes(RouteSettings settings) {
     case AppRoutes.layout:
       return MaterialPageRoute(
         builder: (context) => ScreenLayout(),
+      );
+    case AppRoutes.donationSection:
+      return MaterialPageRoute(
+        builder: (context) => DonationSection(),
+      );
+    case AppRoutes.previousDailyExpenses:
+      return MaterialPageRoute(
+        builder: (context) => PreviousDaysScreen(),
       );
     default:
       return MaterialPageRoute(

@@ -5,6 +5,7 @@ import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/core/widgets/general_button.dart';
 import 'package:ramadan_kitchen_management/features/daily_expenses/logic/expense_cubit.dart';
 import 'package:ramadan_kitchen_management/features/daily_expenses/model/expense_model.dart';
+import '../../core/routes/app_routes.dart';
 import '../../core/services/service_locator.dart';
 import 'add_expenses_screen.dart';
 import 'logic/expense_state.dart';
@@ -110,9 +111,31 @@ class _DailyExpensesScreenState extends State<DailyExpensesScreen> {
               : 'مصاريف اليوم',
           style: Theme.of(context).textTheme.titleLarge,
         ),
-        IconButton(
-          icon: Icon(Icons.calendar_today, color: isAdmin ? null : Colors.grey),
-          onPressed: isAdmin ? _pickDate : null,
+        Row(
+          children: [
+            IconButton(
+              icon: Icon(Icons.calendar_today,
+                  color: isAdmin ? null : Colors.grey),
+              onPressed: isAdmin ? _pickDate : null,
+            ),
+            SizedBox(
+              width: 2,
+            ),
+            IconButton(
+              icon: const Icon(Icons.person, color: AppColors.blackColor),
+              onPressed: () =>
+                  Navigator.pushNamed(context, AppRoutes.donationSection),
+            ),
+            SizedBox(
+              width: 2,
+            ),
+            IconButton(
+              icon: const Icon(Icons.skip_previous_sharp,
+                  color: AppColors.blackColor),
+              onPressed: () =>
+                  Navigator.pushNamed(context, AppRoutes.previousDailyExpenses),
+            ),
+          ],
         ),
       ],
     );
