@@ -360,7 +360,8 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
                                         caseData: caseData)))),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.blue),
+                        icon: const Icon(Icons.edit,
+                            color: AppColors.primaryColor),
                         onPressed: () => _editCase(caseData),
                       ),
                       IconButton(
@@ -418,8 +419,14 @@ class _ManageCaseGroupsScreenState extends State<ManageCaseGroupsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text("إدارة المجموعات")),
+      appBar: AppBar(
+        title: const Text("إدارة المجموعات",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        centerTitle: true,
+      ),
       body: Column(
         children: [
           Expanded(
@@ -428,129 +435,240 @@ class _ManageCaseGroupsScreenState extends State<ManageCaseGroupsScreen> {
                   .collection('caseGroups')
                   .snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) return const CircularProgressIndicator();
-                final customOrder = [
-                  'الشنط الفردية',
-                  'المجموعة الأولى',
-                  'المجموعة الخامسة',
-                  'المجموعة السابعة',
-                  'المجموعة الثانية',
-                  'المجموعة الثالثة',
-                  'المجموعة الرابعة',
-                  'المجموعة السادسة',
-                  'المجموعة الثامنة',
-                ];
-                final groups = snapshot.data!.docs;
-                groups.sort((a, b) => customOrder
-                    .indexOf(a.id)
-                    .compareTo(customOrder.indexOf(b.id)));
-                return ListView.builder(
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.group_off, size: 64, color: theme.hintColor),
+                        const SizedBox(height: 16),
+                        Text("لا توجد مجموعات مضافة",
+                            style: theme.textTheme.titleLarge
+                                ?.copyWith(color: theme.hintColor)),
+                      ],
+                    ),
+                  );
+                }
+
+                final customOrder = [/* your custom order */];
+                final groups = snapshot.data!.docs
+                  ..sort((a, b) => customOrder
+                      .indexOf(a.id)
+                      .compareTo(customOrder.indexOf(b.id)));
+
+                return ListView.separated(
+                  padding: const EdgeInsets.all(16),
                   itemCount: groups.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final doc = groups[index];
                     final groupName = doc.id;
                     final caseNumbers =
                         List<int>.from(doc.get('caseNumbers') ?? []);
-                    return ListTile(
-                      title: Text(groupName),
-                      subtitle: Text(caseNumbers.join(', ')),
-                      onTap: () {
-                        _groupNameController.text = groupName;
-                        _caseNumbersController.text = caseNumbers.join(', ');
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            return AlertDialog(
-                              title: const Text("تحديث المجموعة"),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  TextField(
-                                      controller: _groupNameController,
-                                      decoration: const InputDecoration(
-                                          labelText: "اسم المجموعة")),
-                                  TextField(
-                                      controller: _caseNumbersController,
-                                      decoration: const InputDecoration(
-                                          labelText:
-                                              "أرقام الحالات (افصل بفاصلة)")),
-                                ],
-                              ),
-                              actions: [
-                                TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text("إلغاء")),
-                                TextButton(
-                                    onPressed: () {
-                                      _addOrUpdateGroup(groupId: groupName);
-                                      Navigator.pop(context);
-                                    },
-                                    child: const Text("تحديث")),
-                              ],
-                            );
-                          },
-                        );
-                      },
-                      trailing: IconButton(
-                          icon: const Icon(Icons.delete),
-                          onPressed: () async {
-                            await FirebaseFirestore.instance
-                                .collection('caseGroups')
-                                .doc(groupName)
-                                .delete();
-                          }),
+
+                    return Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 12),
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: theme.primaryColor.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child:
+                              Icon(Icons.group_work, color: theme.primaryColor),
+                        ),
+                        title: Text(groupName,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w600, fontSize: 16)),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            caseNumbers.isEmpty
+                                ? "لا توجد أرقام حالات"
+                                : caseNumbers.join(', '),
+                            style: TextStyle(
+                                color: theme.textTheme.bodyMedium?.color
+                                    ?.withValues(alpha: 0.7)),
+                          ),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.edit, color: Colors.blue[600]),
+                              onPressed: () => _showEditDialog(
+                                  context, groupName, caseNumbers),
+                            ),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              icon: Icon(Icons.delete, color: Colors.red[600]),
+                              onPressed: () =>
+                                  _confirmDelete(context, groupName),
+                            ),
+                          ],
+                        ),
+                      ),
                     );
                   },
                 );
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ElevatedButton(
-              child: const Text("إضافة جروب جديد"),
-              onPressed: () {
-                _groupNameController.clear();
-                _caseNumbersController.clear();
-                showDialog(
-                  context: context,
-                  builder: (context) {
-                    return AlertDialog(
-                      title: const Text("إضافة مجموعة جديدة"),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          TextField(
-                              controller: _groupNameController,
-                              decoration: const InputDecoration(
-                                  labelText: "اسم المجموعة")),
-                          SizedBox(height: 6),
-                          TextField(
-                              controller: _caseNumbersController,
-                              decoration: const InputDecoration(
-                                  labelText: "أرقام الحالات (افصل بفاصلة)")),
-                        ],
-                      ),
-                      actions: [
-                        TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text("إالغاء")),
-                        SizedBox(height: 8),
-                        TextButton(
-                            onPressed: () {
-                              _addOrUpdateGroup();
-                              Navigator.pop(context);
-                            },
-                            child: const Text("إضافة")),
-                      ],
-                    );
-                  },
-                );
-              },
+          Container(
+            padding: const EdgeInsets.all(16),
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.add_circle_outline, size: 24),
+              label: const Text("إضافة مجموعة جديدة",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () => _showEditDialog(context),
             ),
           ),
         ],
       ),
     );
+  }
+
+  void _showEditDialog(BuildContext context,
+      [String? groupName, List<int>? caseNumbers]) {
+    _groupNameController.text = groupName ?? '';
+    _caseNumbersController.text = caseNumbers?.join(', ') ?? '';
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(groupName == null ? "إضافة مجموعة جديدة" : "تعديل المجموعة",
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 24),
+              TextField(
+                controller: _groupNameController,
+                decoration: InputDecoration(
+                  labelText: "اسم المجموعة",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  prefixIcon: const Icon(Icons.group),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _caseNumbersController,
+                decoration: InputDecoration(
+                  labelText: "أرقام الحالات (مفصولة بفاصلة)",
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                  prefixIcon: const Icon(Icons.numbers),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.grey[600],
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("إلغاء"),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onPressed: () {
+                      if (_validateInputs()) {
+                        _addOrUpdateGroup(groupId: groupName);
+                        Navigator.pop(context);
+                      }
+                    },
+                    child: Text(groupName == null ? "إضافة" : "حفظ التعديلات"),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, String groupName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("تأكيد الحذف"),
+        content: Text("هل أنت متأكد من رغبتك في حذف مجموعة '$groupName'؟"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("تراجع"),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () async {
+              await FirebaseFirestore.instance
+                  .collection('caseGroups')
+                  .doc(groupName)
+                  .delete();
+              Navigator.pop(context);
+            },
+            child: const Text("حذف"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _validateInputs() {
+    if (_groupNameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("يرجى إدخال اسم المجموعة")));
+      return false;
+    }
+
+    final numbers = _caseNumbersController.text
+        .split(',')
+        .map((s) => int.tryParse(s.trim()))
+        .toList();
+
+    if (numbers.any((n) => n == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("يوجد أرقام حالات غير صالحة")));
+      return false;
+    }
+
+    return true;
   }
 }
