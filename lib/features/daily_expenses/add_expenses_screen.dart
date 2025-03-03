@@ -20,16 +20,27 @@ class AddExpenseScreenState extends State<AddExpenseScreen> {
   String _selectedCategory = 'قسم البقالة';
   String? _selectedProduct;
   String _selectedUnitType = 'كيلوجرام';
-  String _selectedPaymentStatus = 'لم يتم الدفع';
+  String _selectedPaymentStatus = 'تم الدفع';
 
   final Map<String, List<String>> _categoryProducts = {
-    'قسم البقالة': ['رز', 'مكرونة', 'شعرية', 'زيت', 'سمن', 'سكر', 'ملح'],
+    'قسم البقالة': [
+      'رز',
+      'مكرونة',
+      'شعرية',
+      'زيت',
+      'سمن',
+      'سكر',
+      'ملح',
+      'صلصة',
+      'خل'
+    ],
     'قسم الخضروات': [
       'بسلة',
       'طماطم',
       'بطاطس',
       'جزر',
       'بصل',
+      'كوسة',
       'لوبيا',
       'فاصولياء',
       'ثوم',
