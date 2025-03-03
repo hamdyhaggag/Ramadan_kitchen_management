@@ -166,7 +166,7 @@ class DetailsOfPreviousDay extends StatelessWidget {
   }
 
   double _calculateDailyExpenses(ExpenseLoaded state) {
-    final dateString = DateFormat('yyyy-MM-dd').format(date);
+    final dateString = date.toIso8601String().split('T')[0]; // Use UTC date
     return state.expenses
         .where((expense) => expense.date == dateString)
         .fold(0.0, (sum, expense) => sum + expense.amount);
