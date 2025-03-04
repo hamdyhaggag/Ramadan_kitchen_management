@@ -13,4 +13,7 @@ abstract class AppRoutes {
   static const String layout = 'ScreenLayout';
   static const String donationSection = 'donationSection';
   static const String previousDailyExpenses = 'previousDailyExpenses';
+  static const String notificationScreen = 'notificationScreen';
+  static const String sendNotificationScreen = 'sendNotificationScreen';
+  static const String viewPublicScreen = 'viewPublicScreen ';
 }

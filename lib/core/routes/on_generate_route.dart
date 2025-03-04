@@ -9,7 +9,10 @@ import 'package:ramadan_kitchen_management/features/splash/presentation/views/sp
 import '../../features/auth/presentation/views/forget_password_view.dart';
 import '../../features/auth/presentation/views/login_view.dart';
 import '../../features/daily_expenses/daily_expenses.dart';
+import '../../features/donation/presentation/views/widgets/notifications_screen.dart';
+import '../../features/donation/presentation/views/widgets/send_notification_screen.dart';
 import '../../features/home/presentation/views/home_view.dart';
+import '../../features/home/presentation/views/widgets/view_public_screen.dart';
 import '../../features/manage_cases/manage_cases.dart';
 import '../../features/on_boarding/presentation/views/login_or_register_view.dart';
 import '../../features/reports/reports.dart';
@@ -66,6 +69,18 @@ Route<dynamic> onGenerateRoutes(RouteSettings settings) {
     case AppRoutes.previousDailyExpenses:
       return MaterialPageRoute(
         builder: (context) => PreviousDaysScreen(),
+      );
+    case AppRoutes.notificationScreen:
+      return MaterialPageRoute(
+        builder: (context) => NotificationsScreen(),
+      );
+    case AppRoutes.sendNotificationScreen:
+      return MaterialPageRoute(
+        builder: (context) => SendNotificationScreen(),
+      );
+    case AppRoutes.viewPublicScreen:
+      return MaterialPageRoute(
+        builder: (context) => ViewPublicScreen(),
       );
     default:
       return MaterialPageRoute(

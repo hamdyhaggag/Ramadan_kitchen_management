@@ -7,6 +7,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:ramadan_kitchen_management/core/routes/app_routes.dart';
 import 'core/cache/prefs.dart';
 import 'core/routes/on_generate_route.dart';
+import 'core/services/local_notfiication_service.dart';
+import 'core/services/push_notification_service.dart';
 import 'core/services/service_locator.dart';
 import 'core/utils/app_theme.dart';
 import 'features/daily_expenses/logic/expense_cubit.dart';
@@ -14,6 +16,7 @@ import 'features/donation/presentation/cubit/donation_cubit.dart';
 import 'features/manage_cases/logic/cases_cubit.dart';
 import 'firebase_options.dart';
 import 'generated/l10n.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +29,11 @@ void main() async {
     persistenceEnabled: true,
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
+  await PushNotificationService.initialize();
+  PushNotificationService.setupNotificationListener();
 
+  await LocalNotificationService.init();
+  tz.initializeTimeZones();
   await Prefs.init();
   setupGetit();
   runApp(

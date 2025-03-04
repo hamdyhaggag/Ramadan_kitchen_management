@@ -49,9 +49,35 @@ class _ScreenLayoutState extends State<ScreenLayout> {
               actions: [
                 Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: IconButton(
-                    icon: const Icon(Icons.logout, color: AppColors.blackColor),
-                    onPressed: () => _showCreativeLogoutDialog(context),
+                  child: Row(
+                    children: [
+                      isAdmin
+                          ? IconButton(
+                              icon: const Icon(Icons.logout,
+                                  color: AppColors.blackColor),
+                              onPressed: () =>
+                                  _showCreativeLogoutDialog(context),
+                            )
+                          : Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.notifications_active,
+                                      color: AppColors.blackColor),
+                                  onPressed: () => Navigator.pushNamed(
+                                      context, AppRoutes.notificationScreen),
+                                ),
+                                SizedBox(
+                                  width: 2,
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.logout,
+                                      color: AppColors.blackColor),
+                                  onPressed: () =>
+                                      _showCreativeLogoutDialog(context),
+                                ),
+                              ],
+                            ),
+                    ],
                   ),
                 ),
               ],

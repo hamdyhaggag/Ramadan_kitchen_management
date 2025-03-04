@@ -8,6 +8,7 @@ import '../../../../core/errors/exception.dart';
 import '../../../../core/errors/failure.dart';
 import '../../../../core/services/data_base_service.dart';
 import '../../../../core/services/firebase_auth_service.dart';
+import '../../../../core/services/push_notification_service.dart';
 import '../models/user_model.dart';
 import 'auth_repo.dart';
 
@@ -45,10 +46,12 @@ class AuthRepoImpl extends AuthRepo {
       user = await firebaseAuthService.createUserWithEmailAndPassword(
           email: email, password: password);
       final userModel = UserModel(
-          uid: user.uid,
-          name: userName,
-          email: email,
-          phoneNumber: phoneNumber);
+        uid: user.uid,
+        name: userName,
+        email: email,
+        phoneNumber: phoneNumber,
+        fcmToken: PushNotificationService.fcmToken!,
+      );
       await addUserData(user: userModel);
       await saveUserData(user: userModel);
       return Right(userModel);
@@ -65,6 +68,11 @@ class AuthRepoImpl extends AuthRepo {
       final user = await firebaseAuthService.signInWithEmailAndPassword(
           email: email, password: password);
       final currentUser = await getUserData(uid: user.uid);
+      databaseService.updateData(
+        path: BackendEndpoints.kUsers,
+        data: {"fcmToken": PushNotificationService.fcmToken},
+        documentId: user.uid,
+      );
       await saveUserData(user: currentUser);
       return Right(currentUser);
     } on CustomException catch (e) {

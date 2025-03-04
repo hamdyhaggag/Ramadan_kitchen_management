@@ -114,26 +114,25 @@ class _DailyExpensesScreenState extends State<DailyExpensesScreen> {
         Row(
           children: [
             IconButton(
+              icon: Icon(Icons.menu, color: AppColors.primaryColor),
+              onPressed: () async {
+                final result = await Navigator.pushNamed(
+                  context,
+                  AppRoutes.viewPublicScreen,
+                  arguments: isAdmin,
+                );
+                if (result != null && result is DateTime) {
+                  setState(() => selectedDate = result);
+                }
+              },
+            ),
+            SizedBox(
+              width: 2,
+            ),
+            IconButton(
               icon: Icon(Icons.calendar_today,
                   color: isAdmin ? null : Colors.grey),
               onPressed: isAdmin ? _pickDate : null,
-            ),
-            SizedBox(
-              width: 2,
-            ),
-            IconButton(
-              icon: const Icon(Icons.person, color: AppColors.blackColor),
-              onPressed: () =>
-                  Navigator.pushNamed(context, AppRoutes.donationSection),
-            ),
-            SizedBox(
-              width: 2,
-            ),
-            IconButton(
-              icon: const Icon(Icons.skip_previous_sharp,
-                  color: AppColors.blackColor),
-              onPressed: () =>
-                  Navigator.pushNamed(context, AppRoutes.previousDailyExpenses),
             ),
           ],
         ),
