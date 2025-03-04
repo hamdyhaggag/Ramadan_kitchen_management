@@ -329,7 +329,9 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
                   onPressed: () {
                     _searchController.clear();
                     setState(() => searchQuery = '');
-                  }),
+                    FocusScope.of(context).unfocus();
+                  },
+                ),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
           filled: true,
           fillColor: Colors.white,

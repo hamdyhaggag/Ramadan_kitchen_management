@@ -613,7 +613,10 @@ class _ManageCaseGroupsScreenState extends State<ManageCaseGroupsScreen> {
                         Navigator.pop(context);
                       }
                     },
-                    child: Text(groupName == null ? "إضافة" : "حفظ التعديلات"),
+                    child: Text(
+                      groupName == null ? "إضافة" : "حفظ التعديلات",
+                      style: TextStyle(color: AppColors.whiteColor),
+                    ),
                   ),
                 ],
               ),
