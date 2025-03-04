@@ -26,7 +26,7 @@ class ViewPublicScreen extends StatelessWidget {
             _buildActionTile(
               context,
               icon: Icons.person,
-              title: 'قسم التبرعات',
+              title: 'عرض كمتبرع',
               color: AppColors.primaryColor,
               onTap: () => Navigator.pushReplacementNamed(
                   context, AppRoutes.donationSection),

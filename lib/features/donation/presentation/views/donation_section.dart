@@ -159,7 +159,9 @@ class DonationSection extends StatelessWidget {
                                     padding: const EdgeInsets.symmetric(
                                         vertical: 8, horizontal: 16),
                                     child: Text(
-                                      '${(totalExpenses / (state.donations.first['numberOfIndividuals'] as int)).toStringAsFixed(2)} ج.م',
+                                      totalExpenses == 0.0
+                                          ? 'لم تحدد بعد'
+                                          : '${(totalExpenses / (state.donations.first['numberOfIndividuals'] as int)).toStringAsFixed(2)} ج.م',
                                       style: Theme.of(context)
                                           .textTheme
                                           .titleMedium
