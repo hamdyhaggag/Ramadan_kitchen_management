@@ -141,17 +141,17 @@ class ReportsScreenState extends State<ReportsScreen>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Flexible(
-                          flex: 2,
-                          child: Text(
-                            '${entry.value.length} مصروفات',
-                            style: TextStyle(color: Colors.grey[700]),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            textAlign: TextAlign.end,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
+                        // Flexible(
+                        //   flex: 2,
+                        //   child: Text(
+                        //     '${entry.value.length} مصروفات',
+                        //     style: TextStyle(color: Colors.grey[700]),
+                        //     overflow: TextOverflow.ellipsis,
+                        //     maxLines: 1,
+                        //     textAlign: TextAlign.end,
+                        //   ),
+                        // ),
+                        // const SizedBox(width: 8),
                         Flexible(
                           flex: 1,
                           child: Text(
