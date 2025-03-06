@@ -12,15 +12,6 @@ import 'package:ramadan_kitchen_management/features/daily_expenses/model/expense
 
 import '../../core/services/service_locator.dart';
 
-extension DateTimeExtension on DateTime {
-  int get weekOfYear {
-    final date = DateTime(year, month, day);
-    final firstDay = DateTime(date.year, 1, 1);
-    final difference = date.difference(firstDay).inDays;
-    return ((difference + firstDay.weekday) / 7).ceil();
-  }
-}
-
 String formatDateString(String dateString) {
   try {
     return DateFormat('EEEE ، d MMM yyyy', 'ar')
@@ -257,13 +248,13 @@ class ReportsScreenState extends State<ReportsScreen>
                                   ),
                                 ),
                               )),
-                          Divider(),
+                          const Divider(),
                           Padding(
-                            padding: EdgeInsets.all(16.0),
+                            padding: const EdgeInsets.all(16.0),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
+                                const Text(
                                   'المجموع اليومي:',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
@@ -299,20 +290,13 @@ class ReportsScreenState extends State<ReportsScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('تصدير التقرير'),
-        content: const Text('اختر نوع التقرير المراد تصديره:'),
+        content: const Text('تصدير التقرير اليومي'),
         actions: [
           TextButton(
-            child: const Text('تقرير يومي'),
+            child: const Text('تصدير'),
             onPressed: () {
               Navigator.pop(context);
-              _generatePdfReport(context, isWeekly: false);
-            },
-          ),
-          TextButton(
-            child: const Text('تقرير أسبوعي'),
-            onPressed: () {
-              Navigator.pop(context);
-              _generatePdfReport(context, isWeekly: true);
+              _generatePdfReport(context);
             },
           ),
         ],
@@ -320,29 +304,53 @@ class ReportsScreenState extends State<ReportsScreen>
     );
   }
 
-  Map<String, List<Expense>> _groupExpensesByWeek(List<Expense> expenses) {
-    final grouped = <String, List<Expense>>{};
-    for (var expense in expenses) {
-      final date = DateTime.parse(expense.date);
-      final startOfWeek = date.subtract(Duration(days: date.weekday - 1));
-      final weekKey = '${startOfWeek.year}-W${startOfWeek.weekOfYear}';
-      grouped.putIfAbsent(weekKey, () => []);
-      grouped[weekKey]!.add(expense);
-    }
-    return grouped;
+  Future<void> _generatePdfReport(BuildContext context) async {
+    final state = context.read<ExpenseCubit>().state;
+    final expenses = state is ExpenseLoaded ? state.expenses : <Expense>[];
+    final pdf = pw.Document();
+
+    final groupedData = groupExpensesByDate(expenses);
+
+    pdf.addPage(
+      pw.MultiPage(
+        theme: pw.ThemeData.withFont(
+          base: arabicFont,
+          bold: arabicFont,
+          fontFallback: [arabicFont],
+        ),
+        build: (context) => [
+          pw.Header(
+            level: 0,
+            child: pw.Text('تقرير يومي',
+                style: pw.TextStyle(font: arabicFont, fontSize: 24),
+                textDirection: pw.TextDirection.rtl),
+          ),
+          ..._buildPdfContent(groupedData),
+          pw.SizedBox(height: 20),
+          pw.Text(
+              'تاريخ التصدير: ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}',
+              style: pw.TextStyle(font: arabicFont),
+              textDirection: pw.TextDirection.rtl),
+        ],
+      ),
+    );
+
+    final bytes = await pdf.save();
+
+    await Printing.sharePdf(
+      bytes: bytes,
+      filename: 'daily_report_${DateTime.now().toIso8601String()}.pdf',
+    );
   }
 
-  List<pw.Widget> _buildPdfContent(Map<String, List<Expense>> groupedData,
-      {bool isWeekly = false}) {
+  List<pw.Widget> _buildPdfContent(Map<String, List<Expense>> groupedData) {
     return groupedData.entries.map((entry) {
       final total = entry.value.fold(0.0, (sum, e) => sum + e.amount);
       return pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.Text(
-            isWeekly
-                ? 'أسبوع: ${_formatWeekHeader(entry.key)}'
-                : 'تاريخ: ${formatDateString(entry.key)}',
+            'تاريخ: ${formatDateString(entry.key)}',
             style: pw.TextStyle(
                 font: arabicFont, fontWeight: pw.FontWeight.bold, fontSize: 18),
             textDirection: pw.TextDirection.rtl,
@@ -413,53 +421,6 @@ class ReportsScreenState extends State<ReportsScreen>
     }).toList();
   }
 
-  String _formatWeekHeader(String weekKey) {
-    final parts = weekKey.split('-W');
-    final year = int.parse(parts[0]);
-    final week = int.parse(parts[1]);
-    final firstDay = DateTime(year, 1, 1 + (week - 1) * 7);
-    final dateFormat = DateFormat('dd/MM', 'ar');
-    final numberFormat = NumberFormat.decimalPattern('ar');
-    return 'الأسبوع ${numberFormat.format(week)} (${dateFormat.format(firstDay)} - ${dateFormat.format(firstDay.add(const Duration(days: 6)))})';
-  }
-
-  Future<void> _generatePdfReport(BuildContext context,
-      {required bool isWeekly}) async {
-    final state = context.read<ExpenseCubit>().state;
-    final expenses = state is ExpenseLoaded ? state.expenses : <Expense>[];
-    final pdf = pw.Document();
-
-    final groupedData = isWeekly
-        ? _groupExpensesByWeek(expenses)
-        : groupExpensesByDate(expenses);
-
-    pdf.addPage(
-      pw.MultiPage(
-        theme: pw.ThemeData.withFont(
-          base: arabicFont,
-          bold: arabicFont,
-          fontFallback: [arabicFont],
-        ),
-        build: (context) => [
-          pw.Header(
-            level: 0,
-            child: pw.Text(isWeekly ? 'تقرير أسبوعي' : 'تقرير يومي',
-                style: pw.TextStyle(font: arabicFont, fontSize: 24),
-                textDirection: pw.TextDirection.rtl),
-          ),
-          ..._buildPdfContent(groupedData, isWeekly: isWeekly),
-          pw.SizedBox(height: 20),
-          pw.Text(
-              'تاريخ التصدير: ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}',
-              style: pw.TextStyle(font: arabicFont),
-              textDirection: pw.TextDirection.rtl),
-        ],
-      ),
-    );
-
-    await Printing.layoutPdf(onLayout: (format) => pdf.save());
-  }
-
   @override
   Widget build(BuildContext context) {
     final isAdmin = getIt<AuthRepo>().currentUser?.role == 'admin';
@@ -517,11 +478,11 @@ class ReportsScreenState extends State<ReportsScreen>
                       controller: _tabController,
                       unselectedLabelColor: AppColors.greyColor,
                       splashFactory: NoSplash.splashFactory,
-                      overlayColor: WidgetStateProperty.resolveWith<Color?>(
-                        (Set<WidgetState> states) => Colors.transparent,
+                      overlayColor: MaterialStateProperty.resolveWith<Color?>(
+                        (Set<MaterialState> states) => Colors.transparent,
                       ),
                       dividerColor: Colors.transparent,
-                      labelStyle: TextStyle(
+                      labelStyle: const TextStyle(
                         color: AppColors.primaryColor,
                         fontFamily: 'DIN',
                         fontSize: 16,
@@ -534,9 +495,9 @@ class ReportsScreenState extends State<ReportsScreen>
                       ],
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Container(
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: AppColors.primaryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -544,7 +505,7 @@ class ReportsScreenState extends State<ReportsScreen>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
+                        const Text(
                           'إجمالي المصروفات حتى الآن : ',
                           style: TextStyle(
                             fontSize: 18,
@@ -554,7 +515,7 @@ class ReportsScreenState extends State<ReportsScreen>
                         ),
                         Text(
                           '${state.expenses.fold(0.0, (sum, e) => sum + e.amount).toStringAsFixed(0)} جنيه',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: AppColors.primaryColor,
