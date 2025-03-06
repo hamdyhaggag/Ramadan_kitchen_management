@@ -54,26 +54,26 @@ class ReportsScreenState extends State<ReportsScreen>
     super.dispose();
   }
 
-  Widget _buildPaymentStatus(bool isPaid) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Icon(
-          isPaid ? Icons.check_circle : Icons.cancel,
-          color: isPaid ? Colors.green : Colors.red,
-          size: 16,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          isPaid ? 'تم الدفع' : 'لم يتم الدفع',
-          style: TextStyle(
-            color: isPaid ? Colors.green : Colors.red,
-            fontSize: 12,
-          ),
-        ),
-      ],
-    );
-  }
+  // Widget _buildPaymentStatus(bool isPaid) {
+  //   return Row(
+  //     mainAxisAlignment: MainAxisAlignment.end,
+  //     children: [
+  //       Icon(
+  //         isPaid ? Icons.check_circle : Icons.cancel,
+  //         color: isPaid ? Colors.green : Colors.red,
+  //         size: 16,
+  //       ),
+  //       const SizedBox(width: 4),
+  //       Text(
+  //         isPaid ? 'تم الدفع' : 'لم يتم الدفع',
+  //         style: TextStyle(
+  //           color: isPaid ? Colors.green : Colors.red,
+  //           fontSize: 12,
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Map<String, List<Expense>> groupExpensesByDate(List<Expense> expenses,
       {bool unpaidOnly = false}) {
@@ -478,8 +478,8 @@ class ReportsScreenState extends State<ReportsScreen>
                       controller: _tabController,
                       unselectedLabelColor: AppColors.greyColor,
                       splashFactory: NoSplash.splashFactory,
-                      overlayColor: MaterialStateProperty.resolveWith<Color?>(
-                        (Set<MaterialState> states) => Colors.transparent,
+                      overlayColor: WidgetStateProperty.resolveWith<Color?>(
+                        (Set<WidgetState> states) => Colors.transparent,
                       ),
                       dividerColor: Colors.transparent,
                       labelStyle: const TextStyle(
@@ -499,7 +499,7 @@ class ReportsScreenState extends State<ReportsScreen>
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryColor.withOpacity(0.1),
+                      color: AppColors.primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
