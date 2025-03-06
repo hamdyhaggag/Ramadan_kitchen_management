@@ -184,53 +184,105 @@ class ReportsScreenState extends State<ReportsScreen>
                 shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
-                builder: (_) => SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(formatDateString(entry.key),
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 12),
-                        ...entry.value.map((expense) => ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(expense.product,
-                                  style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600)),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 4),
-                                  Text(
-                                      'المبلغ: ${expense.amount.toStringAsFixed(0)} ج.م',
-                                      style: TextStyle(
-                                          color: Colors.grey[700],
-                                          fontSize: 13)),
-                                ],
-                              ),
-                              leading: CircleAvatar(
-                                radius: 20,
-                                backgroundColor:
-                                    AppColors.primaryColor.withAlpha(200),
-                                child: const Icon(Icons.attach_money,
-                                    color: Colors.white),
-                              ),
-                              trailing: SizedBox(
-                                width: 80,
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  mainAxisSize: MainAxisSize.min,
+                builder: (_) => SafeArea(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(formatDateString(entry.key),
+                              style: const TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 12),
+                          ...entry.value.map((expense) => ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(expense.product,
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600)),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    _buildPaymentStatus(expense.paid),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                        'المبلغ: ${expense.amount.toStringAsFixed(0)} ج.م',
+                                        style: TextStyle(
+                                            color: Colors.grey[700],
+                                            fontSize: 13)),
                                   ],
                                 ),
-                              ),
-                            )),
-                      ],
+                                leading: CircleAvatar(
+                                  radius: 20,
+                                  backgroundColor:
+                                      AppColors.primaryColor.withAlpha(200),
+                                  child: const Icon(Icons.attach_money,
+                                      color: Colors.white),
+                                ),
+                                trailing: SizedBox(
+                                  width: 80,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
+                                        children: [
+                                          Icon(
+                                            expense.paid
+                                                ? Icons.check_circle
+                                                : Icons.cancel,
+                                            color: expense.paid
+                                                ? Colors.green
+                                                : Colors.red,
+                                            size: 16,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            expense.paid
+                                                ? 'تم الدفع'
+                                                : 'لم يتم الدفع',
+                                            style: TextStyle(
+                                              color: expense.paid
+                                                  ? Colors.green
+                                                  : Colors.red,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )),
+                          Divider(),
+                          Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'المجموع اليومي:',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Text(
+                                  '${total.toStringAsFixed(0)} جنيه',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: AppColors.primaryColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -479,6 +531,35 @@ class ReportsScreenState extends State<ReportsScreen>
                       tabs: const [
                         Tab(text: 'جميع المصروفات'),
                         Tab(text: 'غير المدفوعة'),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'إجمالي المصروفات حتى الآن : ',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.blackColor,
+                          ),
+                        ),
+                        Text(
+                          '${state.expenses.fold(0.0, (sum, e) => sum + e.amount).toStringAsFixed(0)} جنيه',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryColor,
+                          ),
+                        ),
                       ],
                     ),
                   ),
