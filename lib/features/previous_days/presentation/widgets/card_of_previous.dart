@@ -16,6 +16,7 @@ class DonationCardOfPrevious extends StatelessWidget {
   final String imageUrl;
 
   const DonationCardOfPrevious({
+    super.key,
     required this.date,
     required this.mealTitle,
     required this.description,
@@ -70,7 +71,6 @@ class DonationCardOfPrevious extends StatelessWidget {
                         if (state is ExpenseLoaded) {
                           final dateString =
                               date.toIso8601String().split('T')[0];
-
                           final totalExpenses = state.expenses
                               .where((expense) => expense.date == dateString)
                               .fold(
@@ -86,13 +86,13 @@ class DonationCardOfPrevious extends StatelessWidget {
                                     size: 16, color: AppColors.primaryColor),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'التكلفة للفرد: ${costPerMeal.toStringAsFixed(2)} ج.م',
+                                  'التكلفة للفرد: ${costPerMeal == 0.0 ? 'لم تحدد بعد' : '${costPerMeal.toStringAsFixed(2)} ج.م'}',
                                   style: TextStyle(
                                     color: Colors.grey[600],
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
                                   ),
-                                ),
+                                )
                               ],
                             ),
                           );
@@ -128,24 +128,25 @@ class DonationCardOfPrevious extends StatelessWidget {
   }
 
   Widget _buildImageHeader() {
-    return Hero(
-      tag: imageUrl,
-      child: Stack(
-        children: [
-          CachedNetworkImage(
-            imageUrl: imageUrl,
-            imageBuilder: (context, imageProvider) => Container(
-              height: 160,
-              decoration: BoxDecoration(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(12)),
-                image: DecorationImage(
-                  image: imageProvider,
-                  fit: BoxFit.cover,
-                ),
+    return Stack(
+      children: [
+        Hero(
+          tag: imageUrl,
+          child: Container(
+            height: 160,
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
               ),
-              child: Container(
+            ),
+            child: CachedNetworkImage(
+              imageUrl: imageUrl,
+              imageBuilder: (context, imageProvider) => Container(
                 decoration: BoxDecoration(
+                  image: DecorationImage(
+                    image: imageProvider,
+                    fit: BoxFit.cover,
+                  ),
                   gradient: LinearGradient(
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
@@ -156,51 +157,53 @@ class DonationCardOfPrevious extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
-            placeholder: (context, url) => Shimmer.fromColors(
-              baseColor: Colors.grey[300]!,
-              highlightColor: Colors.grey[100]!,
-              child: Container(
+              placeholder: (context, url) => Shimmer.fromColors(
+                baseColor: Colors.grey[300]!,
+                highlightColor: Colors.grey[100]!,
+                child: Container(
+                  height: 160,
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(12),
+                    ),
+                    color: Colors.grey[300],
+                  ),
+                ),
+              ),
+              errorWidget: (context, url, error) => Container(
                 height: 160,
                 decoration: BoxDecoration(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(12)),
-                  color: Colors.grey[300],
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
+                  ),
+                  color: Colors.grey[200],
                 ),
-              ),
-            ),
-            errorWidget: (context, url, error) => Container(
-              height: 160,
-              decoration: BoxDecoration(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(12)),
-                color: Colors.grey[200],
-              ),
-              child: const Center(
-                child: Icon(Icons.error, color: Colors.red, size: 40),
+                child: const Center(
+                  child: Icon(Icons.error, color: Colors.red, size: 40),
+                ),
               ),
             ),
           ),
-          Positioned(
-            bottom: 12,
-            left: 16,
-            right: 16,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildPill(
-                  DateFormat('dd MMM , yyyy').format(date),
-                  Icons.calendar_today,
-                ),
-                _buildPill(
-                  '$participants  فرد تم إفطارهم',
-                  Icons.people_outline,
-                ),
-              ],
-            ),
+        ),
+        Positioned(
+          bottom: 12,
+          left: 16,
+          right: 16,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildPill(
+                DateFormat('dd MMM , yyyy').format(date),
+                Icons.calendar_today,
+              ),
+              _buildPill(
+                '$participants فرد تم إفطارهم',
+                Icons.people_outline,
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

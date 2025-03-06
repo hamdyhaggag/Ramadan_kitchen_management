@@ -44,15 +44,17 @@ class AddExpenseScreenState extends State<AddExpenseScreen> {
       'لوبيا',
       'فاصولياء',
       'ثوم',
-      'خضرة سلطة'
+      'خضرة سلطة',
+      'فلفل أخضر',
     ],
     'قسم الفواكه': ['برتقال', 'موز', 'تمر'],
     'قسم الأسماك': ['بلطي', 'بوري', 'ماكاريل'],
     'قسم اللحوم': ['الفراخ', 'اللحم', 'الكبدة'],
-    'قسم المواد الإضافية': ['بهارات', 'طرشي', 'طحينة'],
+    'قسم المواد الإضافية': ['بهارات', 'طرشي', 'طحينة', 'ليمون', 'رده'],
     'قسم الأدوات والمستلزمات': ['فويل', 'فوم', 'أكياس'],
     'قسم الوقود ': ['غاز'],
-    'قسم التجهيزات ': ['تكلفة التجهيز'],
+    'قسم التجهيزات ': ['تكلفة الطهي و التجهيز'],
+    'قسم الحلويات ': ['هريسة', 'كنافه', 'جلاش'],
   };
 
   @override
@@ -143,7 +145,7 @@ class AddExpenseScreenState extends State<AddExpenseScreen> {
     return DropdownButtonFormField<String>(
       value: _selectedUnitType,
       decoration: _inputDecoration('الوحدة'),
-      items: ['كيلوجرام', 'لتر', 'قطعة', 'فرد'].map((String value) {
+      items: ['كيلوجرام', 'لتر', 'قطعة', 'فرد', 'صينية'].map((String value) {
         return DropdownMenuItem(
           value: value,
           child: Text(value),
