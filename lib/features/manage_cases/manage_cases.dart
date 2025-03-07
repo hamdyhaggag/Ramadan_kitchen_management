@@ -564,10 +564,10 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
                     child: SingleChildScrollView(
                       scrollDirection: Axis.vertical,
                       child: DataTable(
-                        dividerThickness: 0.5,
+                        dividerThickness: 0.2,
                         headingRowColor:
                             WidgetStateProperty.all(Colors.grey.shade200),
-                        dataRowMinHeight: 50,
+                        dataRowMinHeight: 40,
                         dataRowMaxHeight: 60,
                         columnSpacing: isPortrait ? 24 : 32,
                         columns: _buildDataColumns(isPortrait),
