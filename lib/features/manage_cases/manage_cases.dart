@@ -1,6 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
+import 'package:excel/excel.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/core/widgets/general_button.dart';
@@ -210,6 +214,44 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
       }).toList();
     }
     return filtered;
+  }
+
+  Future<void> _exportToExcel(List<Map<String, dynamic>> cases) async {
+    try {
+      final excel = Excel.createExcel();
+      final sheet = excel['Cases'];
+
+      sheet.appendRow([
+        'الرقم',
+        'الاسم',
+        'عدد الأفراد',
+        'جاهزة للتوزيع',
+        'الشنطة هنا؟',
+        'المجموعة'
+      ]);
+
+      for (var caseItem in cases) {
+        sheet.appendRow([
+          caseItem['الرقم'].toString(),
+          caseItem['الاسم'],
+          caseItem['عدد الأفراد'].toString(),
+          caseItem['جاهزة'] ? 'نعم' : 'لا',
+          caseItem['هنا؟'] ? 'نعم' : 'لا',
+          _getGroupForCase(int.parse(caseItem['الرقم'].toString())) ??
+              'غير محدد',
+        ]);
+      }
+
+      final directory = await getTemporaryDirectory();
+      final file = File('${directory.path}/cases_export.xlsx');
+      final fileBytes = excel.save();
+      await file.writeAsBytes(fileBytes!);
+      await Share.shareXFiles([XFile(file.path)], text: 'تصدير بيانات الحالات');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('خطأ في التصدير: ${e.toString()}')),
+      );
+    }
   }
 
   void _showFilterModal() {
@@ -516,52 +558,40 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
           builder: (context, orientation) {
             final bool isPortrait = orientation == Orientation.portrait;
             return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildSearchField(),
                 const SizedBox(height: 16),
                 _buildFilterSection(isPortrait),
                 const SizedBox(height: 16),
-                if (!widget.isAdmin) _buildPermissionBanner(),
-                const SizedBox(height: 8),
                 Expanded(
                   child: SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
+                    scrollDirection: Axis.horizontal,
                     child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
+                      scrollDirection: Axis.vertical,
                       child: DataTable(
-                        dividerThickness: 0.2,
+                        dividerThickness: 0.5,
                         headingRowColor:
                             WidgetStateProperty.all(Colors.grey.shade200),
-                        dataRowMinHeight: 40,
+                        dataRowMinHeight: 50,
                         dataRowMaxHeight: 60,
-                        columnSpacing: isPortrait ? 20 : 40,
+                        columnSpacing: isPortrait ? 24 : 32,
                         columns: _buildDataColumns(isPortrait),
                         rows: _buildDataRows(isPortrait),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 Row(
                   children: [
                     Expanded(
                       child: GeneralButton(
                         text: 'بدء يوم جديد',
-                        backgroundColor: widget.isAdmin
-                            ? AppColors.secondaryColor
-                            : Colors.grey,
+                        backgroundColor: AppColors.secondaryColor,
                         textColor: AppColors.whiteColor,
                         onPressed: () {
-                          if (widget.isAdmin) {
-                            _showResetConfirmation();
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content:
-                                        Text('لا تمتلك الصلاحية لبدء يوم جديد'),
-                                    duration: Duration(seconds: 2)));
-                          }
+                          if (widget.isAdmin) _showResetConfirmation();
                         },
                       ),
                     ),
@@ -578,28 +608,17 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
                     ],
                   ],
                 ),
+                const SizedBox(height: 12),
+                GeneralButton(
+                  text: 'تصدير إلى إكسل',
+                  backgroundColor: AppColors.secondaryColor,
+                  textColor: AppColors.whiteColor,
+                  onPressed: () => _exportToExcel(filteredCases),
+                ),
               ],
             );
           },
         ),
-      ),
-    );
-  }
-
-  Widget _buildPermissionBanner() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      decoration: BoxDecoration(
-          color: AppColors.primaryColor.withAlpha(25),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.primaryColor)),
-      child: Row(
-        children: [
-          Icon(Icons.lock_outline, color: AppColors.primaryColor, size: 18),
-          const SizedBox(width: 8),
-          Text("بعض المعلومات مخفية بسبب الصلاحيات المحدودة",
-              style: TextStyle(color: AppColors.primaryColor, fontSize: 14)),
-        ],
       ),
     );
   }
