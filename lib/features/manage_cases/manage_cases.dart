@@ -477,24 +477,15 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
           DataCell(Center(
               child: Text(caseData["الرقم"].toString(),
                   style: TextStyle(fontSize: isPortrait ? 18 : 20)))),
-          DataCell(
-            widget.isAdmin
-                ? Text(caseData["الاسم"],
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: isPortrait ? 16 : 20,
-                        decoration: caseData["جاهزة"]
-                            ? TextDecoration.lineThrough
-                            : TextDecoration.none,
-                        decorationStyle: TextDecorationStyle.solid,
-                        color: caseData["جاهزة"] ? Colors.grey : Colors.black))
-                : Row(
-                    children: [
-                      Tooltip(message: caseData["الاسم"], child: Text("•••••")),
-                      Text("•••••"),
-                    ],
-                  ),
-          ),
+          DataCell(Text(caseData["الاسم"],
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: isPortrait ? 16 : 20,
+                  decoration: caseData["جاهزة"]
+                      ? TextDecoration.lineThrough
+                      : TextDecoration.none,
+                  decorationStyle: TextDecorationStyle.solid,
+                  color: caseData["جاهزة"] ? Colors.grey : Colors.black))),
           DataCell(Center(
               child: Text(caseData["عدد الأفراد"].toString(),
                   style: TextStyle(
@@ -502,33 +493,36 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
                       fontWeight: FontWeight.w700)))),
           DataCell(Center(
             child: IconButton(
-              iconSize: isPortrait ? 24 : 28,
-              icon: Icon(caseData["جاهزة"] ? Icons.check_circle : Icons.cancel,
-                  color: caseData["جاهزة"] ? Colors.green : Colors.red),
-              onPressed: widget.isAdmin
-                  ? () => _showConfirmationDialog(
-                      caseData["الاسم"],
-                      "جاهزة",
-                      caseData["جاهزة"],
-                      () => context.read<CasesCubit>().updateCaseState(
-                          caseData['id'], "جاهزة", !caseData["جاهزة"]))
-                  : null,
-            ),
+                iconSize: isPortrait ? 24 : 28,
+                icon: Icon(
+                    caseData["جاهزة"] ? Icons.check_circle : Icons.cancel,
+                    color: caseData["جاهزة"] ? Colors.green : Colors.red),
+                onPressed: () {
+                  FocusScope.of(context).unfocus();
+                  _showConfirmationDialog(
+                    caseData["الاسم"],
+                    "جاهزة",
+                    caseData["جاهزة"],
+                    () => context.read<CasesCubit>().updateCaseState(
+                        caseData['id'], "جاهزة", !caseData["جاهزة"]),
+                  );
+                }),
           )),
           DataCell(Center(
             child: IconButton(
-              iconSize: isPortrait ? 24 : 28,
-              icon: Icon(caseData["هنا؟"] ? Icons.check_circle : Icons.cancel,
-                  color: caseData["هنا؟"] ? Colors.green : Colors.red),
-              onPressed: widget.isAdmin
-                  ? () => _showConfirmationDialog(
-                      caseData["الاسم"],
-                      "هنا؟",
-                      caseData["هنا؟"],
-                      () => context.read<CasesCubit>().updateCaseState(
-                          caseData['id'], "هنا؟", !caseData["هنا؟"]))
-                  : null,
-            ),
+                iconSize: isPortrait ? 24 : 28,
+                icon: Icon(caseData["هنا؟"] ? Icons.check_circle : Icons.cancel,
+                    color: caseData["هنا؟"] ? Colors.green : Colors.red),
+                onPressed: () {
+                  FocusScope.of(context).unfocus();
+                  _showConfirmationDialog(
+                    caseData["الاسم"],
+                    "هنا؟",
+                    caseData["هنا؟"],
+                    () => context.read<CasesCubit>().updateCaseState(
+                        caseData['id'], "هنا؟", !caseData["هنا؟"]),
+                  );
+                }),
           )),
           DataCell(Center(
               child: Text(
