@@ -72,6 +72,10 @@ class ReportsScreenState extends State<ReportsScreen>
   }
 
   Widget _buildExpensesList(Map<String, List<Expense>> groupedExpenses) {
+    final total = groupedExpenses.values
+        .expand((expenses) => expenses)
+        .fold(0.0, (sum, e) => sum + e.amount);
+
     final sortedEntries = groupedExpenses.entries.toList()
       ..sort((a, b) => _isAscending
           ? DateTime.parse(a.key).compareTo(DateTime.parse(b.key))
@@ -79,173 +83,214 @@ class ReportsScreenState extends State<ReportsScreen>
 
     if (sortedEntries.isEmpty) {
       return const Center(
-          child: Text('لا توجد مصروفات مسجلة', style: TextStyle(fontSize: 16)));
+        child: Text('لا توجد مصروفات مسجلة', style: TextStyle(fontSize: 16)),
+      );
     }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ListView.builder(
-        itemCount: sortedEntries.length,
-        itemBuilder: (context, index) {
-          final entry = sortedEntries[index];
-          final total = entry.value.fold(0.0, (sum, e) => sum + e.amount);
-          return Card(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-            elevation: 4,
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            child: ListTile(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              title: Row(
-                children: [
-                  Expanded(
-                    child: Row(
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'إجمالي المصروفات حتى الآن : ',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.blackColor,
+                  ),
+                ),
+                Text(
+                  '${total.toStringAsFixed(0)} جنيه',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: ListView.builder(
+              itemCount: sortedEntries.length,
+              itemBuilder: (context, index) {
+                final entry = sortedEntries[index];
+                final total = entry.value.fold(0.0, (sum, e) => sum + e.amount);
+                return Card(
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15)),
+                  elevation: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    title: Row(
                       children: [
-                        Icon(
-                          Icons.calendar_today,
-                          color: AppColors.primaryColor.withAlpha(200),
-                        ),
-                        const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
-                            formatDateString(entry.key),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Flexible(
-                          flex: 1,
-                          child: Text(
-                            '${total.toStringAsFixed(0)} جنيه',
-                            style: TextStyle(
-                              color: AppColors.primaryColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              onTap: () => showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                builder: (_) => SafeArea(
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(formatDateString(entry.key),
-                              style: const TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 12),
-                          ...entry.value.map((expense) => ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                title: Text(expense.product,
-                                    style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600)),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: 4),
-                                    Text(
-                                        'المبلغ: ${expense.amount.toStringAsFixed(0)} ج.م',
-                                        style: TextStyle(
-                                            color: Colors.grey[700],
-                                            fontSize: 13)),
-                                  ],
-                                ),
-                                leading: CircleAvatar(
-                                  radius: 20,
-                                  backgroundColor:
-                                      AppColors.primaryColor.withAlpha(200),
-                                  child: const Icon(Icons.attach_money,
-                                      color: Colors.white),
-                                ),
-                                trailing: SizedBox(
-                                  width: 80,
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.end,
-                                        children: [
-                                          Icon(
-                                            expense.paid
-                                                ? Icons.check_circle
-                                                : Icons.cancel,
-                                            color: expense.paid
-                                                ? Colors.green
-                                                : Colors.red,
-                                            size: 16,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            expense.paid
-                                                ? 'تم الدفع'
-                                                : 'لم يتم الدفع',
-                                            style: TextStyle(
-                                              color: expense.paid
-                                                  ? Colors.green
-                                                  : Colors.red,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )),
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'المجموع اليومي:',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today,
+                                color: AppColors.primaryColor.withAlpha(200),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  formatDateString(entry.key),
+                                  style: const TextStyle(
                                     fontSize: 16,
+                                    fontWeight: FontWeight.bold,
                                   ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                Text(
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Flexible(
+                                flex: 1,
+                                child: Text(
                                   '${total.toStringAsFixed(0)} جنيه',
                                   style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
                                     color: AppColors.primaryColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    onTap: () => showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      builder: (_) => SafeArea(
+                        child: SingleChildScrollView(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(formatDateString(entry.key),
+                                    style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 12),
+                                ...entry.value.map((expense) => ListTile(
+                                      contentPadding: EdgeInsets.zero,
+                                      title: Text(expense.product,
+                                          style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600)),
+                                      subtitle: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const SizedBox(height: 4),
+                                          Text(
+                                              'المبلغ: ${expense.amount.toStringAsFixed(0)} ج.م',
+                                              style: TextStyle(
+                                                  color: Colors.grey[700],
+                                                  fontSize: 13)),
+                                        ],
+                                      ),
+                                      leading: CircleAvatar(
+                                        radius: 20,
+                                        backgroundColor: AppColors.primaryColor
+                                            .withAlpha(200),
+                                        child: const Icon(Icons.attach_money,
+                                            color: Colors.white),
+                                      ),
+                                      trailing: SizedBox(
+                                        width: 80,
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.end,
+                                              children: [
+                                                Icon(
+                                                  expense.paid
+                                                      ? Icons.check_circle
+                                                      : Icons.cancel,
+                                                  color: expense.paid
+                                                      ? Colors.green
+                                                      : Colors.red,
+                                                  size: 16,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  expense.paid
+                                                      ? 'تم الدفع'
+                                                      : 'لم يتم الدفع',
+                                                  style: TextStyle(
+                                                    color: expense.paid
+                                                        ? Colors.green
+                                                        : Colors.red,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    )),
+                                Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text(
+                                        'المجموع اليومي:',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${total.toStringAsFixed(0)} جنيه',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          color: AppColors.primaryColor,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
@@ -273,9 +318,8 @@ class ReportsScreenState extends State<ReportsScreen>
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final entry = sortedEntries[index];
-                      final expense = expenses.firstWhere(
-                          (e) => e.product == entry.key,
-                          orElse: () => expenses.first);
+                      final expense =
+                          expenses.firstWhere((e) => e.product == entry.key);
 
                       return Container(
                         decoration: BoxDecoration(
@@ -598,35 +642,6 @@ class ReportsScreenState extends State<ReportsScreen>
                       tabs: const [
                         Tab(text: 'جميع المصروفات'),
                         Tab(text: 'الكميات'),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          'إجمالي المصروفات حتى الآن : ',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.blackColor,
-                          ),
-                        ),
-                        Text(
-                          '${state.expenses.fold(0.0, (sum, e) => sum + e.amount).toStringAsFixed(0)} جنيه',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primaryColor,
-                          ),
-                        ),
                       ],
                     ),
                   ),
