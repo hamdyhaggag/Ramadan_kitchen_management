@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -48,40 +50,23 @@ class ReportsScreenState extends State<ReportsScreen>
     arabicFont = pw.Font.ttf(fontData);
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  // Widget _buildPaymentStatus(bool isPaid) {
-  //   return Row(
-  //     mainAxisAlignment: MainAxisAlignment.end,
-  //     children: [
-  //       Icon(
-  //         isPaid ? Icons.check_circle : Icons.cancel,
-  //         color: isPaid ? Colors.green : Colors.red,
-  //         size: 16,
-  //       ),
-  //       const SizedBox(width: 4),
-  //       Text(
-  //         isPaid ? 'تم الدفع' : 'لم يتم الدفع',
-  //         style: TextStyle(
-  //           color: isPaid ? Colors.green : Colors.red,
-  //           fontSize: 12,
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
-
-  Map<String, List<Expense>> groupExpensesByDate(List<Expense> expenses,
-      {bool unpaidOnly = false}) {
+  Map<String, List<Expense>> groupExpensesByDate(List<Expense> expenses) {
     final grouped = <String, List<Expense>>{};
     for (var expense in expenses) {
-      if (unpaidOnly && expense.paid) continue;
       grouped.putIfAbsent(expense.date, () => []);
       grouped[expense.date]!.add(expense);
+    }
+    return grouped;
+  }
+
+  Map<String, double> groupQuantitiesByProduct(List<Expense> expenses) {
+    final grouped = <String, double>{};
+    for (var expense in expenses) {
+      grouped.update(
+        expense.product,
+        (value) => value + expense.quantity,
+        ifAbsent: () => expense.quantity,
+      );
     }
     return grouped;
   }
@@ -104,7 +89,6 @@ class ReportsScreenState extends State<ReportsScreen>
         itemBuilder: (context, index) {
           final entry = sortedEntries[index];
           final total = entry.value.fold(0.0, (sum, e) => sum + e.amount);
-
           return Card(
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -131,7 +115,6 @@ class ReportsScreenState extends State<ReportsScreen>
                               fontWeight: FontWeight.bold,
                             ),
                             overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
                           ),
                         ),
                       ],
@@ -141,17 +124,6 @@ class ReportsScreenState extends State<ReportsScreen>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        // Flexible(
-                        //   flex: 2,
-                        //   child: Text(
-                        //     '${entry.value.length} مصروفات',
-                        //     style: TextStyle(color: Colors.grey[700]),
-                        //     overflow: TextOverflow.ellipsis,
-                        //     maxLines: 1,
-                        //     textAlign: TextAlign.end,
-                        //   ),
-                        // ),
-                        // const SizedBox(width: 8),
                         Flexible(
                           flex: 1,
                           child: Text(
@@ -160,8 +132,6 @@ class ReportsScreenState extends State<ReportsScreen>
                               color: AppColors.primaryColor,
                               fontWeight: FontWeight.bold,
                             ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
                           ),
                         ),
                       ],
@@ -172,9 +142,6 @@ class ReportsScreenState extends State<ReportsScreen>
               onTap: () => showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
                 builder: (_) => SafeArea(
                   child: SingleChildScrollView(
                     child: Padding(
@@ -215,7 +182,6 @@ class ReportsScreenState extends State<ReportsScreen>
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     crossAxisAlignment: CrossAxisAlignment.end,
-                                    mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Row(
                                         mainAxisAlignment:
@@ -248,7 +214,6 @@ class ReportsScreenState extends State<ReportsScreen>
                                   ),
                                 ),
                               )),
-                          const Divider(),
                           Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: Row(
@@ -285,6 +250,265 @@ class ReportsScreenState extends State<ReportsScreen>
     );
   }
 
+  Widget _buildQuantitiesList(List<Expense> expenses) {
+    final groupedQuantities = groupQuantitiesByProduct(expenses);
+    final sortedEntries = groupedQuantities.entries.toList()
+      ..sort((a, b) => _isAscending
+          ? a.value.compareTo(b.value)
+          : b.value.compareTo(a.value));
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        children: [
+          Expanded(
+            child: sortedEntries.isEmpty
+                ? const Center(
+                    child: Text('لا توجد كميات مسجلة',
+                        style: TextStyle(fontSize: 16, color: Colors.grey)),
+                  )
+                : ListView.separated(
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: sortedEntries.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final entry = sortedEntries[index];
+                      final expense = expenses.firstWhere(
+                          (e) => e.product == entry.key,
+                          orElse: () => expenses.first);
+
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          leading: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  _getUnitTypeColor(expense.unitType)
+                                      .withOpacity(0.8),
+                                  _getUnitTypeColor(expense.unitType),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.production_quantity_limits_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                          title: Row(
+                            children: [
+                              Expanded(
+                                  child: Text(entry.key,
+                                      style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600))),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color:
+                                      AppColors.primaryColor.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  '${_getPurchaseCount(expenses, entry.key)} مشتريات',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.primaryColor,
+                                      fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                            ],
+                          ),
+                          trailing: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                entry.value.toStringAsFixed(0),
+                                style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primaryColor),
+                              ),
+                              Text(
+                                expense.unitType,
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey.shade600),
+                              ),
+                            ],
+                          ),
+                          onTap: () => _showQuantityDetails(
+                              context, entry.key, entry.value, expenses),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getUnitTypeColor(String unitType) {
+    switch (unitType) {
+      case 'كجم':
+        return Colors.green.shade400;
+      case 'لتر':
+        return Colors.blue.shade400;
+      case 'علبة':
+        return Colors.orange.shade400;
+      default:
+        return AppColors.primaryColor;
+    }
+  }
+
+  int _getPurchaseCount(List<Expense> expenses, String product) {
+    return expenses.where((e) => e.product == product).length;
+  }
+
+  Future<void> _generatePdfReport(BuildContext context) async {
+    final state = context.read<ExpenseCubit>().state;
+    final expenses = state is ExpenseLoaded ? state.expenses : <Expense>[];
+    final pdf = pw.Document();
+    final groupedData = groupExpensesByDate(expenses);
+
+    pdf.addPage(
+      pw.MultiPage(
+        theme: pw.ThemeData.withFont(
+          base: arabicFont,
+          bold: arabicFont,
+          fontFallback: [arabicFont],
+        ),
+        build: (context) => [
+          pw.Header(
+            level: 0,
+            child: pw.Text('تقرير يومي',
+                style: pw.TextStyle(font: arabicFont, fontSize: 24),
+                textDirection: pw.TextDirection.rtl),
+          ),
+          ...groupedData.entries.map((entry) {
+            final total = entry.value.fold(0.0, (sum, e) => sum + e.amount);
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  'تاريخ: ${formatDateString(entry.key)}',
+                  style: pw.TextStyle(
+                      font: arabicFont,
+                      fontWeight: pw.FontWeight.bold,
+                      fontSize: 18),
+                  textDirection: pw.TextDirection.rtl,
+                ),
+                pw.SizedBox(height: 10),
+                pw.Table(
+                  border: pw.TableBorder.all(),
+                  columnWidths: {
+                    0: const pw.FlexColumnWidth(2),
+                    1: const pw.FlexColumnWidth(1),
+                    2: const pw.FlexColumnWidth(1.5),
+                  },
+                  children: [
+                    pw.TableRow(
+                      children: ['البند', 'المبلغ', 'حالة الدفع']
+                          .map((text) => pw.Padding(
+                                padding: const pw.EdgeInsets.all(8),
+                                child: pw.Text(text,
+                                    style: pw.TextStyle(
+                                        font: arabicFont,
+                                        fontWeight: pw.FontWeight.bold),
+                                    textDirection: pw.TextDirection.rtl,
+                                    textAlign: pw.TextAlign.right),
+                              ))
+                          .toList(),
+                    ),
+                    ...entry.value.map((expense) => pw.TableRow(
+                          children: [
+                            pw.Padding(
+                              padding: const pw.EdgeInsets.all(8),
+                              child: pw.Text(expense.product,
+                                  style: pw.TextStyle(font: arabicFont),
+                                  textDirection: pw.TextDirection.rtl,
+                                  textAlign: pw.TextAlign.right),
+                            ),
+                            pw.Padding(
+                              padding: const pw.EdgeInsets.all(8),
+                              child: pw.Text(
+                                  '${expense.amount.toStringAsFixed(0)} ج.م',
+                                  style: pw.TextStyle(font: arabicFont),
+                                  textDirection: pw.TextDirection.rtl,
+                                  textAlign: pw.TextAlign.right),
+                            ),
+                            pw.Padding(
+                              padding: const pw.EdgeInsets.all(8),
+                              child: pw.Text(
+                                  expense.paid ? 'تم الدفع' : 'غير مدفوع',
+                                  style: pw.TextStyle(font: arabicFont),
+                                  textDirection: pw.TextDirection.rtl,
+                                  textAlign: pw.TextAlign.right),
+                            ),
+                          ],
+                        )),
+                  ],
+                ),
+                pw.SizedBox(height: 10),
+                pw.Align(
+                  alignment: pw.Alignment.centerLeft,
+                  child: pw.Text('المجموع: ${total.toStringAsFixed(2)} ج.م',
+                      style: pw.TextStyle(
+                          font: arabicFont,
+                          fontWeight: pw.FontWeight.bold,
+                          fontSize: 16),
+                      textDirection: pw.TextDirection.rtl),
+                ),
+                pw.SizedBox(height: 20),
+              ],
+            );
+          }).toList(),
+          pw.SizedBox(height: 20),
+          pw.Text(
+              'تاريخ التصدير: ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}',
+              style: pw.TextStyle(font: arabicFont),
+              textDirection: pw.TextDirection.rtl),
+        ],
+      ),
+    );
+
+    final bytes = await pdf.save();
+    await Printing.sharePdf(
+      bytes: bytes,
+      filename: 'daily_report_${DateTime.now().toIso8601String()}.pdf',
+    );
+  }
+
   void _showExportDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -302,123 +526,6 @@ class ReportsScreenState extends State<ReportsScreen>
         ],
       ),
     );
-  }
-
-  Future<void> _generatePdfReport(BuildContext context) async {
-    final state = context.read<ExpenseCubit>().state;
-    final expenses = state is ExpenseLoaded ? state.expenses : <Expense>[];
-    final pdf = pw.Document();
-
-    final groupedData = groupExpensesByDate(expenses);
-
-    pdf.addPage(
-      pw.MultiPage(
-        theme: pw.ThemeData.withFont(
-          base: arabicFont,
-          bold: arabicFont,
-          fontFallback: [arabicFont],
-        ),
-        build: (context) => [
-          pw.Header(
-            level: 0,
-            child: pw.Text('تقرير يومي',
-                style: pw.TextStyle(font: arabicFont, fontSize: 24),
-                textDirection: pw.TextDirection.rtl),
-          ),
-          ..._buildPdfContent(groupedData),
-          pw.SizedBox(height: 20),
-          pw.Text(
-              'تاريخ التصدير: ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}',
-              style: pw.TextStyle(font: arabicFont),
-              textDirection: pw.TextDirection.rtl),
-        ],
-      ),
-    );
-
-    final bytes = await pdf.save();
-
-    await Printing.sharePdf(
-      bytes: bytes,
-      filename: 'daily_report_${DateTime.now().toIso8601String()}.pdf',
-    );
-  }
-
-  List<pw.Widget> _buildPdfContent(Map<String, List<Expense>> groupedData) {
-    return groupedData.entries.map((entry) {
-      final total = entry.value.fold(0.0, (sum, e) => sum + e.amount);
-      return pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Text(
-            'تاريخ: ${formatDateString(entry.key)}',
-            style: pw.TextStyle(
-                font: arabicFont, fontWeight: pw.FontWeight.bold, fontSize: 18),
-            textDirection: pw.TextDirection.rtl,
-          ),
-          pw.SizedBox(height: 10),
-          pw.Table(
-            border: pw.TableBorder.all(),
-            columnWidths: {
-              0: const pw.FlexColumnWidth(2),
-              1: const pw.FlexColumnWidth(1),
-              2: const pw.FlexColumnWidth(1.5),
-            },
-            children: [
-              pw.TableRow(
-                children: ['البند', 'المبلغ', 'حالة الدفع']
-                    .map((text) => pw.Padding(
-                          padding: const pw.EdgeInsets.all(8),
-                          child: pw.Text(text,
-                              style: pw.TextStyle(
-                                  font: arabicFont,
-                                  fontWeight: pw.FontWeight.bold),
-                              textDirection: pw.TextDirection.rtl,
-                              textAlign: pw.TextAlign.right),
-                        ))
-                    .toList(),
-              ),
-              ...entry.value.map((expense) => pw.TableRow(
-                    children: [
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text(expense.product,
-                            style: pw.TextStyle(font: arabicFont),
-                            textDirection: pw.TextDirection.rtl,
-                            textAlign: pw.TextAlign.right),
-                      ),
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text(
-                            '${expense.amount.toStringAsFixed(0)} ج.م',
-                            style: pw.TextStyle(font: arabicFont),
-                            textDirection: pw.TextDirection.rtl,
-                            textAlign: pw.TextAlign.right),
-                      ),
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text(expense.paid ? 'تم الدفع' : 'غير مدفوع',
-                            style: pw.TextStyle(font: arabicFont),
-                            textDirection: pw.TextDirection.rtl,
-                            textAlign: pw.TextAlign.right),
-                      ),
-                    ],
-                  )),
-            ],
-          ),
-          pw.SizedBox(height: 10),
-          pw.Align(
-            alignment: pw.Alignment.centerLeft,
-            child: pw.Text('المجموع: ${total.toStringAsFixed(2)} ج.م',
-                style: pw.TextStyle(
-                    font: arabicFont,
-                    fontWeight: pw.FontWeight.bold,
-                    fontSize: 16),
-                textDirection: pw.TextDirection.rtl),
-          ),
-          pw.SizedBox(height: 20),
-        ],
-      );
-    }).toList();
   }
 
   @override
@@ -461,9 +568,8 @@ class ReportsScreenState extends State<ReportsScreen>
                   child:
                       CircularProgressIndicator(color: AppColors.primaryColor));
             }
-            if (state is ExpenseError) {
+            if (state is ExpenseError)
               return Center(child: Text(state.message));
-            }
             if (state is ExpenseLoaded) {
               return Column(
                 children: [
@@ -491,7 +597,7 @@ class ReportsScreenState extends State<ReportsScreen>
                       indicatorColor: AppColors.primaryColor,
                       tabs: const [
                         Tab(text: 'جميع المصروفات'),
-                        Tab(text: 'غير المدفوعة'),
+                        Tab(text: 'الكميات'),
                       ],
                     ),
                   ),
@@ -529,8 +635,7 @@ class ReportsScreenState extends State<ReportsScreen>
                       controller: _tabController,
                       children: [
                         _buildExpensesList(groupExpensesByDate(state.expenses)),
-                        _buildExpensesList(groupExpensesByDate(state.expenses,
-                            unpaidOnly: true)),
+                        _buildQuantitiesList(state.expenses),
                       ],
                     ),
                   ),
@@ -543,4 +648,65 @@ class ReportsScreenState extends State<ReportsScreen>
       ),
     );
   }
+}
+
+void _showQuantityDetails(BuildContext context, String product, double quantity,
+    List<Expense> expenses) {
+  final productExpenses = expenses.where((e) => e.product == product).toList();
+  final purchaseDates = productExpenses.map((e) => e.date).toSet().toList();
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      titlePadding: const EdgeInsets.all(16),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+      title: Row(
+        children: [
+          Icon(Icons.inventory, color: AppColors.primaryColor),
+          const SizedBox(width: 12),
+          Text(product, style: const TextStyle(fontSize: 20)),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDetailRow('الكمية الإجمالية',
+                '${quantity.toStringAsFixed(0)} ${productExpenses.first.unitType}'),
+            _buildDetailRow('عدد المشتريات', '${productExpenses.length} مرة'),
+            const SizedBox(height: 16),
+            const Text('تواريخ الشراء:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            ...purchaseDates.map((date) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Text(formatDateString(date),
+                      style: TextStyle(color: Colors.grey.shade600)),
+                )),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('إغلاق'),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildDetailRow(String title, String value) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+        Text(value,
+            style: TextStyle(
+                color: AppColors.primaryColor, fontWeight: FontWeight.bold)),
+      ],
+    ),
+  );
 }
