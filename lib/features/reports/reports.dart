@@ -94,7 +94,7 @@ class ReportsScreenState extends State<ReportsScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.primaryColor.withOpacity(0.1),
+              color: AppColors.primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -327,7 +327,7 @@ class ReportsScreenState extends State<ReportsScreen>
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.grey.withOpacity(0.1),
+                              color: Colors.grey.withValues(alpha: 0.1),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -343,7 +343,7 @@ class ReportsScreenState extends State<ReportsScreen>
                               gradient: LinearGradient(
                                 colors: [
                                   _getUnitTypeColor(expense.unitType)
-                                      .withOpacity(0.8),
+                                      .withValues(alpha: 0.8),
                                   _getUnitTypeColor(expense.unitType),
                                 ],
                                 begin: Alignment.topLeft,
@@ -378,8 +378,8 @@ class ReportsScreenState extends State<ReportsScreen>
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color:
-                                      AppColors.primaryColor.withOpacity(0.05),
+                                  color: AppColors.primaryColor
+                                      .withValues(alpha: 0.05),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
