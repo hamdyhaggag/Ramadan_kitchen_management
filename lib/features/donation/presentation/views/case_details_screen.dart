@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../cloudinary_config.dart';
 import '../../../../core/cache/prefs.dart';
 import '../../../../core/utils/app_colors.dart';
@@ -178,7 +179,9 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
     _nameController.dispose();
     _membersController.dispose();
     _phoneController.dispose();
-    for (var c in _ageControllers) c.dispose();
+    for (var c in _ageControllers) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -226,7 +229,7 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
       [TextInputType? type]) {
     return TextField(
       controller: controller,
-      keyboardType: type,
+      keyboardType: type ?? TextInputType.text,
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.grey),
@@ -236,6 +239,25 @@ class _CaseDetailsScreenState extends State<CaseDetailsScreen> {
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: AppColors.primaryColor),
         ),
+        suffixIcon: controller == _phoneController
+            ? IconButton(
+                icon: Icon(Icons.call, color: AppColors.primaryColor),
+                onPressed: () async {
+                  final phoneNumber = controller.text;
+                  if (phoneNumber.isNotEmpty) {
+                    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+                    if (await canLaunchUrl(phoneUri)) {
+                      await launchUrl(phoneUri);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Could not launch dialer')),
+                      );
+                    }
+                  }
+                },
+              )
+            : null,
       ),
     );
   }
