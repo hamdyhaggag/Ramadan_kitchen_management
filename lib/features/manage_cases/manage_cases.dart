@@ -766,26 +766,38 @@ class _FilterModalContentState extends State<_FilterModalContent> {
                     child: ListView.builder(
                       itemCount: widget.caseGroups.keys.length,
                       itemBuilder: (context, index) {
+                        // Correct order of groups with proper Arabic numerical sequence
                         final customOrder = [
                           'الشنط الفردية',
                           'المجموعة الأولى',
-                          'المجموعة الخامسة',
-                          'المجموعة السابعة',
                           'المجموعة الثانية',
+                          'المجموعة الثالثة(أ)',
                           'المجموعة الثالثة',
                           'المجموعة الرابعة',
+                          'المجموعة الخامسة',
                           'المجموعة السادسة',
+                          'المجموعة السابعة',
                           'المجموعة الثامنة',
+                          'المجموعة التاسعة',
                         ];
+
                         List<String> sortedKeys =
                             widget.caseGroups.keys.toList();
+
                         sortedKeys.sort((a, b) {
                           int indexA = customOrder.indexOf(a);
                           int indexB = customOrder.indexOf(b);
-                          if (indexA == -1) indexA = 9999;
-                          if (indexB == -1) indexB = 9999;
+
+                          if (indexA == -1) {
+                            indexA = customOrder.length + sortedKeys.indexOf(a);
+                          }
+                          if (indexB == -1) {
+                            indexB = customOrder.length + sortedKeys.indexOf(b);
+                          }
+
                           return indexA.compareTo(indexB);
                         });
+
                         final groupKey = sortedKeys[index];
                         return RadioListTile<dynamic>(
                           title: Text(groupKey),
