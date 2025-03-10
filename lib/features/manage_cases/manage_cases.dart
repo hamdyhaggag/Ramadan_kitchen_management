@@ -210,7 +210,9 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
     if (searchQuery.isNotEmpty) {
       filtered = filtered.where((caseItem) {
         final name = caseItem["الاسم"].toString().toLowerCase();
-        return name.contains(searchQuery.toLowerCase());
+        final caseNumber = caseItem["الرقم"].toString().toLowerCase();
+        return name.contains(searchQuery.toLowerCase()) ||
+            caseNumber.contains(searchQuery.toLowerCase());
       }).toList();
     }
     return filtered;
@@ -358,7 +360,7 @@ class _ManageCasesContentState extends State<_ManageCasesContent> {
         onChanged: (value) => setState(() => searchQuery = value.trim()),
         decoration: InputDecoration(
           hintStyle: TextStyle(color: Colors.grey.shade600),
-          hintText: 'ابحث بالإسم ...',
+          hintText: 'ابحث بالاسم أو الرقم ...', // Updated hint text
           suffixIcon: _searchController.text.isEmpty
               ? IconButton(
                   icon: Icon(Icons.search),
