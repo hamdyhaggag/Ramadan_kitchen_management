@@ -1,4 +1,4 @@
-# Ramadan Meal Distribution App
+# Ramadan Meal Managment App
 
 ## Project Overview
 A mobile application to manage and streamline Ramadan meal distribution for two user roles:
