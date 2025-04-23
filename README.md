@@ -1,4 +1,4 @@
-# Ramadan Meal Managment App
+# Ramadan Meal Management App
 
 ## Project Overview
 A mobile application to manage and streamline Ramadan meal distribution for two user roles:
@@ -21,9 +21,11 @@ A mobile application to manage and streamline Ramadan meal distribution for two 
 &nbsp;&nbsp;&nbsp;3.2 [Statistics Screen](#donor-statistics-screen)  
 &nbsp;&nbsp;&nbsp;3.3 [Past Days Screen](#past-days-screen)  
 &nbsp;&nbsp;&nbsp;3.4 [Reports Screen](#donor-reports-screen)  
-4. [Getting Started](#getting-started)  
-5. [Export & Data Management](#export--data-management)  
-6. [Appendices](#appendices)
+4. [File Structure](#file-structure)  
+5. [Getting Started](#getting-started)  
+6. [Export & Data Management](#export--data-management)  
+7. [Appendices](#appendices)
+
 
 ---
 
@@ -122,6 +124,237 @@ To help visualize each feature of the Ramadan Meal Distribution App, below is a 
 
 ---
 
+## File Structure
+```plaintext
+└─ lib
+   ├─ cloudinary_config.dart
+   ├─ core
+   │  ├─ cache
+   │  │  └─ prefs.dart
+   │  ├─ constants
+   │  │  ├─ backend_endpoints.dart
+   │  │  ├─ constatnts.dart
+   │  │  └─ constatnts.dart~
+   │  ├─ errors
+   │  │  ├─ exception.dart
+   │  │  └─ failure.dart
+   │  ├─ functions
+   │  │  ├─ get_current_user.dart
+   │  │  ├─ show_snack_bar.dart
+   │  │  └─ show_snack_bar.dart~
+   │  ├─ helpers
+   │  │  └─ app_regex.dart
+   │  ├─ models
+   │  │  └─ notficiation_model.dart
+   │  ├─ private
+   │  │  └─ private.dart
+   │  ├─ routes
+   │  │  ├─ app_routes.dart
+   │  │  └─ on_generate_route.dart
+   │  ├─ services
+   │  │  ├─ data_base_service.dart
+   │  │  ├─ firebase_auth_service.dart
+   │  │  ├─ firebase_auth_service.dart~
+   │  │  ├─ firestore_service.dart
+   │  │  ├─ local_notfiication_service.dart
+   │  │  ├─ push_notification_service.dart
+   │  │  └─ service_locator.dart
+   │  ├─ utils
+   │  │  ├─ app_assets.dart
+   │  │  ├─ app_colors.dart
+   │  │  ├─ app_styles.dart
+   │  │  ├─ app_texts.dart
+   │  │  └─ app_theme.dart
+   │  └─ widgets
+   │     ├─ custom_text_form_field.dart
+   │     ├─ email_field.dart
+   │     ├─ general_button.dart
+   │     └─ password_field.dart
+   ├─ features
+   │  ├─ auth
+   │  │  ├─ data
+   │  │  │  ├─ models
+   │  │  │  │  └─ user_model.dart
+   │  │  │  └─ repos
+   │  │  │     ├─ auth_repo.dart
+   │  │  │     └─ auth_repo_impl.dart
+   │  │  └─ presentation
+   │  │     ├─ manager
+   │  │     │  ├─ admin_cubit
+   │  │     │  │  ├─ admin_cubit.dart
+   │  │     │  │  └─ admin_state.dart
+   │  │     │  ├─ auth_cubit
+   │  │     │  ├─ login_cubit
+   │  │     │  │  ├─ login_cubit.dart
+   │  │     │  │  └─ login_cubit_state.dart
+   │  │     │  ├─ register_cubit
+   │  │     │  │  ├─ register_cubit.dart
+   │  │     │  │  └─ register_cubit_state.dart
+   │  │     │  └─ reset_password_cubit
+   │  │     │     ├─ reset_password_cubit.dart
+   │  │     │     └─ reset_password_state.dart
+   │  │     └─ views
+   │  │        ├─ forget_password_view.dart
+   │  │        ├─ login_view.dart
+   │  │        ├─ register_view.dart
+   │  │        ├─ register_view.dart~
+   │  │        └─ widgets
+   │  │           ├─ already_have_an_account.dart
+   │  │           ├─ already_have_an_account.dart~
+   │  │           ├─ custom_check_box.dart
+   │  │           ├─ custom_otp_field.dart
+   │  │           ├─ do_not_have_an_account.dart
+   │  │           ├─ foreget_password.dart
+   │  │           ├─ forget_password_view_body.dart
+   │  │           ├─ forget_password_view_body.dart~
+   │  │           ├─ forget_password_view_body_bloc_consumer.dart
+   │  │           ├─ login_form.dart
+   │  │           ├─ login_form.dart~
+   │  │           ├─ login_view_body.dart
+   │  │           ├─ login_view_body.dart~
+   │  │           ├─ login_view_body_bloc_consumer.dart
+   │  │           ├─ register_form.dart
+   │  │           ├─ register_view_body.dart
+   │  │           ├─ register_view_body_bloc_consumer.dart
+   │  │           ├─ register_view_body_bloc_consumer.dart~
+   │  │           ├─ reset_password_view_body.dart
+   │  │           ├─ terms_and_conditions.dart
+   │  │           ├─ terms_and_conditions.dart~
+   │  │           └─ verify_view_body.dart~
+   │  ├─ daily_expenses
+   │  │  ├─ add_expenses_screen.dart
+   │  │  ├─ daily_expenses.dart
+   │  │  ├─ logic
+   │  │  │  ├─ expense_cubit.dart
+   │  │  │  └─ expense_state.dart
+   │  │  ├─ model
+   │  │  │  ├─ expense_model.dart
+   │  │  │  └─ expense_model.dart~
+   │  │  └─ services
+   │  │     ├─ expense_service.dart
+   │  │     └─ expense_service.dart~
+   │  ├─ donation
+   │  │  └─ presentation
+   │  │     ├─ cubit
+   │  │     │  ├─ donation_cubit.dart
+   │  │     │  └─ donation_state.dart
+   │  │     └─ views
+   │  │        ├─ case_details_screen.dart
+   │  │        ├─ donation_section.dart
+   │  │        └─ widgets
+   │  │           ├─ action_button.dart
+   │  │           ├─ contact_header.dart
+   │  │           ├─ contact_header.dart~
+   │  │           ├─ contact_info_row.dart
+   │  │           ├─ contact_list_item.dart
+   │  │           ├─ contact_person.dart
+   │  │           ├─ editable_donation_section.dart
+   │  │           ├─ header_image.dart
+   │  │           ├─ header_image.dart~
+   │  │           ├─ meal_description.dart
+   │  │           ├─ meal_title.dart
+   │  │           ├─ notifications_screen.dart
+   │  │           ├─ section_title.dart
+   │  │           ├─ send_notification_screen.dart
+   │  │           └─ send_notification_screen.dart~
+   │  ├─ home
+   │  │  ├─ data
+   │  │  │  ├─ models
+   │  │  │  └─ repos
+   │  │  ├─ logic
+   │  │  └─ presentation
+   │  │     ├─ cubit
+   │  │     └─ views
+   │  │        ├─ home_view.dart
+   │  │        └─ widgets
+   │  │           ├─ admin_screen_layout.dart~
+   │  │           ├─ home_view_body.dart
+   │  │           ├─ home_view_body.dart~
+   │  │           ├─ screen_layout.dart
+   │  │           ├─ view_public_screen.dart
+   │  │           └─ view_public_screen.dart~
+   │  ├─ manage_cases
+   │  │  ├─ data
+   │  │  │  ├─ models
+   │  │  │  │  ├─ cases_repository.dart
+   │  │  │  │  ├─ manage_cases_model.dart
+   │  │  │  │  └─ manage_cases_model.dart~
+   │  │  │  └─ services
+   │  │  │     ├─ file_utils.dart
+   │  │  │     ├─ manage_cases_services.dart~
+   │  │  │     └─ storage_utils.dart
+   │  │  ├─ donation_section.dart~
+   │  │  ├─ logic
+   │  │  │  ├─ cases_cubit.dart
+   │  │  │  └─ cases_state.dart
+   │  │  ├─ manage_case-details_screen.dart~
+   │  │  ├─ manage_cases.dart
+   │  │  ├─ manage_case_details_screen.dart
+   │  │  └─ widget
+   │  │     ├─ action_buttons.dart~
+   │  │     ├─ cases_data_table.dart~
+   │  │     ├─ empty_state.dart~
+   │  │     ├─ file_operations.dart~
+   │  │     ├─ loading_indicator.dart~
+   │  │     └─ pdf_exporter.dart~
+   │  ├─ on_boarding
+   │  │  ├─ data
+   │  │  │  └─ models
+   │  │  │     └─ on_boarding_model.dart
+   │  │  └─ presentation
+   │  │     └─ views
+   │  │        ├─ login_or_register_view.dart
+   │  │        ├─ on_boarding_view.dart
+   │  │        └─ widgets
+   │  │           ├─ custom_dots_indicators.dart
+   │  │           ├─ custom_on_boarding_button.dart
+   │  │           ├─ login_or_register_view_body.dart
+   │  │           ├─ on_boarding_page_view.dart
+   │  │           ├─ on_boarding_page_view_item.dart
+   │  │           ├─ on_boarding_page_view_item.dart~
+   │  │           ├─ on_boarding_view_body.dart
+   │  │           ├─ row_buttons.dart
+   │  │           ├─ top_login_or_register_section.dart
+   │  │           └─ top_login_or_register_section.dart~
+   │  ├─ previous_days
+   │  │  └─ presentation
+   │  │     ├─ views
+   │  │     │  └─ previous_days_screen.dart
+   │  │     └─ widgets
+   │  │        ├─ card_of_previous.dart
+   │  │        ├─ card_of_previous.dart~
+   │  │        └─ details_of_previous_days.dart
+   │  ├─ reports
+   │  │  ├─ presentation
+   │  │  │  ├─ views
+   │  │  │  └─ widgets
+   │  │  └─ reports.dart
+   │  ├─ splash
+   │  │  └─ presentation
+   │  │     └─ views
+   │  │        ├─ splash_view.dart
+   │  │        └─ widgets
+   │  │           └─ splash_view_body.dart
+   │  └─ statistics
+   │     ├─ presentation
+   │     │  └─ views
+   │     │     ├─ statistics_screen.dart
+   │     │     └─ widgets
+   │     │        ├─ total_statistics_content.dart
+   │     │        └─ total_statistics_content.dart~
+   │     └─ statistics_screen.dart~
+   ├─ firebase_options.dart
+   ├─ generated
+   │  ├─ intl
+   │  │  ├─ messages_all.dart
+   │  │  ├─ messages_ar.dart
+   │  │  └─ messages_en.dart
+   │  └─ l10n.dart
+   ├─ l10n
+   │  ├─ intl_ar.arb
+   │  └─ intl_en.arb
+   └─ main.dart
+```
 ## <a name="getting-started"></a>Getting Started
 1. Clone repo:
    ```bash
