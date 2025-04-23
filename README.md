@@ -8,32 +8,59 @@ A mobile application to manage and streamline Ramadan meal distribution for two 
 ---
 
 ## Table of Contents
-1. [Administrator Features](#administrator-features)  
-   1.1 [Main Screen (TabBar)](#main-screen-tabbar)  
-   1.2 [Cases Tab](#cases-tab)  
-   1.3 [Control Panel Tab](#control-panel-tab)  
-   1.4 [Statistics Screen](#statistics-screen)  
-   1.5 [Expenses Screen](#expenses-screen)  
-   1.6 [Reports Screen](#reports-screen)  
-2. [Donor Features](#donor-features)  
-   2.1 [Main Screen](#main-screen)  
-   2.2 [Statistics Screen](#statistics-screen-1)  
-   2.3 [Past Days Screen](#past-days-screen)  
-   2.4 [Reports Screen](#reports-screen-1)  
-3. [Getting Started](#getting-started)  
-4. [Export & Data Management](#export--data-management)  
-5. [Appendices](#appendices)
+1. [Screenshots](#screenshots)  
+2. [Administrator Features](#administrator-features)  
+&nbsp;&nbsp;&nbsp;2.1 [Main Screen (TabBar)](#main-screen-tabbar)  
+&nbsp;&nbsp;&nbsp;2.2 [Cases Tab](#cases-tab)  
+&nbsp;&nbsp;&nbsp;2.3 [Control Panel Tab](#control-panel-tab)  
+&nbsp;&nbsp;&nbsp;2.4 [Statistics Screen](#statistics-screen-admin)  
+&nbsp;&nbsp;&nbsp;2.5 [Expenses Screen](#expenses-screen)  
+&nbsp;&nbsp;&nbsp;2.6 [Reports Screen](#reports-screen-admin)  
+3. [Donor Features](#donor-features)  
+&nbsp;&nbsp;&nbsp;3.1 [Main Screen](#main-screen-donor)  
+&nbsp;&nbsp;&nbsp;3.2 [Statistics Screen](#donor-statistics-screen)  
+&nbsp;&nbsp;&nbsp;3.3 [Past Days Screen](#past-days-screen)  
+&nbsp;&nbsp;&nbsp;3.4 [Reports Screen](#donor-reports-screen)  
+4. [Getting Started](#getting-started)  
+5. [Export & Data Management](#export--data-management)  
+6. [Appendices](#appendices)
 
 ---
 
-## Administrator Features
+## <a name="screenshots"></a>Screenshots
 
-### Main Screen (TabBar)
+To help visualize each feature of the Ramadan Meal Distribution App, below is a professionally numbered grid of screenshots organized by user role.
+
+### Administrator Features
+
+| # | Feature                               | Screenshot                                           |
+|---|---------------------------------------|------------------------------------------------------|
+| 1 | Main Screen (TabBar)                  | ![1. Main Screen](screenshots/admin-main-screen.png) |
+| 2 | Cases Tab                             | ![2. Cases Tab](screenshots/admin-cases-tab.png)     |
+| 3 | Control Panel Tab                     | ![3. Control Panel](screenshots/admin-control-panel.png) |
+| 4 | Statistics Screen                     | ![4. Statistics Screen](screenshots/admin-statistics.png) |
+| 5 | Expenses Screen                       | ![5. Expenses Screen](screenshots/admin-expenses.png) |
+| 6 | Reports Screen                        | ![6. Reports Screen](screenshots/admin-reports.png)  |
+
+### Donor Features
+
+| # | Feature                 | Screenshot                                         |
+|---|-------------------------|----------------------------------------------------|
+| 1 | Main Screen             | ![1. Donor Main](screenshots/donor-main-screen.png) |
+| 2 | Statistics Screen       | ![2. Donor Statistics](screenshots/donor-statistics.png) |
+| 3 | Past Days Screen        | ![3. Past Days](screenshots/donor-past-days.png)   |
+| 4 | Reports Screen          | ![4. Donor Reports](screenshots/donor-reports.png) |
+
+---
+
+## <a name="administrator-features"></a>Administrator Features
+
+### <a name="main-screen-tabbar"></a>Main Screen (TabBar)
 - **Tabs:**  
   1. **Cases**  
   2. **Control Panel**
 
-### Cases Tab
+### <a name="cases-tab"></a>Cases Tab
 - **Case List**  
   - Name, Bag ID, Family Size  
   - Distribution Status (Done/Pending)  
@@ -44,32 +71,32 @@ A mobile application to manage and streamline Ramadan meal distribution for two 
   - **Export to Excel** — exports current case data  
   - **Manage Cases** — CRUD operations and view full family details (ID photo, contact, ages)
 
-### Control Panel Tab
+### <a name="control-panel-tab"></a>Control Panel Tab
 - **Carousel** of images/promotions  
 - **Daily Meal Display**  
   - Date & Day  
   - Meal Title & Description  
-  - Expected Number of Recipients  
+  - Expected Number of Recipients
 - **Notifications**  
 - **Donation Payment Info**  
   - List existing payment methods  
   - Add new payment info
 
-### Statistics Screen
+### <a name="statistics-screen-admin"></a>Statistics Screen
 - **Tab 1: Real-Time & Daily Metrics**  
   - Total fed today  
   - Prepared meals  
   - Remaining meals  
-  - Fulfillment percentage  
+  - Fulfillment percentage
 - **Tab 2: Cumulative Animated Progress**  
   - Engaging animation showing total fed since start of Ramadan
 
-### Expenses Screen
+### <a name="expenses-screen"></a>Expenses Screen
 - **Fields:**  
   - Product Category → Product → Unit  
   - Quantity → Unit Price → Payment Status (Paid/Unpaid)
 
-### Reports Screen
+### <a name="reports-screen-admin"></a>Reports Screen
 - **Tab 1: Daily Expense Invoices**  
   - One “invoice” per day: date, total spent, list of purchased items  
 - **Tab 2: Aggregated Quantities**  
@@ -78,24 +105,24 @@ A mobile application to manage and streamline Ramadan meal distribution for two 
 
 ---
 
-## Donor Features
+## <a name="donor-features"></a>Donor Features
 
-### Main Screen
+### <a name="main-screen-donor"></a>Main Screen
 - Mirrors Admin’s carousel & daily meal info  
 - View notifications, donation contact methods, and logout
 
-### Statistics Screen
+### <a name="donor-statistics-screen"></a>Statistics Screen
 - Displays total individuals fed since Ramadan began (static or animated)
 
-### Past Days Screen
+### <a name="past-days-screen"></a>Past Days Screen
 - List of previous days, each linking to that day’s meal details
 
-### Reports Screen
+### <a name="donor-reports-screen"></a>Reports Screen
 - Full access to expense and quantity reports like Admin view
 
 ---
 
-## 4. Getting Started
+## <a name="getting-started"></a>Getting Started
 1. Clone repo:
    ```bash
    git clone https://github.com/yourusername/ramadan-kitchen-app.git
@@ -106,32 +133,15 @@ A mobile application to manage and streamline Ramadan meal distribution for two 
 4. Add Cloudinary keys in `lib/core/private/private.dart`
 5. Run: `flutter run`
 
-## 5. Configuration
-- Firebase: place `google-services.json` & `GoogleService-Info.plist`, run `flutterfire configure`
-- Cloudinary: set credentials in `lib/core/private/private.dart`
-- API endpoints: update `lib/core/constants/backend_endpoints.dart`
+## <a name="export--data-management"></a>Export & Data Management
+- Use the Export to Excel action in the Cases Tab for case data  
+- Reports Screen provides CSV/PDF exports for daily invoices and aggregated quantities
 
-## 6. Usage
-- **Admin**: navigate tabs to manage cases, expenses, reports, stats
-- **Donor**: explore meals, view stats, check past days, read reports
+## <a name="appendices"></a>Appendices
+- **CI/CD:** GitHub Actions (`.github/workflows/flutter.yml`) for linting, testing, and building APK/IPA
+- **Testing:** `flutter test` for unit & widget tests, `flutter drive` for integration tests
+- **License:** MIT — see [LICENSE](LICENSE)
+- **Acknowledgements:** Flutter, Dart, Firebase, Material Design Icons — inspired by community Ramadan kitchen initiatives.
 
-## 7. Testing
-- Unit & widget tests: `flutter test`
-- Integration: `flutter drive --driver=test_driver/integration_test.dart --target=integration_test/app_test.dart`
-
-## 8. CI / CD
-GitHub Actions (`.github/workflows/flutter.yml`): lint, test on PR; build APK/IPA on merge
-
-## 9. Contributing
-1. Fork & branch (`git checkout -b feat/...`)
-2. Commit with Conventional Commits
-3. Push & open PR
-
-## 10. License
-MIT — see [LICENSE](LICENSE)
-
-## 11. Acknowledgements
-Flutter, Dart, Firebase, Material Design Icons — inspired by community Ramadan kitchen initiatives.
-
-Built with ❤️ by Hamdy Haggag.
+*Built with ❤️ by Hamdy Haggag.*
 
