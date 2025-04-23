@@ -358,7 +358,7 @@ To help visualize each feature of the Ramadan Meal Distribution App, below is a 
 ## <a name="getting-started"></a>Getting Started
 1. Clone repo:
    ```bash
-   git clone https://github.com/yourusername/ramadan-kitchen-app.git
+   git clone https://github.com/hamdyhaggag/Ramadan_kitchen_management.git
    cd ramadan-kitchen-app
    ```
 2. Install dependencies: `flutter pub get`
