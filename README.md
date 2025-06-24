@@ -37,21 +37,21 @@ To help visualize each feature of the Ramadan Meal Distribution App, below is a 
 
 | # | Feature                               | Screenshot                                           |
 |---|---------------------------------------|------------------------------------------------------|
-| 1 | Main Screen (TabBar)                  | ![1. Main Screen](screenshots/admin-main-screen.jpg) |
-| 2 | Cases Tab                             | ![2. Cases Tab](screenshots/admin-cases-tab.jpg)     |
-| 3 | Control Panel Tab                     | ![3. Control Panel](screenshots/admin-control-panel.jpg) |
-| 4 | Statistics Screen                     | ![4. Statistics Screen](screenshots/admin-statistics.jpg) |
-| 5 | Expenses Screen                       | ![5. Expenses Screen](screenshots/admin-expenses.jpg) |
-| 6 | Reports Screen                        | ![6. Reports Screen](screenshots/admin-reports.jpg)  |
+| 1 | Main Screen (TabBar)                  | <img src="screenshots/admin-main-screen.jpg" alt="1. Main Screen" width="250"/> |
+| 2 | Cases Tab                             | <img src="screenshots/admin-cases-tab.jpg" alt="2. Cases Tab" width="250"/>     |
+| 3 | Control Panel Tab                     | <img src="screenshots/admin-control-panel.jpg" alt="3. Control Panel" width="250"/> |
+| 4 | Statistics Screen                     | <img src="screenshots/admin-statistics.jpg" alt="4. Statistics Screen" width="250"/> |
+| 5 | Expenses Screen                       | <img src="screenshots/admin-expenses.jpg" alt="5. Expenses Screen" width="250"/> |
+| 6 | Reports Screen                        | <img src="screenshots/admin-reports.jpg" alt="6. Reports Screen" width="250"/>  |
 
 ### Donor Features
 
 | # | Feature                 | Screenshot                                         |
 |---|-------------------------|----------------------------------------------------|
-| 1 | Main Screen             | ![1. Donor Main](screenshots/donor-main-screen.jpg) |
-| 2 | Statistics Screen       | ![2. Donor Statistics](screenshots/donor-statistics.jpg) |
-| 3 | Past Days Screen        | ![3. Past Days](screenshots/donor-past-days.jpg)   |
-| 4 | Reports Screen          | ![4. Donor Reports](screenshots/donor-reports.jpg) |
+| 1 | Main Screen             | <img src="screenshots/donor-main-screen.jpg" alt="1. Donor Main" width="250"/> |
+| 2 | Statistics Screen       | <img src="screenshots/donor-statistics.jpg" alt="2. Donor Statistics" width="250"/> |
+| 3 | Past Days Screen        | <img src="screenshots/donor-past-days.jpg" alt="3. Past Days" width="250"/>   |
+| 4 | Reports Screen          | <img src="screenshots/donor-reports.jpg" alt="4. Donor Reports" width="250"/> |
 
 ---
 
@@ -177,7 +177,7 @@ To help visualize each feature of the Ramadan Meal Distribution App, below is a 
    │  │  │  │  └─ user_model.dart
    │  │  │  └─ repos
    │  │  │     ├─ auth_repo.dart
-   │  │  │     └─ auth_repo_impl.dart
+   │  │     │     └─ auth_repo_impl.dart
    │  │  └─ presentation
    │  │     ├─ manager
    │  │     │  ├─ admin_cubit
