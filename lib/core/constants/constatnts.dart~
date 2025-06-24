@@ -1,0 +1,22 @@
+const String kUserData = 'userData';
+const String kIsOnBoardingViewed = 'seen';
+class AppConstants {
+  static const String adminRole = 'admin';
+  static const String nameKey = "الاسم";
+  static const String individualsCountKey = "عدد الأفراد";
+  static const String readyKey = "جاهزة";
+  static const String hereKey = "هنا؟";
+}
+
+class AppFonts {
+  static const String din = 'DIN';
+}
+
+class AppStrings {
+  static const String casesTab = 'الحالات';
+  static const String donationsTab = 'التبرعات';
+  static const String noCasesAvailable = 'لا توجد حالات';
+  static const String resetConfirmationTitle = 'تأكيد إعادة التعيين';
+  static const String resetConfirmationContent =
+      'هل أنت متأكد من أنك تريد إعادة تعيين جميع الحالات لليوم الجديد؟';
+}

@@ -1,0 +1,45 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
+import 'package:ramadan_kitchen_management/core/widgets/general_button.dart';
+
+import '../../../core/constants/constatnts.dart';
+import '../../auth/data/repos/auth_repo.dart';
+
+// action_buttons.dart
+class ActionButtons extends StatelessWidget {
+  final VoidCallback onReset;
+  final VoidCallback onManageCases;
+
+  const ActionButtons({
+    super.key,
+    required this.onReset,
+    required this.onManageCases,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isAdmin = context.read<AuthRepo>().currentUser?.role == AppConstants.adminRole;
+
+    return Row(
+      children: [
+        Expanded(
+          child: GeneralButton(
+            text: 'بدء يوم جديد',
+            backgroundColor: isAdmin ? AppColors.secondaryColor : Colors.grey,
+            onPressed: isAdmin ? onReset : null, textColor: AppColors.whiteColor,
+          ),
+        ),
+        if (isAdmin) ...[
+          const SizedBox(width: 16),
+          Expanded(
+            child: GeneralButton(
+              text: 'إدارة الحالات',
+              onPressed: onManageCases, backgroundColor: AppColors.primaryColor, textColor: AppColors.whiteColor,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}

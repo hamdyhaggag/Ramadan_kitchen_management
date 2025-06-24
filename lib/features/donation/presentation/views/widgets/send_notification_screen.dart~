@@ -1,0 +1,116 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
+import 'package:ramadan_kitchen_management/core/widgets/general_button.dart';
+
+class SendNotificationScreen extends StatefulWidget {
+  const SendNotificationScreen({Key? key}) : super(key: key);
+
+  @override
+  State<SendNotificationScreen> createState() => _SendNotificationScreenState();
+}
+
+class _SendNotificationScreenState extends State<SendNotificationScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _bodyController = TextEditingController();
+
+  Future<void> _sendNotification() async {
+    if (_formKey.currentState!.validate()) {
+      try {
+        await FirebaseFirestore.instance.collection('notifications').add({
+          'title': _titleController.text,
+          'body': _bodyController.text,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم إرسال الإشعار بنجاح')),
+        );
+        Navigator.pop(context);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل إرسال الإشعار: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('إرسال إشعار جديد'),
+        centerTitle: true,
+      ),
+      body: GestureDetector(
+        // Dismiss keyboard on tap outside input fields.
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Icon(
+                        Icons.notifications,
+                        size: 80,
+                        color: AppColors.primaryColor,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _titleController,
+                        decoration: const InputDecoration(
+                          labelText: 'عنوان الإشعار',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.title),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'يرجى إدخال عنوان الإشعار';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _bodyController,
+                        decoration: const InputDecoration(
+                          labelText: 'نص الإشعار',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.message),
+                        ),
+                        maxLines: 3,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'يرجى إدخال نص الإشعار';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      GeneralButton(
+                        onPressed: _sendNotification,
+                        text: 'إرسال الإشعار',
+                        backgroundColor: AppColors.primaryColor,
+                        textColor: AppColors.whiteColor,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

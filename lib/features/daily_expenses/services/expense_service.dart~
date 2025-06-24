@@ -1,0 +1,53 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:collection/collection.dart';
+import '../model/expense_model.dart';
+
+class ExpenseService {
+  static final ExpenseService _instance = ExpenseService._internal();
+  factory ExpenseService() => _instance;
+  ExpenseService._internal();
+
+  final CollectionReference _expensesCollection =
+  FirebaseFirestore.instance.collection('expenses');
+
+  Stream<List<Expense>> getExpensesStream() {
+    return _expensesCollection
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+        .map((doc) => Expense.fromFirestore(doc))
+        .toList());
+  }
+
+  Future<String> addExpense(Expense expense) async {
+    final docRef = await _expensesCollection.add(expense.toFirestore());
+    return docRef.id;
+  }
+
+  Future<void> updateExpense(Expense expense) async {
+    await _expensesCollection
+        .doc(expense.id)
+        .update(expense.toFirestore());
+  }
+
+  Future<void> deleteExpense(String expenseId) async {
+    await _expensesCollection.doc(expenseId).delete();
+  }
+
+  Map<String, List<Expense>> groupExpensesByDate(List<Expense> expenses) {
+    final grouped = groupBy(expenses, (e) => e.date);
+    return _sortGroupedExpenses(grouped);
+  }
+
+  Map<String, List<Expense>> groupUnpaidExpensesByDate(List<Expense> expenses) {
+    final unpaid = expenses.where((e) => !e.paid).toList();
+    final grouped = groupBy(unpaid, (e) => e.date);
+    return _sortGroupedExpenses(grouped);
+  }
+
+  Map<String, List<Expense>> _sortGroupedExpenses(Map<String, List<Expense>> grouped) {
+    final sortedKeys = grouped.keys.toList()
+      ..sort((a, b) => DateTime.parse(b).compareTo(DateTime.parse(a)));
+    return {for (var key in sortedKeys) key: grouped[key]!};
+  }
+}

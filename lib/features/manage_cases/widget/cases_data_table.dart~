@@ -1,0 +1,27 @@
+import 'package:flutter/material.dart';
+
+class CasesDataTable extends StatelessWidget {
+  final List<Map<String, dynamic>> cases;
+  final Function(String, String, bool) onStatusChanged;
+
+  const CasesDataTable({
+    super.key,
+    required this.cases,
+    required this.onStatusChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.vertical,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          // Implement your DataTable logic here
+          columns: const [],
+          rows: const [],
+        ),
+      ),
+    );
+  }
+}

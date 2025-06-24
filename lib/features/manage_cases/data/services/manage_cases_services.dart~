@@ -1,0 +1,27 @@
+// manage_cases_service.dart
+
+import '../../../../core/services/data_base_service.dart';
+import '../models/manage_cases_model.dart';
+
+class ManageCasesService {
+  final DatabaseService databaseService;
+
+  ManageCasesService({required this.databaseService});
+
+  // Add data method
+  Future<void> addManageCaseData(ManageCasesModel manageCasesModel) async {
+    // Convert the model to map
+    Map<String, dynamic> data = manageCasesModel.toMap();
+
+    try {
+      // Add the data to Firestore
+      await databaseService.addData(
+        path: 'manage_cases',  // Your collection name
+        data: data,
+      );
+      print("Data added successfully!");
+    } catch (e) {
+      print("Failed to add data: $e");
+    }
+  }
+}

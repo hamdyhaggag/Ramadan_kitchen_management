@@ -1,6 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:knowledge_bridge/core/routes/app_routes.dart';
+import 'package:ramadan_kitchen_management/core/routes/app_routes.dart';
 
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/app_styles.dart';
@@ -19,7 +19,7 @@ class AlreadyHaveAnAccount extends StatelessWidget {
           TextSpan(
             text: AppTexts.alreadyHaveAnAccount,
             style:
-                AppStyles.cairoRegular16.copyWith(color: AppColors.greyColor),
+                AppStyles.dinRegular16.copyWith(color: AppColors.greyColor),
           ),
           TextSpan(
             recognizer: TapGestureRecognizer()
@@ -27,7 +27,7 @@ class AlreadyHaveAnAccount extends StatelessWidget {
                 Navigator.pushReplacementNamed(context, AppRoutes.login);
               },
             text: AppTexts.login,
-            style: AppStyles.cairoRegular16.copyWith(
+            style: AppStyles.dinRegular16.copyWith(
               color: AppColors.primaryColor,
             ),
           ),

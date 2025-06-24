@@ -1,0 +1,33 @@
+class ManageCasesModel {
+  List<String> names;
+  List<int> serialNumbers;
+  List<int> numberOfIndividuals;
+  List<bool> checkboxValues;
+
+  ManageCasesModel({
+    required this.names,
+    required this.serialNumbers,
+    required this.numberOfIndividuals,
+    required this.checkboxValues,
+  });
+
+  // Convert the model to a map to save it in Firestore
+  Map<String, dynamic> toMap() {
+    return {
+      'names': names,
+      'serialNumbers': serialNumbers,
+      'numberOfIndividuals': numberOfIndividuals,
+      'checkboxValues': checkboxValues,
+    };
+  }
+
+  // Convert the map from Firestore to an instance of the model
+  factory ManageCasesModel.fromMap(Map<String, dynamic> map) {
+    return ManageCasesModel(
+      names: List<String>.from(map['names'] ?? []),
+      serialNumbers: List<int>.from(map['serialNumbers'] ?? []),
+      numberOfIndividuals: List<int>.from(map['numberOfIndividuals'] ?? []),
+      checkboxValues: List<bool>.from(map['checkboxValues'] ?? []),
+    );
+  }
+}
