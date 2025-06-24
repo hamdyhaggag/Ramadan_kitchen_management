@@ -35,23 +35,67 @@ To help visualize each feature of the Ramadan Meal Distribution App, below is a 
 
 ### Administrator Features
 
-| # | Feature                               | Screenshot                                           |
-|---|---------------------------------------|------------------------------------------------------|
-| 1 | Main Screen (TabBar)                  | <img src="screenshots/admin-main-screen.jpg" alt="1. Main Screen" width="250"/> |
-| 2 | Cases Tab                             | <img src="screenshots/admin-cases-tab.jpg" alt="2. Cases Tab" width="250"/>     |
-| 3 | Control Panel Tab                     | <img src="screenshots/admin-control-panel.jpg" alt="3. Control Panel" width="250"/> |
-| 4 | Statistics Screen                     | <img src="screenshots/admin-statistics.jpg" alt="4. Statistics Screen" width="250"/> |
-| 5 | Expenses Screen                       | <img src="screenshots/admin-expenses.jpg" alt="5. Expenses Screen" width="250"/> |
-| 6 | Reports Screen                        | <img src="screenshots/admin-reports.jpg" alt="6. Reports Screen" width="250"/>  |
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="screenshots/admin-main-screen.jpg" alt="1. Main Screen" width="250"/><br/>
+        <b>1. Main Screen (TabBar)</b>
+      </td>
+      <td align="center">
+        <img src="screenshots/admin-cases-tab.jpg" alt="2. Cases Tab" width="250"/><br/>
+        <b>2. Cases Tab</b>
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <img src="screenshots/admin-control-panel.jpg" alt="3. Control Panel" width="250"/><br/>
+        <b>3. Control Panel Tab</b>
+      </td>
+      <td align="center">
+        <img src="screenshots/admin-statistics.jpg" alt="4. Statistics Screen" width="250"/><br/>
+        <b>4. Statistics Screen</b>
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <img src="screenshots/admin-expenses.jpg" alt="5. Expenses Screen" width="250"/><br/>
+        <b>5. Expenses Screen</b>
+      </td>
+      <td align="center">
+        <img src="screenshots/admin-reports.jpg" alt="6. Reports Screen" width="250"/><br/>
+        <b>6. Reports Screen</b>
+      </td>
+    </tr>
+  </table>
+</div>
 
 ### Donor Features
 
-| # | Feature                 | Screenshot                                         |
-|---|-------------------------|----------------------------------------------------|
-| 1 | Main Screen             | <img src="screenshots/donor-main-screen.jpg" alt="1. Donor Main" width="250"/> |
-| 2 | Statistics Screen       | <img src="screenshots/donor-statistics.jpg" alt="2. Donor Statistics" width="250"/> |
-| 3 | Past Days Screen        | <img src="screenshots/donor-past-days.jpg" alt="3. Past Days" width="250"/>   |
-| 4 | Reports Screen          | <img src="screenshots/donor-reports.jpg" alt="4. Donor Reports" width="250"/> |
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="screenshots/donor-main-screen.jpg" alt="1. Donor Main" width="250"/><br/>
+        <b>1. Main Screen</b>
+      </td>
+      <td align="center">
+        <img src="screenshots/donor-statistics.jpg" alt="2. Donor Statistics" width="250"/><br/>
+        <b>2. Statistics Screen</b>
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <img src="screenshots/donor-past-days.jpg" alt="3. Past Days" width="250"/><br/>
+        <b>3. Past Days Screen</b>
+      </td>
+      <td align="center">
+        <img src="screenshots/donor-reports.jpg" alt="4. Donor Reports" width="250"/><br/>
+        <b>4. Reports Screen</b>
+      </td>
+    </tr>
+  </table>
+</div>
 
 ---
 
