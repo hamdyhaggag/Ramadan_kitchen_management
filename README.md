@@ -35,23 +35,67 @@ To help visualize each feature of the Ramadan Meal Distribution App, below is a 
 
 ### Administrator Features
 
-| # | Feature                               | Screenshot                                           |
-|---|---------------------------------------|------------------------------------------------------|
-| 1 | Main Screen (TabBar)                  | ![1. Main Screen](screenshots/admin-main-screen.png) |
-| 2 | Cases Tab                             | ![2. Cases Tab](screenshots/admin-cases-tab.png)     |
-| 3 | Control Panel Tab                     | ![3. Control Panel](screenshots/admin-control-panel.png) |
-| 4 | Statistics Screen                     | ![4. Statistics Screen](screenshots/admin-statistics.png) |
-| 5 | Expenses Screen                       | ![5. Expenses Screen](screenshots/admin-expenses.png) |
-| 6 | Reports Screen                        | ![6. Reports Screen](screenshots/admin-reports.png)  |
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="screenshots/admin-main-screen.jpg" alt="1. Main Screen" width="250"/><br/>
+        <b>1. Main Screen (TabBar)</b>
+      </td>
+      <td align="center">
+        <img src="screenshots/admin-cases-tab.jpg" alt="2. Cases Tab" width="250"/><br/>
+        <b>2. Cases Tab</b>
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <img src="screenshots/admin-control-panel.jpg" alt="3. Control Panel" width="250"/><br/>
+        <b>3. Control Panel Tab</b>
+      </td>
+      <td align="center">
+        <img src="screenshots/admin-statistics.jpg" alt="4. Statistics Screen" width="250"/><br/>
+        <b>4. Statistics Screen</b>
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <img src="screenshots/admin-expenses.jpg" alt="5. Expenses Screen" width="250"/><br/>
+        <b>5. Expenses Screen</b>
+      </td>
+      <td align="center">
+        <img src="screenshots/admin-reports.jpg" alt="6. Reports Screen" width="250"/><br/>
+        <b>6. Reports Screen</b>
+      </td>
+    </tr>
+  </table>
+</div>
 
 ### Donor Features
 
-| # | Feature                 | Screenshot                                         |
-|---|-------------------------|----------------------------------------------------|
-| 1 | Main Screen             | ![1. Donor Main](screenshots/donor-main-screen.png) |
-| 2 | Statistics Screen       | ![2. Donor Statistics](screenshots/donor-statistics.png) |
-| 3 | Past Days Screen        | ![3. Past Days](screenshots/donor-past-days.png)   |
-| 4 | Reports Screen          | ![4. Donor Reports](screenshots/donor-reports.png) |
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="screenshots/donor-main-screen.jpg" alt="1. Donor Main" width="250"/><br/>
+        <b>1. Main Screen</b>
+      </td>
+      <td align="center">
+        <img src="screenshots/donor-statistics.jpg" alt="2. Donor Statistics" width="250"/><br/>
+        <b>2. Statistics Screen</b>
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <img src="screenshots/donor-past-days.jpg" alt="3. Past Days" width="250"/><br/>
+        <b>3. Past Days Screen</b>
+      </td>
+      <td align="center">
+        <img src="screenshots/donor-reports.jpg" alt="4. Donor Reports" width="250"/><br/>
+        <b>4. Reports Screen</b>
+      </td>
+    </tr>
+  </table>
+</div>
 
 ---
 
@@ -100,7 +144,7 @@ To help visualize each feature of the Ramadan Meal Distribution App, below is a 
 
 ### <a name="reports-screen-admin"></a>Reports Screen
 - **Tab 1: Daily Expense Invoices**  
-  - One “invoice” per day: date, total spent, list of purchased items  
+  - One "invoice" per day: date, total spent, list of purchased items  
 - **Tab 2: Aggregated Quantities**  
   - Total purchased per product across days  
   - Purchase frequency details (date/time of each buy)
@@ -110,14 +154,14 @@ To help visualize each feature of the Ramadan Meal Distribution App, below is a 
 ## <a name="donor-features"></a>Donor Features
 
 ### <a name="main-screen-donor"></a>Main Screen
-- Mirrors Admin’s carousel & daily meal info  
+- Mirrors Admin's carousel & daily meal info  
 - View notifications, donation contact methods, and logout
 
 ### <a name="donor-statistics-screen"></a>Statistics Screen
 - Displays total individuals fed since Ramadan began (static or animated)
 
 ### <a name="past-days-screen"></a>Past Days Screen
-- List of previous days, each linking to that day’s meal details
+- List of previous days, each linking to that day's meal details
 
 ### <a name="donor-reports-screen"></a>Reports Screen
 - Full access to expense and quantity reports like Admin view
@@ -177,7 +221,7 @@ To help visualize each feature of the Ramadan Meal Distribution App, below is a 
    │  │  │  │  └─ user_model.dart
    │  │  │  └─ repos
    │  │  │     ├─ auth_repo.dart
-   │  │  │     └─ auth_repo_impl.dart
+   │  │     │     └─ auth_repo_impl.dart
    │  │  └─ presentation
    │  │     ├─ manager
    │  │     │  ├─ admin_cubit
@@ -377,4 +421,3 @@ To help visualize each feature of the Ramadan Meal Distribution App, below is a 
 - **Acknowledgements:** Flutter, Dart, Firebase, Material Design Icons — inspired by community Ramadan kitchen initiatives.
 
 *Built with ❤️ by Hamdy Haggag.*
-
