@@ -51,235 +51,215 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
 
           return Scaffold(
             backgroundColor: const Color(0xFFF8FAFC),
-            body: CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                  expandedHeight: 0,
-                  floating: true,
-                  pinned: true,
-                  backgroundColor: Colors.white,
-                  elevation: 0,
-                  surfaceTintColor: Colors.white,
-                  title: const Text(
-                    'مطبخ الخير',
-                    style: TextStyle(
-                      color: Color(0xFF1E293B),
-                      fontFamily: 'DIN',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 22,
-                    ),
-                  ),
-                  centerTitle: false,
-                  actions: [
-                    Container(
-                      margin: const EdgeInsets.only(left: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Iconsax.notification,
-                            color: Color(0xFF64748B), size: 20),
-                        onPressed: () {},
-                      ),
-                    ),
-                  ],
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                    child: Column(
-                      children: [
-                        Container(
-                          height: 200,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.circular(32),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.15),
-                                blurRadius: 25,
-                                offset: const Offset(0, 12),
-                              ),
-                            ],
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: carouselImages.isEmpty
-                              ? Container(
-                                  color: AppColors.primaryColor
-                                      .withValues(alpha: 0.1),
-                                  child: const Icon(Icons.restaurant,
-                                      size: 60, color: AppColors.primaryColor),
-                                )
-                              : Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    CarouselSlider(
-                                      items: carouselImages.map((url) {
-                                        return Center(
-                                          child: CachedNetworkImage(
-                                            imageUrl: url,
-                                            fit: BoxFit.cover,
-                                            width: double.infinity,
-                                            placeholder: (context, url) =>
-                                                Shimmer.fromColors(
-                                              baseColor: Colors.grey[300]!,
-                                              highlightColor: Colors.grey[100]!,
-                                              child: Container(
-                                                  color: Colors.white),
-                                            ),
-                                            errorWidget: (context, url, _) =>
-                                                Container(
-                                                    color: Colors.grey[300]),
-                                          ),
-                                        );
-                                      }).toList(),
-                                      options: CarouselOptions(
-                                        height: 200,
-                                        viewportFraction: 1.0,
-                                        autoPlay: carouselImages.length > 1,
-                                        onPageChanged: (index, reason) {
-                                          setState(() {
-                                            _currentCarouselIndex = index;
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                    const DecoratedBox(
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                          colors: [
-                                            Colors.transparent,
-                                            Color(
-                                                0x99000000), // black with 0.6 opacity (approx)
-                                          ],
-                                          stops: [0.6, 1.0],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                        ),
-                        if (carouselImages.length > 1) ...[
-                          const SizedBox(height: 12),
-                          DotsIndicator(
-                            dotsCount: carouselImages.length,
-                            position: _currentCarouselIndex,
-                            decorator: DotsDecorator(
-                              color: Colors.grey[200]!,
-                              activeColor: AppColors.primaryColor,
-                              size: const Size.square(6.0),
-                              activeSize: const Size(18.0, 6.0),
-                              activeShape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(5.0)),
-                              spacing:
-                                  const EdgeInsets.symmetric(horizontal: 4.0),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-
-                // 2. Content Body
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: AnimationLimiter(
+            body: RefreshIndicator(
+              onRefresh: () async {
+                context.read<DonationCubit>().getDonations();
+                context.read<ExpenseCubit>().loadExpenses();
+                await Future.delayed(const Duration(seconds: 1));
+              },
+              color: AppColors.primaryColor,
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: AnimationConfiguration.toStaggeredList(
-                          duration: const Duration(milliseconds: 600),
-                          childAnimationBuilder: (widget) => SlideAnimation(
-                            horizontalOffset: 30.0,
-                            child: FadeInAnimation(child: widget),
-                          ),
-                          children: [
-                            // 1. Today's Stats (Core Context)
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildStatCard(
-                                    context,
-                                    label: 'عدد الأفراد',
-                                    value: '$individuals',
-                                    icon: Iconsax.people,
-                                    color: Colors.orange,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child:
-                                      BlocBuilder<ExpenseCubit, ExpenseState>(
-                                    builder: (context, expenseState) {
-                                      double costPerPerson = 0.0;
-                                      if (expenseState is ExpenseLoaded) {
-                                        final today = DateTime.now()
-                                            .toIso8601String()
-                                            .split('T')[0];
-                                        double totalExpenses = expenseState
-                                            .expenses
-                                            .where((e) => e.date == today)
-                                            .fold(0.0,
-                                                (sum, e) => sum + e.amount);
-                                        if (individuals > 0) {
-                                          costPerPerson =
-                                              totalExpenses / individuals;
-                                        }
-                                      }
-                                      return _buildStatCard(
-                                        context,
-                                        label: 'تكلفة الفرد',
-                                        value: costPerPerson > 0
-                                            ? '${costPerPerson.toStringAsFixed(1)} ج'
-                                            : '---',
-                                        icon: Iconsax.money_send,
-                                        color: Colors.green,
-                                      );
-                                    },
-                                  ),
+                        children: [
+                          Container(
+                            height: 200,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(32),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.15),
+                                  blurRadius: 25,
+                                  offset: const Offset(0, 12),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 20),
-
-                            // 2. Primary Action (Conversion Point)
-                            _buildActionCards(context, contacts),
-                            const SizedBox(height: 24),
-
-                            // 3. Meal Info (Detailed Context)
-                            _buildInfoCard(
-                              context,
-                              title: title,
-                              description: description,
+                            clipBehavior: Clip.antiAlias,
+                            child: carouselImages.isEmpty
+                                ? Container(
+                                    color: AppColors.primaryColor
+                                        .withValues(alpha: 0.1),
+                                    child: const Icon(Icons.restaurant,
+                                        size: 60,
+                                        color: AppColors.primaryColor),
+                                  )
+                                : Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      CarouselSlider(
+                                        items: carouselImages.map((url) {
+                                          return GestureDetector(
+                                            onTap: () {
+                                              _showFullScreenImage(
+                                                  context, url, title);
+                                            },
+                                            child: Center(
+                                              child: CachedNetworkImage(
+                                                imageUrl: url,
+                                                fit: BoxFit.cover,
+                                                width: double.infinity,
+                                                placeholder: (context, url) =>
+                                                    Shimmer.fromColors(
+                                                  baseColor: Colors.grey[300]!,
+                                                  highlightColor:
+                                                      Colors.grey[100]!,
+                                                  child: Container(
+                                                      color: Colors.white),
+                                                ),
+                                                errorWidget: (context, url,
+                                                        _) =>
+                                                    Container(
+                                                        color:
+                                                            Colors.grey[300]),
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                        options: CarouselOptions(
+                                          height: 200,
+                                          viewportFraction: 1.0,
+                                          autoPlay: carouselImages.length > 1,
+                                          onPageChanged: (index, reason) {
+                                            setState(() {
+                                              _currentCarouselIndex = index;
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                      const DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              Colors.transparent,
+                                              Color(
+                                                  0x99000000), // black with 0.6 opacity (approx)
+                                            ],
+                                            stops: [0.6, 1.0],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                          if (carouselImages.length > 1) ...[
+                            const SizedBox(height: 12),
+                            DotsIndicator(
+                              dotsCount: carouselImages.length,
+                              position: _currentCarouselIndex,
+                              decorator: DotsDecorator(
+                                color: Colors.grey[200]!,
+                                activeColor: AppColors.primaryColor,
+                                size: const Size.square(6.0),
+                                activeSize: const Size(18.0, 6.0),
+                                activeShape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(5.0)),
+                                spacing:
+                                    const EdgeInsets.symmetric(horizontal: 4.0),
+                              ),
                             ),
-                            const SizedBox(height: 24),
-
-                            // 4. Total Impact (Social Proof/Trust)
-                            _buildTotalImpact(state.donations),
-                            const SizedBox(height: 24),
-
-                            // 5. Yesterday's Highlight (Confirmation of Action)
-                            if (state.donations.length > 1)
-                              _buildYesterdayHighlight(state.donations[1]),
-                            const SizedBox(height: 24),
-
-                            // 6. Quick Support
-                            _buildSupportCard(),
-
-                            // Space at bottom
-                            const SizedBox(height: 40),
                           ],
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // 2. Content Body
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: AnimationLimiter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: AnimationConfiguration.toStaggeredList(
+                            duration: const Duration(milliseconds: 600),
+                            childAnimationBuilder: (widget) => SlideAnimation(
+                              horizontalOffset: 30.0,
+                              child: FadeInAnimation(child: widget),
+                            ),
+                            children: [
+                              // 1. Today's Stats (Core Context)
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildStatCard(
+                                      context,
+                                      label: 'عدد الأفراد',
+                                      value: '$individuals',
+                                      icon: Iconsax.people,
+                                      color: Colors.orange,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child:
+                                        BlocBuilder<ExpenseCubit, ExpenseState>(
+                                      builder: (context, expenseState) {
+                                        double costPerPerson = 0.0;
+                                        if (expenseState is ExpenseLoaded) {
+                                          final today = DateTime.now()
+                                              .toIso8601String()
+                                              .split('T')[0];
+                                          double totalExpenses = expenseState
+                                              .expenses
+                                              .where((e) => e.date == today)
+                                              .fold(0.0,
+                                                  (sum, e) => sum + e.amount);
+                                          if (individuals > 0) {
+                                            costPerPerson =
+                                                totalExpenses / individuals;
+                                          }
+                                        }
+                                        return _buildStatCard(
+                                          context,
+                                          label: 'تكلفة الفرد',
+                                          value: costPerPerson > 0
+                                              ? '${costPerPerson.toStringAsFixed(1)} ج'
+                                              : '---',
+                                          icon: Iconsax.money_send,
+                                          color: Colors.green,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+
+                              // 2. Primary Action (Conversion Point)
+                              _buildActionCards(context, contacts),
+                              const SizedBox(height: 24),
+
+                              // 3. Today's Meal & Components (Visual Context)
+                              _buildTodayMealImage(
+                                  imageUrl, title, description),
+                              const SizedBox(height: 24),
+
+                              // 4. Total Impact (Social Proof/Trust)
+                              _buildTotalImpact(state.donations),
+                              const SizedBox(height: 24),
+
+                              // 5. Yesterday's Highlight (Confirmation of Action)
+                              if (state.donations.length > 1)
+                                _buildYesterdayHighlight(state.donations[1]),
+                              const SizedBox(height: 24),
+
+                              // 6. Quick Support
+                              _buildSupportCard(),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         } else if (state is DonationError) {
@@ -293,52 +273,162 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
     );
   }
 
-  Widget _buildInfoCard(BuildContext context,
-      {required String title, required String description}) {
+  Widget _buildTodayMealImage(
+      String? imageUrl, String title, String description) {
+    final ingredients = description.isNotEmpty
+        ? description
+            .split(RegExp(r'\+|\,'))
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList()
+        : [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'وجبة اليوم',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'DIN',
+                color: Color(0xFF1E293B),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                'مباشر من المطبخ',
+                style: TextStyle(
+                    fontSize: 10,
+                    color: AppColors.primaryColor,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: () {
+            if (imageUrl != null && imageUrl.isNotEmpty) {
+              _showFullScreenImage(context, imageUrl, title);
+            }
+          },
+          child: Container(
+            height: 200,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(32),
+              image: imageUrl != null && imageUrl.isNotEmpty
+                  ? DecorationImage(
+                      image: CachedNetworkImageProvider(imageUrl),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+              color: Colors.grey[200],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: imageUrl == null || imageUrl.isEmpty
+                ? const Center(
+                    child: Icon(Icons.image_not_supported_outlined,
+                        color: Colors.grey, size: 40),
+                  )
+                : Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(32),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.5)
+                        ],
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(20),
+                    alignment: Alignment.bottomRight,
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          'عرض الصورة كاملة',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Icon(Icons.fullscreen, color: Colors.white, size: 20),
+                      ],
+                    ),
+                  ),
+          ),
+        ),
+        if (ingredients.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          const Text(
+            'مكونات الوجبة:',
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.w600,
+              fontFamily: 'DIN',
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children:
+                ingredients.map((item) => _buildIngredientChip(item)).toList(),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildIngredientChip(String label) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[100]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            offset: const Offset(0, 4),
-            blurRadius: 16,
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                    color: AppColors.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12)),
-                child: const Icon(Icons.restaurant,
-                    color: AppColors.primaryColor, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'DIN'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+          const Icon(Icons.check_circle_outline,
+              color: AppColors.primaryColor, size: 14),
+          const SizedBox(width: 6),
           Text(
-            description,
-            style:
-                TextStyle(color: Colors.grey[600], fontSize: 14, height: 1.6),
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF334155),
+            ),
           ),
         ],
       ),
