@@ -599,39 +599,41 @@ class ReportsScreenState extends State<ReportsScreen>
       length: 2,
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          centerTitle: true,
-          title: const Text(
-            'التقارير اليومية',
-            style: TextStyle(
-              color: AppColors.blackColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-            ),
-          ),
-          leading: IconButton(
-            icon: const Icon(Iconsax.arrow_right_3, color: Colors.black),
-            onPressed: () => Navigator.pop(context),
-          ),
-          actions: [
-            if (isAdmin)
-              IconButton(
-                icon: const Icon(Iconsax.document_download,
-                    color: AppColors.primaryColor),
-                onPressed: () => _showExportDialog(context),
-              ),
-            IconButton(
-              icon: Icon(
-                _isAscending ? Iconsax.sort : Iconsax.sort,
-                color: Colors.black,
-              ),
-              onPressed: () => setState(() => _isAscending = !_isAscending),
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
+        appBar: isAdmin
+            ? AppBar(
+                backgroundColor: Colors.white,
+                elevation: 0,
+                centerTitle: true,
+                title: const Text(
+                  'التقارير اليومية',
+                  style: TextStyle(
+                    color: AppColors.blackColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+                leading: IconButton(
+                  icon: const Icon(Iconsax.arrow_right_3, color: Colors.black),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Iconsax.document_download,
+                        color: AppColors.primaryColor),
+                    onPressed: () => _showExportDialog(context),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      _isAscending ? Iconsax.sort : Iconsax.sort,
+                      color: Colors.black,
+                    ),
+                    onPressed: () =>
+                        setState(() => _isAscending = !_isAscending),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              )
+            : null,
         body: BlocBuilder<ExpenseCubit, ExpenseState>(
           builder: (context, state) {
             if (state is ExpenseLoading) {

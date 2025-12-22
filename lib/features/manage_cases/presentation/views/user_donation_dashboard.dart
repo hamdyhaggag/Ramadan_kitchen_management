@@ -33,30 +33,28 @@ class UserDonationDashboard extends StatelessWidget {
           final description = donation['mealDescription'] ?? '';
           final individuals = donation['numberOfIndividuals'] as int? ?? 1;
 
-          return Scaffold(
-            body: Stack(
-              children: [
-                CustomScrollView(
-                  slivers: [
-                    // 1. Immersive Sliver App Bar
-                    SliverAppBar(
-                      expandedHeight: 300.0,
-                      floating: false,
-                      pinned: true,
-                      backgroundColor: AppColors.primaryColor,
-                      flexibleSpace: FlexibleSpaceBar(
-                        title: const Text(
-                          'مطبخ رمضان',
-                          style: TextStyle(
-                            fontFamily: 'DIN',
-                            fontWeight: FontWeight.bold,
-                            shadows: [
-                              Shadow(color: Colors.black45, blurRadius: 10)
-                            ],
-                          ),
+          return Stack(
+            children: [
+              CustomScrollView(
+                slivers: [
+                  // 1. Meal Image Card (Replaces SliverAppBar)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                      child: Container(
+                        height: 220,
+                        clipBehavior: Clip.antiAlias,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 15,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
                         ),
-                        centerTitle: true,
-                        background: Stack(
+                        child: Stack(
                           fit: StackFit.expand,
                           children: [
                             if (imageUrl != null && imageUrl.isNotEmpty)
@@ -74,10 +72,12 @@ class UserDonationDashboard extends StatelessWidget {
                               )
                             else
                               Container(
-                                  color:
-                                      AppColors.primaryColor.withOpacity(0.2)),
-
-                            // Gradient Overlay for text readability
+                                color: AppColors.primaryColor
+                                    .withValues(alpha: 0.2),
+                                child: const Icon(Icons.restaurant,
+                                    size: 50, color: AppColors.primaryColor),
+                              ),
+                            // Gradient Overlay
                             const DecoratedBox(
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
@@ -88,133 +88,144 @@ class UserDonationDashboard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // 2. Content Body
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Meal Info Card
-                            _buildInfoCard(
-                              context,
-                              title: title,
-                              description: description,
-                            ),
-                            const SizedBox(height: 20),
-
-                            // Stats Row (Individuals & Cost)
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildStatCard(
-                                    context,
-                                    label: 'عدد الأفراد',
-                                    value: '$individuals',
-                                    icon: Icons.people_outline,
-                                    color: Colors.orange,
-                                  ),
+                            // Title Overlay
+                            Positioned(
+                              bottom: 16,
+                              right: 20,
+                              child: Text(
+                                'مطبخ رمضان',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontFamily: 'DIN',
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child:
-                                      BlocBuilder<ExpenseCubit, ExpenseState>(
-                                    builder: (context, expenseState) {
-                                      double costPerPerson = 0.0;
-                                      if (expenseState is ExpenseLoaded) {
-                                        final today = DateTime.now()
-                                            .toIso8601String()
-                                            .split('T')[0];
-                                        double totalExpenses = expenseState
-                                            .expenses
-                                            .where((e) => e.date == today)
-                                            .fold(0.0,
-                                                (sum, e) => sum + e.amount);
-                                        if (individuals > 0) {
-                                          costPerPerson =
-                                              totalExpenses / individuals;
-                                        }
-                                      }
-                                      return _buildStatCard(
-                                        context,
-                                        label: 'تكلفة الفرد',
-                                        value: costPerPerson > 0
-                                            ? '${costPerPerson.toStringAsFixed(1)} ج'
-                                            : '---',
-                                        icon: Icons.monetization_on_outlined,
-                                        color: Colors.green,
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 24),
-                            const Text(
-                              'كيف يمكنك المساعدة؟',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primaryColor,
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'مساهمتك بتساعدنا نوفر وجبات إفطار صائم لأسر كتير. تقدر تتبرع بتكلفة وجبة أو أكتر، أو تشاركنا بالمجهود.',
-                              style: TextStyle(
-                                  color: Colors.grey,
-                                  height: 1.5,
-                                  fontSize: 15),
-                            ),
-
-                            // Space for floating button
-                            const SizedBox(height: 100),
                           ],
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
 
-                // 3. Floating Action Bar
-                Positioned(
-                  bottom: 24,
-                  left: 24,
-                  right: 24,
-                  child: ElevatedButton(
-                    onPressed: () => _showDonationOptions(context, contacts),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  // 2. Content Body
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Meal Info Card
+                          _buildInfoCard(
+                            context,
+                            title: title,
+                            description: description,
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Stats Row (Individuals & Cost)
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildStatCard(
+                                  context,
+                                  label: 'عدد الأفراد',
+                                  value: '$individuals',
+                                  icon: Icons.people_outline,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: BlocBuilder<ExpenseCubit, ExpenseState>(
+                                  builder: (context, expenseState) {
+                                    double costPerPerson = 0.0;
+                                    if (expenseState is ExpenseLoaded) {
+                                      final today = DateTime.now()
+                                          .toIso8601String()
+                                          .split('T')[0];
+                                      double totalExpenses = expenseState
+                                          .expenses
+                                          .where((e) => e.date == today)
+                                          .fold(
+                                              0.0, (sum, e) => sum + e.amount);
+                                      if (individuals > 0) {
+                                        costPerPerson =
+                                            totalExpenses / individuals;
+                                      }
+                                    }
+                                    return _buildStatCard(
+                                      context,
+                                      label: 'تكلفة الفرد',
+                                      value: costPerPerson > 0
+                                          ? '${costPerPerson.toStringAsFixed(1)} ج'
+                                          : '---',
+                                      icon: Icons.monetization_on_outlined,
+                                      color: Colors.green,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 24),
+                          const Text(
+                            'كيف يمكنك المساعدة؟',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primaryColor,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'مساهمتك بتساعدنا نوفر وجبات إفطار صائم لأسر كتير. تقدر تتبرع بتكلفة وجبة أو أكتر، أو تشاركنا بالمجهود.',
+                            style: TextStyle(
+                                color: Colors.grey, height: 1.5, fontSize: 15),
+                          ),
+
+                          // Space for floating button
+                          const SizedBox(height: 100),
+                        ],
                       ),
-                      elevation: 8,
-                      shadowColor: AppColors.primaryColor.withOpacity(0.4),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.volunteer_activism),
-                        SizedBox(width: 8),
-                        Text(
-                          'تبرع الآن',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                      ],
                     ),
                   ),
+                ],
+              ),
+
+              // 3. Floating Action Bar
+              Positioned(
+                bottom: 24,
+                left: 24,
+                right: 24,
+                child: ElevatedButton(
+                  onPressed: () => _showDonationOptions(context, contacts),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 8,
+                    shadowColor: AppColors.primaryColor.withOpacity(0.4),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.volunteer_activism),
+                      SizedBox(width: 8),
+                      Text(
+                        'تبرع الآن',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           );
         } else if (state is DonationError) {
           return Scaffold(body: Center(child: Text(state.message)));

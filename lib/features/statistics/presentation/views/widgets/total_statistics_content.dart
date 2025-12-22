@@ -146,21 +146,17 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
                       icon: Iconsax.timer_1,
                       color: const Color(0xFFF59E0B),
                     ),
-                    _buildMinorStatCard(
-                      title: 'متوسط الأداء',
-                      value: '${(_totalIndividuals / 30).toStringAsFixed(0)}',
-                      unit: 'يومياً',
-                      icon: Iconsax.chart_21,
-                      color: const Color(0xFF8B5CF6), // Purple/Indigo
-                    ),
-                    _buildMinorStatCard(
-                      title: 'حالة الربط',
-                      value: 'متصل',
-                      unit: 'Firestore',
-                      icon: Iconsax.cloud_connection,
-                      color: AppColors.primaryColor,
-                    ),
                   ],
+                ),
+                const SizedBox(height: 16),
+                // 4. Full Width Average Performance
+                _buildMinorStatCard(
+                  title: 'متوسط الأداء',
+                  value: '${(_totalIndividuals / 30).toStringAsFixed(0)}',
+                  unit: 'يومياً',
+                  icon: Iconsax.chart_21,
+                  color: const Color(0xFF8B5CF6), // Purple/Indigo
+                  isFullWidth: true,
                 ),
                 const SizedBox(height: 32),
 
@@ -320,8 +316,10 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
     required String unit,
     required IconData icon,
     required Color color,
+    bool isFullWidth = false,
   }) {
     return Container(
+      width: isFullWidth ? double.infinity : null,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -335,7 +333,8 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            isFullWidth ? CrossAxisAlignment.center : CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(8),
@@ -345,7 +344,7 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
             ),
             child: Icon(icon, color: color, size: 20),
           ),
-          const Spacer(),
+          if (isFullWidth) const SizedBox(height: 16) else const Spacer(),
           Text(
             title,
             style: TextStyle(
@@ -356,6 +355,9 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
           ),
           const SizedBox(height: 4),
           Row(
+            mainAxisAlignment: isFullWidth
+                ? MainAxisAlignment.center
+                : MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
@@ -442,14 +444,24 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
               crossAxisCount: 2,
               mainAxisSpacing: 16,
               crossAxisSpacing: 16,
+              childAspectRatio: 1.1,
               children: List.generate(
-                4,
+                2,
                 (index) => Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
                   ),
                 ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              height: 100,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
               ),
             ),
           ],

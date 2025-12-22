@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/cubit/donation_cubit.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:ramadan_kitchen_management/core/services/service_locator.dart';
+import 'package:ramadan_kitchen_management/features/auth/data/repos/auth_repo.dart';
 import '../widgets/card_of_previous.dart';
 
 class PreviousDaysScreen extends StatefulWidget {
@@ -25,22 +27,26 @@ class _PreviousDaysScreenState extends State<PreviousDaysScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isAdmin = getIt<AuthRepo>().currentUser?.role == 'admin';
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
-      appBar: AppBar(
-        title: const Text(
-          'سجل الأيام السابقة',
-          style: TextStyle(
-            color: Color(0xFF1E293B),
-            fontWeight: FontWeight.bold,
-            fontFamily: 'DIN',
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: Colors.black,
-      ),
+      appBar: isAdmin
+          ? AppBar(
+              title: const Text(
+                'سجل الأيام السابقة',
+                style: TextStyle(
+                  color: Color(0xFF1E293B),
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'DIN',
+                ),
+              ),
+              centerTitle: true,
+              backgroundColor: Colors.white,
+              elevation: 0,
+              foregroundColor: Colors.black,
+            )
+          : null,
       body: Column(
         children: [
           _buildSearchBar(),
