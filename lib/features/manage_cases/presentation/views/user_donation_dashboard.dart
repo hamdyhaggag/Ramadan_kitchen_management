@@ -9,8 +9,18 @@ import 'package:shimmer/shimmer.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/contact_list_item.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/contact_person.dart';
 
-class UserDonationDashboard extends StatelessWidget {
+import 'package:carousel_slider/carousel_slider.dart';
+import 'package:dots_indicator/dots_indicator.dart';
+
+class UserDonationDashboard extends StatefulWidget {
   const UserDonationDashboard({super.key});
+
+  @override
+  State<UserDonationDashboard> createState() => _UserDonationDashboardState();
+}
+
+class _UserDonationDashboardState extends State<UserDonationDashboard> {
+  int _currentCarouselIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +39,9 @@ class UserDonationDashboard extends StatelessWidget {
                   .toList() ??
               [];
           final imageUrl = donation['mealImageUrl'] as String?;
+          final carouselImages = donation['carouselImages'] != null
+              ? List<String>.from(donation['carouselImages'])
+              : (imageUrl != null && imageUrl.isNotEmpty ? [imageUrl] : []);
           final title = donation['mealTitle'] ?? 'وجبة اليوم';
           final description = donation['mealDescription'] ?? '';
           final individuals = donation['numberOfIndividuals'] as int? ?? 1;
@@ -37,73 +50,105 @@ class UserDonationDashboard extends StatelessWidget {
             children: [
               CustomScrollView(
                 slivers: [
-                  // 1. Meal Image Card (Replaces SliverAppBar)
+                  // 1. Premium Carousel / Image Section
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-                      child: Container(
-                        height: 220,
-                        clipBehavior: Clip.antiAlias,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 15,
-                              offset: const Offset(0, 8),
+                      child: Column(
+                        children: [
+                          Container(
+                            height: 200,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.black, // Background for contain fit
+                              borderRadius: BorderRadius.circular(28),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.12),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: carouselImages.isEmpty
+                                ? Container(
+                                    color: AppColors.primaryColor
+                                        .withValues(alpha: 0.1),
+                                    child: const Icon(Icons.restaurant,
+                                        size: 60,
+                                        color: AppColors.primaryColor),
+                                  )
+                                : Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      CarouselSlider(
+                                        items: carouselImages.map((url) {
+                                          return Center(
+                                            child: CachedNetworkImage(
+                                              imageUrl: url,
+                                              fit: BoxFit.cover,
+                                              width: double.infinity,
+                                              placeholder: (context, url) =>
+                                                  Shimmer.fromColors(
+                                                baseColor: Colors.grey[300]!,
+                                                highlightColor:
+                                                    Colors.grey[100]!,
+                                                child: Container(
+                                                    color: Colors.white),
+                                              ),
+                                              errorWidget: (context, url, _) =>
+                                                  Container(
+                                                      color: Colors.grey[300]),
+                                            ),
+                                          );
+                                        }).toList(),
+                                        options: CarouselOptions(
+                                          height: 210,
+                                          viewportFraction: 1.0,
+                                          autoPlay: carouselImages.length > 1,
+                                          onPageChanged: (index, reason) {
+                                            setState(() {
+                                              _currentCarouselIndex = index;
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                      // Premium Gradient Overlay
+                                      const DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              Colors.transparent,
+                                              Colors.black87
+                                            ],
+                                            stops: [0.5, 1.0],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                          if (carouselImages.length > 1) ...[
+                            const SizedBox(height: 12),
+                            DotsIndicator(
+                              dotsCount: carouselImages.length,
+                              position: _currentCarouselIndex,
+                              decorator: DotsDecorator(
+                                color: Colors.grey[300]!,
+                                activeColor: AppColors.primaryColor,
+                                size: const Size.square(8.0),
+                                activeSize: const Size(24.0, 8.0),
+                                activeShape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(5.0)),
+                                spacing:
+                                    const EdgeInsets.symmetric(horizontal: 4.0),
+                              ),
                             ),
                           ],
-                        ),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            if (imageUrl != null && imageUrl.isNotEmpty)
-                              CachedNetworkImage(
-                                imageUrl: imageUrl,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) =>
-                                    Shimmer.fromColors(
-                                  baseColor: Colors.grey[300]!,
-                                  highlightColor: Colors.grey[100]!,
-                                  child: Container(color: Colors.white),
-                                ),
-                                errorWidget: (context, url, _) =>
-                                    Container(color: Colors.grey[300]),
-                              )
-                            else
-                              Container(
-                                color: AppColors.primaryColor
-                                    .withValues(alpha: 0.2),
-                                child: const Icon(Icons.restaurant,
-                                    size: 50, color: AppColors.primaryColor),
-                              ),
-                            // Gradient Overlay
-                            const DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [Colors.transparent, Colors.black54],
-                                  stops: [0.6, 1.0],
-                                ),
-                              ),
-                            ),
-                            // Title Overlay
-                            Positioned(
-                              bottom: 16,
-                              right: 20,
-                              child: Text(
-                                'مطبخ رمضان',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 22,
-                                  fontFamily: 'DIN',
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                        ],
                       ),
                     ),
                   ),
