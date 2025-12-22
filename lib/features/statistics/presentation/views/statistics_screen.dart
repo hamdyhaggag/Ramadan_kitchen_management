@@ -9,14 +9,37 @@ import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_sta
 import 'package:ramadan_kitchen_management/features/statistics/presentation/views/widgets/total_statistics_content.dart';
 
 class StatisticsScreen extends StatelessWidget {
-  const StatisticsScreen({super.key});
+  final int initialTabIndex;
+  // Make AppBar title optional, if passed it will be used, otherwise default logic
+  final String? title;
+
+  const StatisticsScreen({super.key, this.initialTabIndex = 0, this.title});
 
   @override
   Widget build(BuildContext context) {
     final authRepo = getIt<AuthRepo>();
     final isAdmin = authRepo.currentUser?.role == 'admin';
 
+    // Determine title based on index if not provided
+    final String screenTitle = title ??
+        (initialTabIndex == 0 ? 'إحصائيات التوزيع' : 'إجمالي الإحصائيات');
+
     return Scaffold(
+      // Add AppBar specifically for Admin views to provide context and back navigation
+      appBar: isAdmin
+          ? AppBar(
+              title: Text(screenTitle),
+              centerTitle: true,
+              backgroundColor: AppColors.whiteColor,
+              elevation: 0,
+              iconTheme: const IconThemeData(color: Colors.black),
+              titleTextStyle: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'DIN'),
+            )
+          : null,
       body: BlocBuilder<CasesCubit, CasesState>(
         builder: (context, state) {
           if (state is CasesLoading) {
@@ -28,9 +51,18 @@ class StatisticsScreen extends StatelessWidget {
             return Center(child: Text(state.message));
           }
           if (state is CasesLoaded) {
-            return isAdmin
-                ? _AdminStatisticsView(cases: state.cases)
-                : TotalStatisticsContent();
+            if (isAdmin) {
+              // Directly return the specific content based on initialTabIndex
+              // No TabBar, No TabBarView. specific content + AppBar.
+              if (initialTabIndex == 0) {
+                return _StatisticsContent(cases: state.cases);
+              } else {
+                return TotalStatisticsContent();
+              }
+            } else {
+              // User View (Keep as is if needed, or update similarly)
+              return TotalStatisticsContent();
+            }
           }
           return const Center(child: Text('No statistics available'));
         },
@@ -39,70 +71,7 @@ class StatisticsScreen extends StatelessWidget {
   }
 }
 
-class _AdminStatisticsView extends StatefulWidget {
-  final List<Map<String, dynamic>> cases;
-  const _AdminStatisticsView({required this.cases});
-
-  @override
-  State<_AdminStatisticsView> createState() => _AdminStatisticsViewState();
-}
-
-class _AdminStatisticsViewState extends State<_AdminStatisticsView>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: TabBar(
-            unselectedLabelColor: AppColors.greyColor,
-            splashFactory: NoSplash.splashFactory,
-            overlayColor: WidgetStateProperty.resolveWith<Color?>(
-                (Set<WidgetState> states) {
-              return states.contains(WidgetState.focused)
-                  ? null
-                  : Colors.transparent;
-            }),
-            dividerColor: Colors.transparent,
-            labelStyle: TextStyle(
-                color: AppColors.primaryColor,
-                fontFamily: 'DIN',
-                fontSize: 16,
-                fontWeight: FontWeight.w500),
-            indicatorColor: AppColors.primaryColor,
-            controller: _tabController,
-            tabs: const [
-              Tab(text: 'التفاصيل اليومية'),
-              Tab(text: 'الإحصائيات العامة'),
-            ],
-          ),
-        ),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _StatisticsContent(cases: widget.cases),
-              TotalStatisticsContent(),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
+// Deprecated: _AdminStatisticsView with Tabs is removed/refactored out since we now link directly.
 
 class _StatisticsContent extends StatefulWidget {
   final List<Map<String, dynamic>> cases;
@@ -143,7 +112,7 @@ class _StatisticsContentState extends State<_StatisticsContent> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       child: Column(
         children: [
           Container(

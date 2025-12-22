@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../../core/utils/app_colors.dart';
 import '../../core/widgets/general_button.dart';
 import '../donation/presentation/views/case_details_screen.dart';
@@ -10,25 +11,11 @@ import 'logic/cases_state.dart';
 
 class ManageCaseDetailsScreen extends StatelessWidget {
   const ManageCaseDetailsScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('إدارة الحالات'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.group_work),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const ManageCaseGroupsScreen()),
-              );
-            },
-          ),
-        ],
-      ),
+      backgroundColor: const Color(0xFFF8F9FE),
       body: BlocBuilder<CasesCubit, CasesState>(
         builder: (context, state) {
           if (state is CasesLoading) {
@@ -37,12 +24,13 @@ class ManageCaseDetailsScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   LoadingAnimationWidget.staggeredDotsWave(
-                    color: Theme.of(context).primaryColor,
+                    color: AppColors.primaryColor,
                     size: 50,
                   ),
                   const SizedBox(height: 16),
-                  Text('جاري تحميل الحالات...',
-                      style: Theme.of(context).textTheme.bodyLarge)
+                  const Text('جاري تحميل سجل الأسر...',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w500))
                 ],
               ),
             );
@@ -53,7 +41,7 @@ class ManageCaseDetailsScreen extends StatelessWidget {
           if (state is CasesLoaded) {
             return _ManageCaseDetailsContent(cases: state.cases);
           }
-          return const Center(child: Text('No cases found'));
+          return const Center(child: Text('لا توجد بيانات'));
         },
       ),
     );
@@ -269,49 +257,31 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('حذف الحالة'),
-        content: const Text('هل أنت متأكد من رغبتك في حذف هذه الحالة؟'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('حذف الحالة',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('هل أنت متأكد من رغبتك في حذف هذه الحالة نهائياً؟',
+            style: TextStyle(color: Colors.black54)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('إلغاء')),
-          TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                context.read<CasesCubit>().deleteCase(docId);
-              },
-              child: const Text('حذف', style: TextStyle(color: Colors.red))),
+              child:
+                  const Text('إلغاء', style: TextStyle(color: Colors.black45))),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<CasesCubit>().deleteCase(docId);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[50],
+              elevation: 0,
+              foregroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('حذف'),
+          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSearchField() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: TextField(
-        controller: _searchController,
-        onChanged: (value) => setState(() => searchQuery = value.trim()),
-        decoration: InputDecoration(
-          hintStyle: TextStyle(color: Colors.grey.shade600),
-          hintText: 'ابحث بالإسم ...',
-          suffixIcon: _searchController.text.isEmpty
-              ? IconButton(
-                  icon: Icon(Icons.search),
-                  color: Colors.grey.shade600,
-                  disabledColor: Colors.grey.shade600,
-                  onPressed: null)
-              : IconButton(
-                  icon: Icon(Icons.clear),
-                  color: Colors.grey.shade600,
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() => searchQuery = '');
-                  }),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
-          filled: true,
-          fillColor: Colors.white,
-        ),
       ),
     );
   }
@@ -320,72 +290,364 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
   Widget build(BuildContext context) {
     List<Map<String, dynamic>> filteredCases = widget.cases.where((caseItem) {
       final name = caseItem["الاسم"].toString().toLowerCase();
-      return name.contains(searchQuery.toLowerCase());
+      final number = caseItem["الرقم"].toString();
+      return name.contains(searchQuery.toLowerCase()) ||
+          number.contains(searchQuery);
     }).toList();
-    List<Map<String, dynamic>> sortedCases = filteredCases
-      ..sort((a, b) => (a['الرقم'] as int).compareTo(b['الرقم'] as int));
+
+    // Sort by case number
+    filteredCases
+        .sort((a, b) => (a['الرقم'] as int).compareTo(b['الرقم'] as int));
+
+    final totalMembers = widget.cases
+        .fold<int>(0, (sum, item) => sum + (item['عدد الأفراد'] as int? ?? 0));
+
     return Column(
       children: [
-        _buildSearchField(),
+        // Custom Header
+        _buildHeader(widget.cases.length, totalMembers),
+
+        // Search Field
+        Transform.translate(
+          offset: const Offset(0, -25),
+          child: _buildSearchField(),
+        ),
+
+        // List Content
         Expanded(
-          child: ListView.builder(
-            controller: _scrollController,
-            physics: const BouncingScrollPhysics(),
-            itemCount: sortedCases.length,
-            itemBuilder: (context, index) {
-              final caseData = sortedCases[index];
-              return Card(
-                color: AppColors.whiteColor,
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                elevation: 3,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-                child: ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  title: Text(caseData["الاسم"],
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text("عدد الأفراد: ${caseData["عدد الأفراد"]}"),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
+          child: AnimationLimiter(
+            child: ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+              controller: _scrollController,
+              physics: const BouncingScrollPhysics(),
+              itemCount: filteredCases.length,
+              itemBuilder: (context, index) {
+                final caseData = filteredCases[index];
+                return AnimationConfiguration.staggeredList(
+                  position: index,
+                  duration: const Duration(milliseconds: 375),
+                  child: SlideAnimation(
+                    verticalOffset: 50.0,
+                    child: FadeInAnimation(
+                      child: _buildCaseCard(caseData),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+
+        // Footer Action Button
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -5),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            top: false,
+            child: GeneralButton(
+              text: 'إضافة أسرة جديدة',
+              backgroundColor: AppColors.primaryColor,
+              textColor: AppColors.whiteColor,
+              onPressed: _addNewCase,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeader(int totalCases, int totalMembers) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 40),
+      decoration: BoxDecoration(
+        color: AppColors.primaryColor,
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryColor.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            Row(
+              children: [
+                InkWell(
+                  onTap: () => Navigator.pop(context),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.arrow_back_ios_new_rounded,
+                        color: Colors.white, size: 20),
+                  ),
+                ),
+                const Expanded(
+                  child: Text(
+                    'سجل الأسر',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'DIN',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                _buildStatItem('إجمالي الأٌسر', '$totalCases',
+                    Icons.groups_rounded, Colors.orange),
+                const SizedBox(width: 16),
+                _buildStatItem('إجمالي الأفراد', '$totalMembers',
+                    Icons.person_rounded, Colors.white),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(
+      String label, String value, IconData icon, Color color) {
+    final isWhite = color == Colors.white;
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: isWhite ? 0.15 : 1.0),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: Colors.white.withValues(alpha: isWhite ? 0.1 : 0.0)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: isWhite ? 0.2 : 0.1),
+                shape: BoxShape.circle,
+              ),
+              child:
+                  Icon(icon, color: isWhite ? Colors.white : color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: isWhite ? Colors.white : Colors.black87,
+                  ),
+                ),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: isWhite ? Colors.white70 : Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: TextField(
+          controller: _searchController,
+          onChanged: (value) => setState(() => searchQuery = value.trim()),
+          decoration: InputDecoration(
+            hintText: 'ابحث عن أسرة بالاسم أو الرقم...',
+            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+            prefixIcon: Icon(Icons.search_rounded, color: Colors.grey[400]),
+            suffixIcon: _searchController.text.isNotEmpty
+                ? IconButton(
+                    icon: Icon(Icons.clear_rounded,
+                        color: AppColors.primaryColor, size: 20),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => searchQuery = '');
+                    })
+                : null,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(vertical: 16),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCaseCard(Map<String, dynamic> caseData) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => BlocProvider.value(
+                value: BlocProvider.of<CasesCubit>(context),
+                child: CaseDetailsScreen(caseData: caseData),
+              ),
+            ),
+          ),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Case Number Badge
+                Container(
+                  width: 50,
+                  height: 50,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${caseData["الرقم"]}',
+                    style: TextStyle(
+                      color: AppColors.primaryColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      fontFamily: 'DIN',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.info, color: Colors.green),
-                        onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => BlocProvider.value(
-                                    value: BlocProvider.of<CasesCubit>(context),
-                                    child: CaseDetailsScreen(
-                                        caseData: caseData)))),
+                      Text(
+                        caseData["الاسم"],
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.edit,
-                            color: AppColors.primaryColor),
-                        onPressed: () => _editCase(caseData),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => _confirmDelete(caseData['id']),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.people_alt_outlined,
+                              size: 14, color: Colors.grey[500]),
+                          const SizedBox(width: 4),
+                          Text(
+                            "${caseData["عدد الأفراد"]} أفراد",
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-              );
-            },
+                // Actions
+                Row(
+                  children: [
+                    _buildIconButton(
+                      icon: Icons.edit_rounded,
+                      color: Colors.blue,
+                      onTap: () => _editCase(caseData),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildIconButton(
+                      icon: Icons.delete_rounded,
+                      color: Colors.red,
+                      onTap: () => _confirmDelete(caseData['id']),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: GeneralButton(
-            text: 'إضافة حالة جديدة',
-            backgroundColor: AppColors.primaryColor,
-            textColor: AppColors.whiteColor,
-            onPressed: _addNewCase,
-          ),
+      ),
+    );
+  }
+
+  Widget _buildIconButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
         ),
-        const SizedBox(height: 16),
-      ],
+        child: Icon(icon, color: color, size: 18),
+      ),
     );
   }
 }

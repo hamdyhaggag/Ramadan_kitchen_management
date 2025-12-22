@@ -40,57 +40,43 @@ class _ScreenLayoutState extends State<ScreenLayout> {
 
   @override
   Widget build(BuildContext context) {
+    // ---------------- ADMIN VIEW ----------------
+    // If Admin, show the Full Screen Dashboard Hub directly without BottomNav.
+    // The Dashboard Hub handles its own navigation to other screens.
+    if (isAdmin) {
+      return const ManageCasesScreen();
+    }
+
+    // ---------------- USER VIEW ----------------
+    // If User, show the standard Tabbed Layout with BottomNavigationBar
+    final bool hideAppBar = _currentIndex == 0;
+
     return Scaffold(
       backgroundColor: AppColors.whiteColor,
-      appBar: _currentIndex == 0
-          ? AppBar(
+      appBar: hideAppBar
+          ? null
+          : AppBar(
               title: _getAppBarTitle(),
-              centerTitle: false,
+              centerTitle: true,
               actions: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    children: [
-                      isAdmin
-                          ? IconButton(
-                              icon: const Icon(Icons.logout,
-                                  color: AppColors.blackColor),
-                              onPressed: () =>
-                                  _showCreativeLogoutDialog(context),
-                            )
-                          : Row(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.notifications_active,
-                                      color: AppColors.blackColor),
-                                  onPressed: () => Navigator.pushNamed(
-                                      context, AppRoutes.notificationScreen),
-                                ),
-                                SizedBox(
-                                  width: 2,
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.logout,
-                                      color: AppColors.blackColor),
-                                  onPressed: () =>
-                                      _showCreativeLogoutDialog(context),
-                                ),
-                              ],
-                            ),
-                    ],
+                if (!hideAppBar)
+                  IconButton(
+                    icon: const Icon(Icons.notifications_active,
+                        color: AppColors.blackColor),
+                    onPressed: () => Navigator.pushNamed(
+                        context, AppRoutes.notificationScreen),
                   ),
-                ),
+                if (!hideAppBar)
+                  IconButton(
+                    icon: const Icon(Icons.logout, color: AppColors.blackColor),
+                    onPressed: () => _showCreativeLogoutDialog(context),
+                  ),
               ],
-            )
-          : _currentIndex == 1 || _currentIndex == 2 || _currentIndex == 3
-              ? null
-              : AppBar(
-                  title: _getAppBarTitle(),
-                  centerTitle: true,
-                ),
-      body: SafeArea(
-        child: _buildCurrentScreen(),
-      ),
+            ),
+      // Remove SafeArea for Home because slivers need full screen
+      body: _currentIndex == 0
+          ? _buildCurrentScreen()
+          : SafeArea(child: _buildCurrentScreen()),
       bottomNavigationBar: _buildBottomNavigation(),
     );
   }
@@ -102,9 +88,7 @@ class _ScreenLayoutState extends State<ScreenLayout> {
       case 1:
         return StatisticsScreen();
       case 2:
-        return isAdmin
-            ? const DailyExpensesScreen()
-            : const PreviousDaysScreen();
+        return const PreviousDaysScreen();
       case 3:
         return ReportsScreen();
       default:
@@ -124,8 +108,7 @@ class _ScreenLayoutState extends State<ScreenLayout> {
       case 1:
         return const Text('الإحصائيات', style: defaultStyle);
       case 2:
-        return Text(isAdmin ? 'المصاريف' : 'الأيام السابقة',
-            style: defaultStyle);
+        return const Text('الأيام السابقة', style: defaultStyle);
       case 3:
         return const Text('التقارير', style: defaultStyle);
       default:
@@ -170,19 +153,19 @@ class _ScreenLayoutState extends State<ScreenLayout> {
         ),
         BottomNavigationBarItem(
           icon: SvgPicture.asset(
-            isAdmin ? 'assets/icons/wallet.svg' : 'assets/icons/calendar.svg',
+            'assets/icons/calendar.svg',
             colorFilter: ColorFilter.mode(AppColors.greyColor, BlendMode.srcIn),
             width: 28,
             height: 28,
           ),
           activeIcon: SvgPicture.asset(
-            isAdmin ? 'assets/icons/wallet.svg' : 'assets/icons/calendar.svg',
+            'assets/icons/calendar.svg',
             colorFilter:
                 const ColorFilter.mode(AppColors.primaryColor, BlendMode.srcIn),
             width: 28,
             height: 28,
           ),
-          label: isAdmin ? 'المصاريف' : 'الأيام السابقة',
+          label: 'الأيام السابقة',
         ),
         BottomNavigationBarItem(
           icon: SvgPicture.asset(

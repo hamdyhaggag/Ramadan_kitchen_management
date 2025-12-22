@@ -5,7 +5,7 @@ import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/core/widgets/general_button.dart';
 import 'package:ramadan_kitchen_management/features/daily_expenses/logic/expense_cubit.dart';
 import 'package:ramadan_kitchen_management/features/daily_expenses/model/expense_model.dart';
-import '../../core/routes/app_routes.dart';
+
 import '../../core/services/service_locator.dart';
 import 'add_expenses_screen.dart';
 import 'logic/expense_state.dart';
@@ -32,6 +32,26 @@ class _DailyExpensesScreenState extends State<DailyExpensesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          selectedDate != null
+              ? 'المصاريف: ${selectedDate!.toLocal().toString().split(' ')[0]}'
+              : 'مصاريف اليوم',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_month_rounded),
+            onPressed: isAdmin ? _pickDate : null,
+            color: isAdmin ? AppColors.primaryColor : Colors.grey,
+          ),
+        ],
+      ),
       body: BlocBuilder<ExpenseCubit, ExpenseState>(
         builder: (context, state) {
           if (state is ExpenseLoading) {
@@ -57,7 +77,8 @@ class _DailyExpensesScreenState extends State<DailyExpensesScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildDateHeader(),
+            // _buildDateHeader(), // Removed as it is now in AppBar
+            const SizedBox(height: 10),
             const SizedBox(height: 20),
             _buildPieChart(filteredExpenses),
             const SizedBox(height: 20),
@@ -101,44 +122,7 @@ class _DailyExpensesScreenState extends State<DailyExpensesScreen> {
     );
   }
 
-  Widget _buildDateHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          selectedDate != null
-              ? 'المصاريف بتاريخ: ${selectedDate!.toLocal().toString().split(' ')[0]}'
-              : 'مصاريف اليوم',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        Row(
-          children: [
-            IconButton(
-              icon: Icon(Icons.menu, color: AppColors.primaryColor),
-              onPressed: () async {
-                final result = await Navigator.pushNamed(
-                  context,
-                  AppRoutes.viewPublicScreen,
-                  arguments: isAdmin,
-                );
-                if (result != null && result is DateTime) {
-                  setState(() => selectedDate = result);
-                }
-              },
-            ),
-            SizedBox(
-              width: 2,
-            ),
-            IconButton(
-              icon: Icon(Icons.calendar_today,
-                  color: isAdmin ? null : Colors.grey),
-              onPressed: isAdmin ? _pickDate : null,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+  // Header moved to AppBar
 
   Widget _buildPieChart(List<Expense> filteredExpenses) {
     final totalAmount = filteredExpenses.fold(0.0, (sum, e) => sum + e.amount);
