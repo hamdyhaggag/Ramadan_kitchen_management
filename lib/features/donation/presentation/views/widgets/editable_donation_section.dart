@@ -46,6 +46,8 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
     super.initState();
     _initializeControllers();
     _loadSuggestedIngredients();
+    // Removed auto-detection and auto-fetch from initState to prevent
+    // overriding the data passed from the parent widget.
   }
 
   void _initializeControllers() {
@@ -621,6 +623,51 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
     );
   }
 
+  Future<void> _fetchDataForSelectedDate() async {
+    final startOfDay =
+        DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    final endOfDay = startOfDay
+        .add(const Duration(days: 1))
+        .subtract(const Duration(milliseconds: 1));
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('donations')
+          .where('created_at', isGreaterThanOrEqualTo: startOfDay)
+          .where('created_at', isLessThanOrEqualTo: endOfDay)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        final data = snapshot.docs.first.data();
+        setState(() {
+          _mealTitleController.text = data['mealTitle'] ?? '';
+          _mealDescriptionController.text = data['mealDescription'] ?? '';
+          _numberOfIndividualsController.text =
+              data['numberOfIndividuals']?.toString() ?? '0';
+          _existingImageUrl = data['mealImageUrl'];
+          _existingCarouselImages = data['carouselImages'] != null
+              ? List<String>.from(data['carouselImages'])
+              : [];
+          _pickedImage = null;
+          _pickedCarouselImages.clear();
+        });
+      } else {
+        // If no data for this specific day, reset fields (but keep title if needed or clear)
+        setState(() {
+          _mealTitleController.clear();
+          _mealDescriptionController.clear();
+          _numberOfIndividualsController.text = '0';
+          _existingImageUrl = null;
+          _existingCarouselImages = [];
+          _pickedImage = null;
+          _pickedCarouselImages.clear();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching data for selected date: $e');
+    }
+  }
+
   Widget _buildDateSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -629,8 +676,11 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
         const SizedBox(height: 12),
         Row(
           children: [
+            _buildDateOption(
+                'أمس', DateTime.now().subtract(const Duration(days: 1))),
+            const SizedBox(width: 8),
             _buildDateOption('اليوم', DateTime.now()),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             _buildDateOption(
                 'غداً', DateTime.now().add(const Duration(days: 1))),
           ],
@@ -646,7 +696,12 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
 
     return Expanded(
       child: InkWell(
-        onTap: () => setState(() => _selectedDate = date),
+        onTap: () {
+          setState(() {
+            _selectedDate = date;
+          });
+          _fetchDataForSelectedDate();
+        },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
@@ -662,6 +717,7 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
             style: TextStyle(
               color: isSelected ? Colors.white : Colors.black87,
               fontWeight: FontWeight.bold,
+              fontSize: 13,
             ),
           ),
         ),

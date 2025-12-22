@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
@@ -36,15 +37,31 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
             );
           }
 
-          final donation = state.donations.first;
+          final now = DateTime.now();
+          final todayStr = "${now.year}-${now.month}-${now.day}";
+
+          // Try to find today's donation first
+          var donation = state.donations.firstWhere(
+            (d) {
+              final createdAt = d['created_at'];
+              if (createdAt is Timestamp) {
+                final date = createdAt.toDate();
+                return "${date.year}-${date.month}-${date.day}" == todayStr;
+              }
+              return false;
+            },
+            orElse: () => state.donations.first,
+          );
           final contacts = (donation['contacts'] as List<dynamic>?)
                   ?.map((e) => ContactPerson.fromMap(e))
                   .toList() ??
               [];
           final imageUrl = donation['mealImageUrl'] as String?;
-          final carouselImages = donation['carouselImages'] != null
-              ? List<String>.from(donation['carouselImages'])
-              : (imageUrl != null && imageUrl.isNotEmpty ? [imageUrl] : []);
+          final List<String> carouselImages =
+              (donation['carouselImages'] != null &&
+                      (donation['carouselImages'] as List).isNotEmpty)
+                  ? List<String>.from(donation['carouselImages'])
+                  : (imageUrl != null && imageUrl.isNotEmpty ? [imageUrl] : []);
           final title = donation['mealTitle'] ?? 'وجبة اليوم';
           final description = donation['mealDescription'] ?? '';
           final individuals = donation['numberOfIndividuals'] as int? ?? 1;
