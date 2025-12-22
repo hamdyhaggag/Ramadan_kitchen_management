@@ -13,6 +13,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:dots_indicator/dots_indicator.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class UserDonationDashboard extends StatefulWidget {
   const UserDonationDashboard({super.key});
@@ -48,201 +49,238 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
           final description = donation['mealDescription'] ?? '';
           final individuals = donation['numberOfIndividuals'] as int? ?? 1;
 
-          return CustomScrollView(
-            slivers: [
-              // 1. Premium Carousel / Image Section
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-                  child: Column(
-                    children: [
-                      Container(
-                        height: 200,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.black, // Background for contain fit
-                          borderRadius: BorderRadius.circular(28),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.12),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: carouselImages.isEmpty
-                            ? Container(
-                                color: AppColors.primaryColor
-                                    .withValues(alpha: 0.1),
-                                child: const Icon(Icons.restaurant,
-                                    size: 60, color: AppColors.primaryColor),
-                              )
-                            : Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  CarouselSlider(
-                                    items: carouselImages.map((url) {
-                                      return Center(
-                                        child: CachedNetworkImage(
-                                          imageUrl: url,
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
-                                          placeholder: (context, url) =>
-                                              Shimmer.fromColors(
-                                            baseColor: Colors.grey[300]!,
-                                            highlightColor: Colors.grey[100]!,
-                                            child:
-                                                Container(color: Colors.white),
-                                          ),
-                                          errorWidget: (context, url, _) =>
-                                              Container(
-                                                  color: Colors.grey[300]),
-                                        ),
-                                      );
-                                    }).toList(),
-                                    options: CarouselOptions(
-                                      height: 200,
-                                      viewportFraction: 1.0,
-                                      autoPlay: carouselImages.length > 1,
-                                      onPageChanged: (index, reason) {
-                                        setState(() {
-                                          _currentCarouselIndex = index;
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                  // Premium Gradient Overlay
-                                  const DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [
-                                          Colors.transparent,
-                                          Colors.black87
-                                        ],
-                                        stops: [0.5, 1.0],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                      ),
-                      if (carouselImages.length > 1) ...[
-                        const SizedBox(height: 12),
-                        DotsIndicator(
-                          dotsCount: carouselImages.length,
-                          position: _currentCarouselIndex,
-                          decorator: DotsDecorator(
-                            color: Colors.grey[300]!,
-                            activeColor: AppColors.primaryColor,
-                            size: const Size.square(8.0),
-                            activeSize: const Size(24.0, 8.0),
-                            activeShape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(5.0)),
-                            spacing:
-                                const EdgeInsets.symmetric(horizontal: 4.0),
-                          ),
-                        ),
-                      ],
-                    ],
+          return Scaffold(
+            backgroundColor: const Color(0xFFF8FAFC),
+            body: CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  expandedHeight: 0,
+                  floating: true,
+                  pinned: true,
+                  backgroundColor: Colors.white,
+                  elevation: 0,
+                  surfaceTintColor: Colors.white,
+                  title: const Text(
+                    'مطبخ الخير',
+                    style: TextStyle(
+                      color: Color(0xFF1E293B),
+                      fontFamily: 'DIN',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 22,
+                    ),
                   ),
+                  centerTitle: false,
+                  actions: [
+                    Container(
+                      margin: const EdgeInsets.only(left: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Iconsax.notification,
+                            color: Color(0xFF64748B), size: 20),
+                        onPressed: () {},
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-
-              // 2. Content Body
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: AnimationLimiter(
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: AnimationConfiguration.toStaggeredList(
-                        duration: const Duration(milliseconds: 600),
-                        childAnimationBuilder: (widget) => SlideAnimation(
-                          horizontalOffset: 30.0,
-                          child: FadeInAnimation(child: widget),
-                        ),
-                        children: [
-                          // 1. Meal Info Section
-                          _buildInfoCard(
-                            context,
-                            title: title,
-                            description: description,
-                          ),
-                          const SizedBox(height: 20),
-
-                          // 3. Stats Section
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildStatCard(
-                                  context,
-                                  label: 'عدد الأفراد',
-                                  value: '$individuals',
-                                  icon: Iconsax.people,
-                                  color: Colors.orange,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: BlocBuilder<ExpenseCubit, ExpenseState>(
-                                  builder: (context, expenseState) {
-                                    double costPerPerson = 0.0;
-                                    if (expenseState is ExpenseLoaded) {
-                                      final today = DateTime.now()
-                                          .toIso8601String()
-                                          .split('T')[0];
-                                      double totalExpenses = expenseState
-                                          .expenses
-                                          .where((e) => e.date == today)
-                                          .fold(
-                                              0.0, (sum, e) => sum + e.amount);
-                                      if (individuals > 0) {
-                                        costPerPerson =
-                                            totalExpenses / individuals;
-                                      }
-                                    }
-                                    return _buildStatCard(
-                                      context,
-                                      label: 'تكلفة الفرد',
-                                      value: costPerPerson > 0
-                                          ? '${costPerPerson.toStringAsFixed(1)} ج'
-                                          : '---',
-                                      icon: Iconsax.money_send,
-                                      color: Colors.green,
-                                    );
-                                  },
-                                ),
+                      children: [
+                        Container(
+                          height: 200,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            borderRadius: BorderRadius.circular(32),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.15),
+                                blurRadius: 25,
+                                offset: const Offset(0, 12),
                               ),
                             ],
                           ),
-
-                          const SizedBox(height: 24),
-                          const Text(
-                            'شاركنا الأثر والخير',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'DIN',
-                              color: Color(0xFF1E293B),
+                          clipBehavior: Clip.antiAlias,
+                          child: carouselImages.isEmpty
+                              ? Container(
+                                  color: AppColors.primaryColor
+                                      .withValues(alpha: 0.1),
+                                  child: const Icon(Icons.restaurant,
+                                      size: 60, color: AppColors.primaryColor),
+                                )
+                              : Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    CarouselSlider(
+                                      items: carouselImages.map((url) {
+                                        return Center(
+                                          child: CachedNetworkImage(
+                                            imageUrl: url,
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                            placeholder: (context, url) =>
+                                                Shimmer.fromColors(
+                                              baseColor: Colors.grey[300]!,
+                                              highlightColor: Colors.grey[100]!,
+                                              child: Container(
+                                                  color: Colors.white),
+                                            ),
+                                            errorWidget: (context, url, _) =>
+                                                Container(
+                                                    color: Colors.grey[300]),
+                                          ),
+                                        );
+                                      }).toList(),
+                                      options: CarouselOptions(
+                                        height: 200,
+                                        viewportFraction: 1.0,
+                                        autoPlay: carouselImages.length > 1,
+                                        onPageChanged: (index, reason) {
+                                          setState(() {
+                                            _currentCarouselIndex = index;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                    const DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Colors.transparent,
+                                            Color(
+                                                0x99000000), // black with 0.6 opacity (approx)
+                                          ],
+                                          stops: [0.6, 1.0],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                        if (carouselImages.length > 1) ...[
+                          const SizedBox(height: 12),
+                          DotsIndicator(
+                            dotsCount: carouselImages.length,
+                            position: _currentCarouselIndex,
+                            decorator: DotsDecorator(
+                              color: Colors.grey[200]!,
+                              activeColor: AppColors.primaryColor,
+                              size: const Size.square(6.0),
+                              activeSize: const Size(18.0, 6.0),
+                              activeShape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(5.0)),
+                              spacing:
+                                  const EdgeInsets.symmetric(horizontal: 4.0),
                             ),
                           ),
-                          const SizedBox(height: 12),
-
-                          // 4. Actionable Help Cards
-                          _buildActionCards(context, contacts),
-
-                          // Space for floating button
-                          const SizedBox(height: 100),
                         ],
+                      ],
+                    ),
+                  ),
+                ),
+
+                // 2. Content Body
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: AnimationLimiter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: AnimationConfiguration.toStaggeredList(
+                          duration: const Duration(milliseconds: 600),
+                          childAnimationBuilder: (widget) => SlideAnimation(
+                            horizontalOffset: 30.0,
+                            child: FadeInAnimation(child: widget),
+                          ),
+                          children: [
+                            // 1. Today's Stats (Core Context)
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildStatCard(
+                                    context,
+                                    label: 'عدد الأفراد',
+                                    value: '$individuals',
+                                    icon: Iconsax.people,
+                                    color: Colors.orange,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child:
+                                      BlocBuilder<ExpenseCubit, ExpenseState>(
+                                    builder: (context, expenseState) {
+                                      double costPerPerson = 0.0;
+                                      if (expenseState is ExpenseLoaded) {
+                                        final today = DateTime.now()
+                                            .toIso8601String()
+                                            .split('T')[0];
+                                        double totalExpenses = expenseState
+                                            .expenses
+                                            .where((e) => e.date == today)
+                                            .fold(0.0,
+                                                (sum, e) => sum + e.amount);
+                                        if (individuals > 0) {
+                                          costPerPerson =
+                                              totalExpenses / individuals;
+                                        }
+                                      }
+                                      return _buildStatCard(
+                                        context,
+                                        label: 'تكلفة الفرد',
+                                        value: costPerPerson > 0
+                                            ? '${costPerPerson.toStringAsFixed(1)} ج'
+                                            : '---',
+                                        icon: Iconsax.money_send,
+                                        color: Colors.green,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+
+                            // 2. Primary Action (Conversion Point)
+                            _buildActionCards(context, contacts),
+                            const SizedBox(height: 24),
+
+                            // 3. Meal Info (Detailed Context)
+                            _buildInfoCard(
+                              context,
+                              title: title,
+                              description: description,
+                            ),
+                            const SizedBox(height: 24),
+
+                            // 4. Total Impact (Social Proof/Trust)
+                            _buildTotalImpact(state.donations),
+                            const SizedBox(height: 24),
+
+                            // 5. Yesterday's Highlight (Confirmation of Action)
+                            if (state.donations.length > 1)
+                              _buildYesterdayHighlight(state.donations[1]),
+                            const SizedBox(height: 24),
+
+                            // 6. Quick Support
+                            _buildSupportCard(),
+
+                            // Space at bottom
+                            const SizedBox(height: 40),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         } else if (state is DonationError) {
           return Scaffold(body: Center(child: Text(state.message)));
@@ -313,37 +351,44 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
       required IconData icon,
       required Color color}) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey.withOpacity(0.08)),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.04),
-            offset: const Offset(0, 2),
-            blurRadius: 12,
+            color: Colors.black.withOpacity(0.03),
+            offset: const Offset(0, 8),
+            blurRadius: 20,
           ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 16),
           Text(
             value,
             style: const TextStyle(
-                fontSize: 22,
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
                 fontFamily: 'DIN',
-                color: Color(0xFF1E293B)),
+                color: Color(0xFF0F172A)),
           ),
           Text(
             label,
             style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey[500],
-                fontWeight: FontWeight.w500),
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -475,6 +520,301 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
               ),
             ),
             Icon(Iconsax.arrow_right_3, color: Colors.grey[300], size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTotalImpact(List<dynamic> donations) {
+    // Basic aggregation for display
+    int totalIndividuals = 0;
+    for (var d in donations) {
+      totalIndividuals += (d['numberOfIndividuals'] as int? ?? 0);
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            offset: const Offset(0, 8),
+            blurRadius: 20,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const Text(
+            'أثرنا التراكمي',
+            style: TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'DIN',
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildImpactMetric(
+                label: 'إجمالي الوجبات',
+                value: totalIndividuals.toString(),
+                icon: Iconsax.box_2,
+              ),
+              Container(width: 1, height: 40, color: Colors.grey[100]),
+              _buildImpactMetric(
+                label: 'أيام العطاء',
+                value: donations.length.toString(),
+                icon: Iconsax.calendar_1,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImpactMetric(
+      {required String label, required String value, required IconData icon}) {
+    return Column(
+      children: [
+        Icon(icon, color: AppColors.primaryColor, size: 28),
+        const SizedBox(height: 12),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Color(0xFF0F172A),
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'DIN',
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildYesterdayHighlight(dynamic yesterdayData) {
+    final imageUrl = yesterdayData['mealImageUrl'] as String?;
+    final title = yesterdayData['mealTitle'] ?? '';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'لمحة من وجبة أمس',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'DIN',
+                color: Color(0xFF1E293B),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'سِجل العطاء',
+                style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: () {
+            if (imageUrl != null && imageUrl.isNotEmpty) {
+              _showFullScreenImage(context, imageUrl, title);
+            }
+          },
+          child: Container(
+            height: 160,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(32),
+              image: imageUrl != null && imageUrl.isNotEmpty
+                  ? DecorationImage(
+                      image: CachedNetworkImageProvider(imageUrl),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+              color: Colors.grey[200],
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(32),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.7)
+                  ],
+                ),
+              ),
+              padding: const EdgeInsets.all(20),
+              alignment: Alignment.bottomRight,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        fontFamily: 'DIN',
+                      ),
+                    ),
+                  ),
+                  const Icon(Iconsax.arrow_right_3,
+                      color: Colors.white, size: 18),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSupportCard() {
+    return InkWell(
+      onTap: _launchWhatsApp,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.primaryColor.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(24),
+          border:
+              Border.all(color: AppColors.primaryColor.withValues(alpha: 0.1)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(Icons.support_agent,
+                  color: Colors.white, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'عندك استفسار؟',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      fontFamily: 'DIN',
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                  Text(
+                    'تواصل معنا مباشرة عبر واتساب',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.primaryColor.withValues(alpha: 0.8),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Iconsax.messages,
+                color: AppColors.primaryColor, size: 28),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _launchWhatsApp() async {
+    final phoneNumber = "+201033420527";
+    final whatsappUrl = Uri.parse("https://wa.me/$phoneNumber");
+    if (await canLaunchUrl(whatsappUrl)) {
+      await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _showFullScreenImage(
+      BuildContext context, String imageUrl, String title) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            InteractiveViewer(
+              panEnabled: true,
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.contain,
+                width: MediaQuery.of(context).size.width,
+                height: MediaQuery.of(context).size.height,
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: CircleAvatar(
+                backgroundColor: Colors.black.withOpacity(0.5),
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 40,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'DIN',
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
