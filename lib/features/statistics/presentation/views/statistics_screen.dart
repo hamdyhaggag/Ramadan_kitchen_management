@@ -25,6 +25,7 @@ class StatisticsScreen extends StatelessWidget {
         (initialTabIndex == 0 ? 'إحصائيات التوزيع' : 'إجمالي الإحصائيات');
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FE),
       // Add AppBar specifically for Admin views to provide context and back navigation
       appBar: isAdmin
           ? AppBar(
@@ -112,133 +113,185 @@ class _StatisticsContentState extends State<_StatisticsContent> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       child: Column(
         children: [
+          // Main Chart Card
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.grey.withValues(alpha: 0.1),
-                    spreadRadius: 8,
-                    blurRadius: 12,
-                    offset: const Offset(0, 4))
+                  color: const Color(0xFF1E293B).withValues(alpha: 0.05),
+                  spreadRadius: 0,
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                )
               ],
             ),
             child: Column(
               children: [
+                Text(
+                  'نسبة الإنجاز اليومي',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                ),
+                const SizedBox(height: 30),
                 SizedBox(
-                  height: 185,
-                  child: PieChart(
-                    PieChartData(
-                      sections: [
-                        PieChartSectionData(
-                          value: totalCheckedIndividuals.toDouble(),
-                          color: AppColors.customColors[0],
-                          radius: 45,
-                          title: '$totalCheckedIndividuals',
-                          titleStyle: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white),
+                  height: 220,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      PieChart(
+                        PieChartData(
+                          sections: [
+                            PieChartSectionData(
+                              value: totalCheckedIndividuals.toDouble(),
+                              color: const Color(0xFF10B981), // Emerald Green
+                              radius: 30,
+                              showTitle: false,
+                            ),
+                            PieChartSectionData(
+                              value: totalUndistributed.toDouble(),
+                              color: const Color(0xFFF1F5F9), // Slate 100
+                              radius: 25,
+                              showTitle: false,
+                            ),
+                          ],
+                          centerSpaceRadius: 70,
+                          sectionsSpace: 0,
+                          startDegreeOffset: -90,
+                          borderData: FlBorderData(show: false),
                         ),
-                        PieChartSectionData(
-                          value: totalUndistributed.toDouble(),
-                          color: Colors.blue[100],
-                          radius: 45,
-                          title: '$totalUndistributed',
-                          titleStyle: TextStyle(
-                              fontSize: 16,
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${progressPercentage.toStringAsFixed(1)}%',
+                            style: const TextStyle(
+                              fontSize: 32,
                               fontWeight: FontWeight.bold,
-                              color: Colors.grey[800]),
-                        ),
-                      ],
-                      centerSpaceRadius: 56,
-                      sectionsSpace: 2,
-                      startDegreeOffset: -90,
-                      borderData: FlBorderData(show: false),
-                      centerSpaceColor: Colors.transparent,
-                    ),
+                              color: Color(0xFF10B981),
+                            ),
+                          ),
+                          Text(
+                            'مكتمل',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 30),
+                // Legend
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                            width: 16,
-                            height: 16,
-                            decoration: BoxDecoration(
-                                color: AppColors.primaryColor,
-                                shape: BoxShape.circle)),
-                        const SizedBox(width: 8),
-                        Text('تم التجهيز',
-                            style: TextStyle(
-                                color: Colors.grey[700],
-                                fontWeight: FontWeight.w500)),
-                      ],
-                    ),
+                    _buildLegendItem(
+                        color: const Color(0xFF10B981), label: 'تم التجهيز'),
                     const SizedBox(width: 24),
-                    Row(
-                      children: [
-                        Container(
-                            width: 16,
-                            height: 16,
-                            decoration: BoxDecoration(
-                                color: Colors.blue[100]!,
-                                shape: BoxShape.circle)),
-                        const SizedBox(width: 8),
-                        Text('قيد الانتظار',
-                            style: TextStyle(
-                                color: Colors.grey[700],
-                                fontWeight: FontWeight.w500)),
-                      ],
-                    ),
+                    _buildLegendItem(
+                        color: const Color(0xFFCBD5E1), label: 'قيد الانتظار'),
                   ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 32),
-          GridView(
+          const SizedBox(height: 24),
+
+          // Detail Cards Grid
+          GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 1.0,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8),
-            padding: const EdgeInsets.only(bottom: 16),
+            crossAxisCount: 2,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            childAspectRatio: 0.85, // Taller cards
             children: [
               _buildMetricCard(
-                  title: 'إجمالي الأفراد',
-                  value: totalIndividuals,
-                  icon: Icons.people_alt_rounded,
-                  color: Colors.purple.shade200),
+                title: 'إجمالي الأفراد',
+                value: totalIndividuals,
+                icon: Icons.groups_rounded,
+                color: const Color(0xFF6366F1), // Indigo
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF818CF8)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
               _buildMetricCard(
-                  title: 'تم التجهيز',
-                  value: totalCheckedIndividuals,
-                  icon: Icons.check_circle_rounded,
-                  color: Colors.green),
+                title: 'تم التجهيز',
+                value: totalCheckedIndividuals,
+                icon: Icons.check_circle_outline_rounded,
+                color: const Color(0xFF10B981), // Emerald
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF10B981), Color(0xFF34D399)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
               _buildMetricCard(
-                  title: 'النسبة المئوية',
-                  value: '${progressPercentage.toStringAsFixed(1)}%',
-                  icon: Icons.percent_rounded,
-                  color: Colors.blue.shade400),
+                title: 'المتبقي',
+                value: totalUndistributed,
+                icon: Icons.hourglass_empty_rounded,
+                color: const Color(0xFFF59E0B), // Amber
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
               _buildMetricCard(
-                  title: 'المتبقي',
-                  value: totalUndistributed,
-                  icon: Icons.pending_actions_rounded,
-                  color: Colors.orange.shade800),
+                title: 'نسبة الإنجاز',
+                value: '${progressPercentage.toStringAsFixed(0)}%',
+                icon: Icons.analytics_rounded,
+                color: const Color(0xFFEC4899), // Pink
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFEC4899), Color(0xFFF472B6)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
             ],
           ),
+          const SizedBox(height: 24),
         ],
       ),
+    );
+  }
+
+  Widget _buildLegendItem({required Color color, required String label}) {
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 
@@ -247,64 +300,100 @@ class _StatisticsContentState extends State<_StatisticsContent> {
     required dynamic value,
     required IconData icon,
     required Color color,
+    required Gradient gradient,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            spreadRadius: 2,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: color.withValues(alpha: 0.15),
+            offset: const Offset(0, 8),
+            blurRadius: 15,
+            spreadRadius: -4,
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color.withValues(alpha: 0.1),
-            ),
-            child: Center(
-              child: Icon(
-                icon,
-                color: color,
-                size: 24,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            // Decorative Circle 1
+            Positioned(
+              top: -20,
+              right: -20,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.05),
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Column(
-            children: [
-              Center(
-                child: Text(
-                  '$value',
-                  style: TextStyle(
-                    fontSize: 35,
-                    fontWeight: FontWeight.bold,
-                    color: color,
+            // Decorative Circle 2
+            Positioned(
+              bottom: -20,
+              left: -20,
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.05),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      gradient: gradient,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        )
+                      ],
+                    ),
+                    child: Icon(icon, color: Colors.white, size: 22),
                   ),
-                ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$value',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.black87,
+                          fontFamily: 'DIN',
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

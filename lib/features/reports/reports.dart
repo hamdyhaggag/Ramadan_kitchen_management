@@ -1,9 +1,8 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
@@ -11,6 +10,7 @@ import 'package:ramadan_kitchen_management/features/auth/data/repos/auth_repo.da
 import 'package:ramadan_kitchen_management/features/daily_expenses/logic/expense_cubit.dart';
 import 'package:ramadan_kitchen_management/features/daily_expenses/logic/expense_state.dart';
 import 'package:ramadan_kitchen_management/features/daily_expenses/model/expense_model.dart';
+import 'package:iconsax/iconsax.dart';
 
 import '../../core/services/service_locator.dart';
 
@@ -20,6 +20,30 @@ String formatDateString(String dateString) {
         .format(DateTime.parse(dateString));
   } catch (e) {
     return 'تاريخ غير صالح';
+  }
+}
+
+String formatDateDay(String dateString) {
+  try {
+    return DateFormat('d', 'ar').format(DateTime.parse(dateString));
+  } catch (e) {
+    return '-';
+  }
+}
+
+String formatDateMonthYear(String dateString) {
+  try {
+    return DateFormat('MMMM yyyy', 'ar').format(DateTime.parse(dateString));
+  } catch (e) {
+    return '-';
+  }
+}
+
+String formatDayName(String dateString) {
+  try {
+    return DateFormat('EEEE', 'ar').format(DateTime.parse(dateString));
+  } catch (e) {
+    return '-';
   }
 }
 
@@ -33,7 +57,7 @@ class ReportsScreen extends StatefulWidget {
 class ReportsScreenState extends State<ReportsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _isAscending = true;
+  bool _isAscending = false; // Default to newest first
   late pw.Font arabicFont;
 
   @override
@@ -82,214 +106,224 @@ class ReportsScreenState extends State<ReportsScreen>
           : DateTime.parse(b.key).compareTo(DateTime.parse(a.key)));
 
     if (sortedEntries.isEmpty) {
-      return const Center(
-        child: Text('لا توجد مصروفات مسجلة', style: TextStyle(fontSize: 16)),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Iconsax.empty_wallet, size: 64, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            const Text('لم يتم تسجيل أي مصروفات',
+                style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500)),
+          ],
+        ),
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
       child: Column(
         children: [
+          // Elegant Header Summary
           Container(
-            padding: const EdgeInsets.all(16),
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
             decoration: BoxDecoration(
-              color: AppColors.primaryColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.white,
+              borderRadius:
+                  const BorderRadius.vertical(bottom: Radius.circular(32)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Column(
               children: [
-                const Text(
-                  'إجمالي المصروفات حتى الآن : ',
+                Text(
+                  'إجمالي المصروفات',
                   style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.blackColor,
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                Text(
-                  '${total.toStringAsFixed(0)} جنيه',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primaryColor,
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      NumberFormat('#,###').format(total),
+                      style: const TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.blackColor,
+                        fontFamily: 'DIN',
+                        height: 1,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${sortedEntries.length} يوم',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryColor,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ListView.builder(
-              itemCount: sortedEntries.length,
-              itemBuilder: (context, index) {
-                final entry = sortedEntries[index];
-                final total = entry.value.fold(0.0, (sum, e) => sum + e.amount);
-                return Card(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15)),
-                  elevation: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    title: Row(
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_today,
-                                color: AppColors.primaryColor.withAlpha(200),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  formatDateString(entry.key),
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+
+          const SizedBox(height: 24),
+
+          // List Items
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              children: sortedEntries.map((entry) {
+                final dayTotal =
+                    entry.value.fold(0.0, (sum, e) => sum + e.amount);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: InkWell(
+                    onTap: () => _showDetailsBottomSheet(
+                        context, entry.key, entry.value, dayTotal),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.grey[100]!),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
-                        ),
-                        Expanded(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Flexible(
-                                flex: 1,
-                                child: Text(
-                                  '${total.toStringAsFixed(0)} جنيه',
-                                  style: TextStyle(
-                                    color: AppColors.primaryColor,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    onTap: () => showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      builder: (_) => SafeArea(
-                        child: SingleChildScrollView(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          // Date Display
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[50],
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.grey[200]!),
+                            ),
                             child: Column(
-                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(formatDateString(entry.key),
-                                    style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold)),
-                                const SizedBox(height: 12),
-                                ...entry.value.map((expense) => ListTile(
-                                      contentPadding: EdgeInsets.zero,
-                                      title: Text(expense.product,
-                                          style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600)),
-                                      subtitle: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const SizedBox(height: 4),
-                                          Text(
-                                              'المبلغ: ${expense.amount.toStringAsFixed(0)} ج.م',
-                                              style: TextStyle(
-                                                  color: Colors.grey[700],
-                                                  fontSize: 13)),
-                                        ],
-                                      ),
-                                      leading: CircleAvatar(
-                                        radius: 20,
-                                        backgroundColor: AppColors.primaryColor
-                                            .withAlpha(200),
-                                        child: const Icon(Icons.attach_money,
-                                            color: Colors.white),
-                                      ),
-                                      trailing: SizedBox(
-                                        width: 80,
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.end,
-                                          children: [
-                                            Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.end,
-                                              children: [
-                                                Icon(
-                                                  expense.paid
-                                                      ? Icons.check_circle
-                                                      : Icons.cancel,
-                                                  color: expense.paid
-                                                      ? Colors.green
-                                                      : Colors.red,
-                                                  size: 16,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  expense.paid
-                                                      ? 'تم الدفع'
-                                                      : 'لم يتم الدفع',
-                                                  style: TextStyle(
-                                                    color: expense.paid
-                                                        ? Colors.green
-                                                        : Colors.red,
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    )),
-                                Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text(
-                                        'المجموع اليومي:',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      Text(
-                                        '${total.toStringAsFixed(0)} جنيه',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                          color: AppColors.primaryColor,
-                                        ),
-                                      ),
-                                    ],
+                                Text(
+                                  formatDateDay(entry.key),
+                                  style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.blackColor,
+                                    height: 1,
+                                    fontFamily: 'DIN',
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  formatDayName(entry.key),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey[600],
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ),
+                          const SizedBox(width: 20),
+
+                          // Info
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  formatDateMonthYear(entry.key),
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.blackColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Icon(Iconsax.bag_2,
+                                        size: 14, color: Colors.grey[400]),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${entry.value.length} عملية شراء',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey[500],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Amount
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                NumberFormat('#,###').format(dayTotal),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primaryColor,
+                                  fontFamily: 'DIN',
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'ج.م',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 );
-              },
+              }).toList(),
             ),
           ),
+          const SizedBox(height: 80), // Fab space mostly
         ],
       ),
     );
@@ -302,134 +336,118 @@ class ReportsScreenState extends State<ReportsScreen>
           ? a.value.compareTo(b.value)
           : b.value.compareTo(a.value));
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        children: [
-          Expanded(
-            child: sortedEntries.isEmpty
-                ? const Center(
-                    child: Text('لا توجد كميات مسجلة',
-                        style: TextStyle(fontSize: 16, color: Colors.grey)),
-                  )
-                : ListView.separated(
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: sortedEntries.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final entry = sortedEntries[index];
-                      final expense =
-                          expenses.firstWhere((e) => e.product == entry.key);
+    if (sortedEntries.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Iconsax.box_remove, size: 64, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            const Text('لا توجد بيانات كميات',
+                style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500)),
+          ],
+        ),
+      );
+    }
 
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withValues(alpha: 0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          leading: Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  _getUnitTypeColor(expense.unitType)
-                                      .withValues(alpha: 0.8),
-                                  _getUnitTypeColor(expense.unitType),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black26,
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Icon(
-                                Icons.production_quantity_limits_rounded,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                          title: Row(
-                            children: [
-                              Expanded(
-                                  child: Text(entry.key,
-                                      style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600))),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryColor
-                                      .withValues(alpha: 0.05),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  '${_getPurchaseCount(expenses, entry.key)} مشتريات',
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.primaryColor,
-                                      fontWeight: FontWeight.w500),
-                                ),
-                              ),
-                            ],
-                          ),
-                          trailing: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                entry.value.toStringAsFixed(0),
-                                style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primaryColor),
-                              ),
-                              Text(
-                                expense.unitType,
-                                style: TextStyle(
-                                    fontSize: 12, color: Colors.grey.shade600),
-                              ),
-                            ],
-                          ),
-                          onTap: () => _showQuantityDetails(
-                              context, entry.key, entry.value, expenses),
-                        ),
-                      );
-                    },
-                  ),
+    return ListView.separated(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      itemCount: sortedEntries.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final entry = sortedEntries[index];
+        final expense = expenses.firstWhere((e) => e.product == entry.key);
+
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey[100]!),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
+          child: ListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color:
+                    _getUnitTypeColor(expense.unitType).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Iconsax.box,
+                color: _getUnitTypeColor(expense.unitType),
+                size: 22,
+              ),
+            ),
+            title: Text(entry.key,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.blackColor,
+                )),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Text(
+                '${_getPurchaseCount(expenses, entry.key)} مرات شراء',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[500],
+                    fontWeight: FontWeight.w500),
+              ),
+            ),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  entry.value.toStringAsFixed(1).replaceAll('.0', ''),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.blackColor,
+                    fontFamily: 'DIN',
+                  ),
+                ),
+                Text(
+                  expense.unitType,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[500],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            onTap: () =>
+                _showQuantityDetails(context, entry.key, entry.value, expenses),
+          ),
+        );
+      },
     );
   }
 
   Color _getUnitTypeColor(String unitType) {
     switch (unitType) {
       case 'كجم':
-        return Colors.green.shade400;
+        return const Color(0xFF10B981); // Emerald Green
       case 'لتر':
-        return Colors.blue.shade400;
+        return const Color(0xFF3B82F6); // Blue
       case 'علبة':
-        return Colors.orange.shade400;
+        return const Color(0xFFF59E0B); // Amber
+      case 'عدد':
+        return const Color(0xFF8B5CF6); // Violet
       default:
         return AppColors.primaryColor;
     }
@@ -455,7 +473,7 @@ class ReportsScreenState extends State<ReportsScreen>
         build: (context) => [
           pw.Header(
             level: 0,
-            child: pw.Text('تقرير يومي',
+            child: pw.Text('تقرير المصروفات',
                 style: pw.TextStyle(font: arabicFont, fontSize: 24),
                 textDirection: pw.TextDirection.rtl),
           ),
@@ -464,83 +482,73 @@ class ReportsScreenState extends State<ReportsScreen>
             return pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text(
-                  'تاريخ: ${formatDateString(entry.key)}',
-                  style: pw.TextStyle(
-                      font: arabicFont,
-                      fontWeight: pw.FontWeight.bold,
-                      fontSize: 18),
-                  textDirection: pw.TextDirection.rtl,
+                pw.Container(
+                  color: PdfColors.grey100,
+                  padding: const pw.EdgeInsets.all(10),
+                  child: pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text(
+                        '${total.toStringAsFixed(0)} ج.م',
+                        style: pw.TextStyle(
+                            font: arabicFont, fontWeight: pw.FontWeight.bold),
+                        textDirection: pw.TextDirection.rtl,
+                      ),
+                      pw.Text(
+                        formatDateString(entry.key),
+                        style: pw.TextStyle(
+                            font: arabicFont, fontWeight: pw.FontWeight.bold),
+                        textDirection: pw.TextDirection.rtl,
+                      ),
+                    ],
+                  ),
                 ),
                 pw.SizedBox(height: 10),
                 pw.Table(
-                  border: pw.TableBorder.all(),
+                  border: pw.TableBorder.all(color: PdfColors.grey300),
                   columnWidths: {
                     0: const pw.FlexColumnWidth(2),
                     1: const pw.FlexColumnWidth(1),
-                    2: const pw.FlexColumnWidth(1.5),
+                    2: const pw.FlexColumnWidth(1),
                   },
                   children: [
-                    pw.TableRow(
-                      children: ['البند', 'المبلغ', 'حالة الدفع']
-                          .map((text) => pw.Padding(
-                                padding: const pw.EdgeInsets.all(8),
-                                child: pw.Text(text,
-                                    style: pw.TextStyle(
-                                        font: arabicFont,
-                                        fontWeight: pw.FontWeight.bold),
-                                    textDirection: pw.TextDirection.rtl,
-                                    textAlign: pw.TextAlign.right),
-                              ))
-                          .toList(),
-                    ),
                     ...entry.value.map((expense) => pw.TableRow(
                           children: [
                             pw.Padding(
-                              padding: const pw.EdgeInsets.all(8),
+                              padding: const pw.EdgeInsets.all(6),
                               child: pw.Text(expense.product,
                                   style: pw.TextStyle(font: arabicFont),
                                   textDirection: pw.TextDirection.rtl,
                                   textAlign: pw.TextAlign.right),
                             ),
                             pw.Padding(
-                              padding: const pw.EdgeInsets.all(8),
-                              child: pw.Text(
-                                  '${expense.amount.toStringAsFixed(0)} ج.م',
+                              padding: const pw.EdgeInsets.all(6),
+                              child: pw.Text(expense.amount.toStringAsFixed(0),
                                   style: pw.TextStyle(font: arabicFont),
                                   textDirection: pw.TextDirection.rtl,
-                                  textAlign: pw.TextAlign.right),
+                                  textAlign: pw.TextAlign.center),
                             ),
                             pw.Padding(
-                              padding: const pw.EdgeInsets.all(8),
+                              padding: const pw.EdgeInsets.all(6),
                               child: pw.Text(
-                                  expense.paid ? 'تم الدفع' : 'غير مدفوع',
+                                  '${expense.quantity} ${expense.unitType}',
                                   style: pw.TextStyle(font: arabicFont),
                                   textDirection: pw.TextDirection.rtl,
-                                  textAlign: pw.TextAlign.right),
+                                  textAlign: pw.TextAlign.center),
                             ),
                           ],
                         )),
                   ],
                 ),
-                pw.SizedBox(height: 10),
-                pw.Align(
-                  alignment: pw.Alignment.centerLeft,
-                  child: pw.Text('المجموع: ${total.toStringAsFixed(2)} ج.م',
-                      style: pw.TextStyle(
-                          font: arabicFont,
-                          fontWeight: pw.FontWeight.bold,
-                          fontSize: 16),
-                      textDirection: pw.TextDirection.rtl),
-                ),
-                pw.SizedBox(height: 20),
+                pw.SizedBox(height: 15),
               ],
             );
-          }).toList(),
+          }),
           pw.SizedBox(height: 20),
           pw.Text(
-              'تاريخ التصدير: ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}',
-              style: pw.TextStyle(font: arabicFont),
+              'تم الاستخراج: ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}',
+              style: pw.TextStyle(
+                  font: arabicFont, fontSize: 10, color: PdfColors.grey600),
               textDirection: pw.TextDirection.rtl),
         ],
       ),
@@ -549,7 +557,7 @@ class ReportsScreenState extends State<ReportsScreen>
     final bytes = await pdf.save();
     await Printing.sharePdf(
       bytes: bytes,
-      filename: 'daily_report_${DateTime.now().toIso8601String()}.pdf',
+      filename: 'Expense_Report_${DateTime.now().toIso8601String()}.pdf',
     );
   }
 
@@ -557,11 +565,22 @@ class ReportsScreenState extends State<ReportsScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('تصدير التقرير'),
-        content: const Text('تصدير التقرير اليومي'),
+        content: const Text('هل تريد تصدير التقرير اليومي كملف PDF؟'),
         actions: [
           TextButton(
-            child: const Text('تصدير'),
+            child: const Text('إلغاء'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryColor,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            child:
+                const Text('تصدير PDF', style: TextStyle(color: Colors.white)),
             onPressed: () {
               Navigator.pop(context);
               _generatePdfReport(context);
@@ -579,30 +598,38 @@ class ReportsScreenState extends State<ReportsScreen>
     return DefaultTabController(
       length: 2,
       child: Scaffold(
+        backgroundColor: Colors.white,
         appBar: AppBar(
-          title: const Text('التقارير اليومية'),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.picture_as_pdf,
-                  color: isAdmin ? null : Colors.grey),
-              onPressed: () {
-                if (isAdmin) {
-                  _showExportDialog(context);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('لا تمتلك الصلاحية لتصدير التقارير'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              },
+          backgroundColor: Colors.white,
+          elevation: 0,
+          centerTitle: true,
+          title: const Text(
+            'التقارير اليومية',
+            style: TextStyle(
+              color: AppColors.blackColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
             ),
+          ),
+          leading: IconButton(
+            icon: const Icon(Iconsax.arrow_right_3, color: Colors.black),
+            onPressed: () => Navigator.pop(context),
+          ),
+          actions: [
+            if (isAdmin)
+              IconButton(
+                icon: const Icon(Iconsax.document_download,
+                    color: AppColors.primaryColor),
+                onPressed: () => _showExportDialog(context),
+              ),
             IconButton(
               icon: Icon(
-                  _isAscending ? Icons.arrow_upward : Icons.arrow_downward),
+                _isAscending ? Iconsax.sort : Iconsax.sort,
+                color: Colors.black,
+              ),
               onPressed: () => setState(() => _isAscending = !_isAscending),
             ),
+            const SizedBox(width: 8),
           ],
         ),
         body: BlocBuilder<ExpenseCubit, ExpenseState>(
@@ -612,8 +639,9 @@ class ReportsScreenState extends State<ReportsScreen>
                   child:
                       CircularProgressIndicator(color: AppColors.primaryColor));
             }
-            if (state is ExpenseError)
+            if (state is ExpenseError) {
               return Center(child: Text(state.message));
+            }
             if (state is ExpenseLoaded) {
               return Column(
                 children: [
@@ -639,6 +667,7 @@ class ReportsScreenState extends State<ReportsScreen>
                         fontWeight: FontWeight.w500,
                       ),
                       indicatorColor: AppColors.primaryColor,
+                      labelColor: AppColors.primaryColor,
                       tabs: const [
                         Tab(text: 'جميع المصروفات'),
                         Tab(text: 'الكميات'),
@@ -665,63 +694,284 @@ class ReportsScreenState extends State<ReportsScreen>
   }
 }
 
-void _showQuantityDetails(BuildContext context, String product, double quantity,
-    List<Expense> expenses) {
-  final productExpenses = expenses.where((e) => e.product == product).toList();
-  final purchaseDates = productExpenses.map((e) => e.date).toSet().toList();
-
-  showDialog(
+void _showDetailsBottomSheet(BuildContext context, String dateKey,
+    List<Expense> expenses, double total) {
+  showModalBottomSheet(
     context: context,
-    builder: (context) => AlertDialog(
-      titlePadding: const EdgeInsets.all(16),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-      title: Row(
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      child: Column(
         children: [
-          Icon(Icons.inventory, color: AppColors.primaryColor),
-          const SizedBox(width: 12),
-          Text(product, style: const TextStyle(fontSize: 20)),
+          // Handle
+          const SizedBox(height: 16),
+          Container(
+            width: 48,
+            height: 5,
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        formatDayName(dateKey),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${formatDateDay(dateKey)} ${formatDateMonthYear(dateKey)}',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.blackColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    NumberFormat('#,###').format(total),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primaryColor,
+                      fontFamily: 'DIN',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const Divider(height: 1),
+
+          // List
+          Expanded(
+            child: ListView.separated(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.all(24),
+              itemCount: expenses.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              itemBuilder: (context, index) {
+                final expense = expenses[index];
+                return Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.grey[100]!),
+                      ),
+                      child: Icon(
+                        Iconsax.bag_2,
+                        size: 22,
+                        color: Colors.grey[400],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            expense.product,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.blackColor,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${expense.quantity} ${expense.unitType}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[500],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      expense.amount.toStringAsFixed(0),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'DIN',
+                        color: AppColors.blackColor,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
         ],
       ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDetailRow('الكمية الإجمالية',
-                '${quantity.toStringAsFixed(0)} ${productExpenses.first.unitType}'),
-            _buildDetailRow('عدد المشتريات', '${productExpenses.length} مرة'),
-            const SizedBox(height: 16),
-            const Text('تواريخ الشراء:',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            ...purchaseDates.map((date) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Text(formatDateString(date),
-                      style: TextStyle(color: Colors.grey.shade600)),
-                )),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('إغلاق'),
-        ),
-      ],
     ),
   );
 }
 
-Widget _buildDetailRow(String title, String value) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-        Text(value,
-            style: TextStyle(
-                color: AppColors.primaryColor, fontWeight: FontWeight.bold)),
-      ],
+void _showQuantityDetails(BuildContext context, String product,
+    double totalQuantity, List<Expense> allExpenses) {
+  final productExpenses =
+      allExpenses.where((e) => e.product == product).toList();
+  productExpenses.sort((a, b) =>
+      DateTime.parse(b.date).compareTo(DateTime.parse(a.date))); // Recent first
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => Container(
+      height: MediaQuery.of(context).size.height * 0.7,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 16),
+          Container(
+            width: 48,
+            height: 5,
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'سجل شراء',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        product,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.blackColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'الإجمالي',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    ),
+                    Text(
+                      '${totalQuantity.toStringAsFixed(1).replaceAll('.0', '')} ${productExpenses.first.unitType}',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primaryColor,
+                        fontFamily: 'DIN',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: ListView.separated(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.all(24),
+              itemCount: productExpenses.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              itemBuilder: (context, index) {
+                final expense = productExpenses[index];
+                return Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${formatDateDay(expense.date)}/${DateFormat('M').format(DateTime.parse(expense.date))}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        formatDayName(expense.date),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${expense.quantity} ${expense.unitType}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'DIN',
+                        color: AppColors.blackColor,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }
