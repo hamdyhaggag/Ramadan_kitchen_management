@@ -11,6 +11,8 @@ import 'package:ramadan_kitchen_management/features/donation/presentation/views/
 
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:dots_indicator/dots_indicator.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 class UserDonationDashboard extends StatefulWidget {
   const UserDonationDashboard({super.key});
@@ -46,121 +48,124 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
           final description = donation['mealDescription'] ?? '';
           final individuals = donation['numberOfIndividuals'] as int? ?? 1;
 
-          return Stack(
-            children: [
-              CustomScrollView(
-                slivers: [
-                  // 1. Premium Carousel / Image Section
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-                      child: Column(
-                        children: [
-                          Container(
-                            height: 200,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: Colors.black, // Background for contain fit
-                              borderRadius: BorderRadius.circular(28),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.12),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: carouselImages.isEmpty
-                                ? Container(
-                                    color: AppColors.primaryColor
-                                        .withValues(alpha: 0.1),
-                                    child: const Icon(Icons.restaurant,
-                                        size: 60,
-                                        color: AppColors.primaryColor),
-                                  )
-                                : Stack(
-                                    fit: StackFit.expand,
-                                    children: [
-                                      CarouselSlider(
-                                        items: carouselImages.map((url) {
-                                          return Center(
-                                            child: CachedNetworkImage(
-                                              imageUrl: url,
-                                              fit: BoxFit.cover,
-                                              width: double.infinity,
-                                              placeholder: (context, url) =>
-                                                  Shimmer.fromColors(
-                                                baseColor: Colors.grey[300]!,
-                                                highlightColor:
-                                                    Colors.grey[100]!,
-                                                child: Container(
-                                                    color: Colors.white),
-                                              ),
-                                              errorWidget: (context, url, _) =>
-                                                  Container(
-                                                      color: Colors.grey[300]),
-                                            ),
-                                          );
-                                        }).toList(),
-                                        options: CarouselOptions(
-                                          height: 210,
-                                          viewportFraction: 1.0,
-                                          autoPlay: carouselImages.length > 1,
-                                          onPageChanged: (index, reason) {
-                                            setState(() {
-                                              _currentCarouselIndex = index;
-                                            });
-                                          },
-                                        ),
-                                      ),
-                                      // Premium Gradient Overlay
-                                      const DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                            colors: [
-                                              Colors.transparent,
-                                              Colors.black87
-                                            ],
-                                            stops: [0.5, 1.0],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                          ),
-                          if (carouselImages.length > 1) ...[
-                            const SizedBox(height: 12),
-                            DotsIndicator(
-                              dotsCount: carouselImages.length,
-                              position: _currentCarouselIndex,
-                              decorator: DotsDecorator(
-                                color: Colors.grey[300]!,
-                                activeColor: AppColors.primaryColor,
-                                size: const Size.square(8.0),
-                                activeSize: const Size(24.0, 8.0),
-                                activeShape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(5.0)),
-                                spacing:
-                                    const EdgeInsets.symmetric(horizontal: 4.0),
-                              ),
+          return CustomScrollView(
+            slivers: [
+              // 1. Premium Carousel / Image Section
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                  child: Column(
+                    children: [
+                      Container(
+                        height: 200,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.black, // Background for contain fit
+                          borderRadius: BorderRadius.circular(28),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.12),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
                             ),
                           ],
-                        ],
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: carouselImages.isEmpty
+                            ? Container(
+                                color: AppColors.primaryColor
+                                    .withValues(alpha: 0.1),
+                                child: const Icon(Icons.restaurant,
+                                    size: 60, color: AppColors.primaryColor),
+                              )
+                            : Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  CarouselSlider(
+                                    items: carouselImages.map((url) {
+                                      return Center(
+                                        child: CachedNetworkImage(
+                                          imageUrl: url,
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          placeholder: (context, url) =>
+                                              Shimmer.fromColors(
+                                            baseColor: Colors.grey[300]!,
+                                            highlightColor: Colors.grey[100]!,
+                                            child:
+                                                Container(color: Colors.white),
+                                          ),
+                                          errorWidget: (context, url, _) =>
+                                              Container(
+                                                  color: Colors.grey[300]),
+                                        ),
+                                      );
+                                    }).toList(),
+                                    options: CarouselOptions(
+                                      height: 200,
+                                      viewportFraction: 1.0,
+                                      autoPlay: carouselImages.length > 1,
+                                      onPageChanged: (index, reason) {
+                                        setState(() {
+                                          _currentCarouselIndex = index;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  // Premium Gradient Overlay
+                                  const DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Colors.transparent,
+                                          Colors.black87
+                                        ],
+                                        stops: [0.5, 1.0],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                       ),
-                    ),
+                      if (carouselImages.length > 1) ...[
+                        const SizedBox(height: 12),
+                        DotsIndicator(
+                          dotsCount: carouselImages.length,
+                          position: _currentCarouselIndex,
+                          decorator: DotsDecorator(
+                            color: Colors.grey[300]!,
+                            activeColor: AppColors.primaryColor,
+                            size: const Size.square(8.0),
+                            activeSize: const Size(24.0, 8.0),
+                            activeShape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(5.0)),
+                            spacing:
+                                const EdgeInsets.symmetric(horizontal: 4.0),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
+                ),
+              ),
 
-                  // 2. Content Body
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+              // 2. Content Body
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: AnimationLimiter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: AnimationConfiguration.toStaggeredList(
+                        duration: const Duration(milliseconds: 600),
+                        childAnimationBuilder: (widget) => SlideAnimation(
+                          horizontalOffset: 30.0,
+                          child: FadeInAnimation(child: widget),
+                        ),
                         children: [
-                          // Meal Info Card
+                          // 1. Meal Info Section
                           _buildInfoCard(
                             context,
                             title: title,
@@ -168,7 +173,7 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
                           ),
                           const SizedBox(height: 20),
 
-                          // Stats Row (Individuals & Cost)
+                          // 3. Stats Section
                           Row(
                             children: [
                               Expanded(
@@ -176,7 +181,7 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
                                   context,
                                   label: 'عدد الأفراد',
                                   value: '$individuals',
-                                  icon: Icons.people_outline,
+                                  icon: Iconsax.people,
                                   color: Colors.orange,
                                 ),
                               ),
@@ -205,7 +210,7 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
                                       value: costPerPerson > 0
                                           ? '${costPerPerson.toStringAsFixed(1)} ج'
                                           : '---',
-                                      icon: Icons.monetization_on_outlined,
+                                      icon: Iconsax.money_send,
                                       color: Colors.green,
                                     );
                                   },
@@ -216,57 +221,24 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
 
                           const SizedBox(height: 24),
                           const Text(
-                            'كيف يمكنك المساعدة؟',
+                            'شاركنا الأثر والخير',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.primaryColor,
+                              fontFamily: 'DIN',
+                              color: Color(0xFF1E293B),
                             ),
                           ),
                           const SizedBox(height: 12),
-                          const Text(
-                            'مساهمتك بتساعدنا نوفر وجبات إفطار صائم لأسر كتير. تقدر تتبرع بتكلفة وجبة أو أكتر، أو تشاركنا بالمجهود.',
-                            style: TextStyle(
-                                color: Colors.grey, height: 1.5, fontSize: 15),
-                          ),
+
+                          // 4. Actionable Help Cards
+                          _buildActionCards(context, contacts),
 
                           // Space for floating button
                           const SizedBox(height: 100),
                         ],
                       ),
                     ),
-                  ),
-                ],
-              ),
-
-              // 3. Floating Action Bar
-              Positioned(
-                bottom: 24,
-                left: 24,
-                right: 24,
-                child: ElevatedButton(
-                  onPressed: () => _showDonationOptions(context, contacts),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 8,
-                    shadowColor: AppColors.primaryColor.withOpacity(0.4),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.volunteer_activism),
-                      SizedBox(width: 8),
-                      Text(
-                        'تبرع الآن',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                    ],
                   ),
                 ),
               ),
@@ -290,12 +262,12 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.04),
             offset: const Offset(0, 4),
-            blurRadius: 12,
+            blurRadius: 16,
           ),
         ],
       ),
@@ -305,19 +277,21 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                     color: AppColors.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8)),
-                child:
-                    const Icon(Icons.restaurant, color: AppColors.primaryColor),
+                    borderRadius: BorderRadius.circular(12)),
+                child: const Icon(Icons.restaurant,
+                    color: AppColors.primaryColor, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   title,
                   style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.bold),
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'DIN'),
                 ),
               ),
             ],
@@ -326,7 +300,7 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
           Text(
             description,
             style:
-                TextStyle(color: Colors.grey[700], fontSize: 15, height: 1.6),
+                TextStyle(color: Colors.grey[600], fontSize: 14, height: 1.6),
           ),
         ],
       ),
@@ -339,33 +313,37 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
       required IconData icon,
       required Color color}) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.withOpacity(0.08)),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.05),
+            color: color.withOpacity(0.04),
             offset: const Offset(0, 2),
-            blurRadius: 8,
+            blurRadius: 12,
           ),
         ],
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 10),
           Text(
             value,
-            style: TextStyle(
-                fontSize: 20,
+            style: const TextStyle(
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87),
+                fontFamily: 'DIN',
+                color: Color(0xFF1E293B)),
           ),
           Text(
             label,
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[500],
+                fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -381,9 +359,9 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
       builder: (context) => Container(
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
         ),
-        padding: const EdgeInsets.only(top: 16, bottom: 20),
+        padding: const EdgeInsets.only(top: 12, bottom: 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -391,7 +369,7 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: Colors.grey[200],
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -401,7 +379,8 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: AppColors.blackColor,
+                fontFamily: 'DIN',
+                color: Color(0xFF1E293B),
               ),
             ),
             const SizedBox(height: 24),
@@ -415,7 +394,87 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionCards(BuildContext context, List<ContactPerson> contacts) {
+    return _buildSingleActionCard(
+      title: 'كفالة وجبة إفطار',
+      subtitle: 'ساهم في إطعام صائم بضغطة زر واحدة',
+      icon: Iconsax.wallet_3, // Professional wallet icon
+      color: AppColors.primaryColor,
+      isFullWidth: true,
+      onTap: () => _showDonationOptions(context, contacts),
+    );
+  }
+
+  Widget _buildSingleActionCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+    bool isFullWidth = false,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        width: isFullWidth ? double.infinity : null,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: color.withValues(alpha: 0.12)),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.08),
+              blurRadius: 15,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      fontFamily: 'DIN',
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[500],
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Iconsax.arrow_right_3, color: Colors.grey[300], size: 20),
           ],
         ),
       ),
