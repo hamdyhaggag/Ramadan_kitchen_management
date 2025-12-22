@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
-
 import 'package:ramadan_kitchen_management/core/services/firebase_auth_service.dart';
 import 'package:ramadan_kitchen_management/core/cache/prefs.dart';
 import 'package:ramadan_kitchen_management/core/constants/constatnts.dart';
@@ -16,48 +15,90 @@ import 'package:ramadan_kitchen_management/features/manage_cases/presentation/vi
 import 'package:ramadan_kitchen_management/features/manage_cases/manage_case_details_screen.dart';
 import 'package:ramadan_kitchen_management/features/previous_days/presentation/views/previous_days_screen.dart';
 import 'package:ramadan_kitchen_management/features/manage_cases/presentation/views/manage_groups_screen.dart';
-import '../widgets/dashboard_card.dart';
 import '../../../donation/presentation/views/widgets/editable_donation_section.dart';
 import '../../../donation/presentation/cubit/donation_cubit.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/send_notification_screen.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
-class AdminDashboardHub extends StatelessWidget {
+class AdminDashboardHub extends StatefulWidget {
   const AdminDashboardHub({super.key});
+
+  @override
+  State<AdminDashboardHub> createState() => _AdminDashboardHubState();
+}
+
+class _AdminDashboardHubState extends State<AdminDashboardHub> {
+  @override
+  void initState() {
+    super.initState();
+    // Ensure cases are loaded for the stats
+    final casesState = context.read<CasesCubit>().state;
+    if (casesState is! CasesLoaded) {
+      context.read<CasesCubit>().loadCases();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FE), // Light background
+      backgroundColor: const Color(0xFFF8F9FE),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context),
-              const SizedBox(height: 32),
+        child: RefreshIndicator(
+          onRefresh: () async {
+            context.read<CasesCubit>().loadCases();
+          },
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // 1. Modern Header
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                sliver: SliverToBoxAdapter(
+                  child: _buildHeader(context),
+                ),
+              ),
 
-              // Section 1: Daily Workflow
-              _buildSectionTitle('بيانات اليوم', Icons.wb_sunny_rounded),
-              const SizedBox(height: 16),
-              _buildDailyWorkflowGrid(context),
+              // 2. Live Stats Card (Hero Section)
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                sliver: SliverToBoxAdapter(
+                  child: _buildLiveStatsCard(context),
+                ),
+              ),
 
-              const SizedBox(height: 32),
+              // 3. Section Title: Operations
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 25, 20, 15),
+                sliver: SliverToBoxAdapter(
+                  child: _buildSectionTitle('العمليات اليومية'),
+                ),
+              ),
 
-              // Section 2: Data Management
-              _buildSectionTitle('إدارة البيانات', Icons.storage_rounded),
-              const SizedBox(height: 16),
-              _buildDataManagementGrid(context),
+              // 4. Operations Grid (Distribute & Meal Setup)
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                sliver: SliverToBoxAdapter(
+                  child: _buildOperationsGrid(context),
+                ),
+              ),
 
-              const SizedBox(height: 32),
+              // 5. Section Title: Administration
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 30, 20, 15),
+                sliver: SliverToBoxAdapter(
+                  child: _buildSectionTitle('الإدارة والتحكم'),
+                ),
+              ),
 
-              // Section 3: History & Analytics
-              _buildSectionTitle('الأرشيف والتحليل', Icons.history_edu_rounded),
-              const SizedBox(height: 16),
-              _buildHistoryAndAnalyticsGrid(context),
+              // 6. Admin Grid
+              SliverPadding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+                sliver: _buildAdminGrid(context),
+              ),
 
-              const SizedBox(height: 40),
+              const SliverPadding(padding: EdgeInsets.only(bottom: 40)),
             ],
           ),
         ),
@@ -65,212 +106,457 @@ class AdminDashboardHub extends StatelessWidget {
     );
   }
 
+  // --- Header ---
   Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
-        CircleAvatar(
-          radius: 28,
-          backgroundColor: AppColors.primaryColor.withValues(alpha: 0.1),
-          child: Icon(Icons.person, color: AppColors.primaryColor, size: 30),
+        Container(
+          padding: const EdgeInsets.all(3), // Border width
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [
+                AppColors.primaryColor,
+                AppColors.primaryColor.withValues(alpha: 0.3)
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.person, color: AppColors.primaryColor, size: 28),
+          ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 15),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'مرحباً بك،',
+              'أهلاً بك،',
               style: TextStyle(
                 color: Colors.grey[600],
-                fontSize: 16,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
               ),
             ),
             const Text(
               'مدير المطبخ',
               style: TextStyle(
-                color: Colors.black87,
-                fontSize: 24,
+                color: Color(0xFF1E293B),
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
+                fontFamily: 'DIN',
               ),
             ),
           ],
         ),
         const Spacer(),
-        // Actions
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: InkWell(
-                onTap: () => _showLogoutDialog(context),
-                child: const Icon(Icons.logout, color: Colors.red),
-              ),
-            ),
-          ],
-        ),
+        _buildLogoutButton(context),
       ],
     );
   }
 
-  Widget _buildSectionTitle(String title, IconData icon) {
-    return Row(
+  Widget _buildLogoutButton(BuildContext context) {
+    return InkWell(
+      onTap: () => _showLogoutDialog(context),
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.red.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border:
+              Border.all(color: Colors.red.withValues(alpha: 0.1), width: 1.5),
+        ),
+        child: const Icon(Icons.logout_rounded, color: Colors.red, size: 22),
+      ),
+    );
+  }
+
+  // --- Live Stats (Hero) ---
+  Widget _buildLiveStatsCard(BuildContext context) {
+    return BlocBuilder<CasesCubit, CasesState>(
+      builder: (context, state) {
+        int total = 0;
+        int ready = 0;
+        double progress = 0;
+        bool isLoading = true;
+
+        if (state is CasesLoaded) {
+          isLoading = false;
+          total = state.cases.fold(
+              0,
+              (sum, item) =>
+                  sum + (int.tryParse(item['عدد الأفراد'].toString()) ?? 0));
+          ready = state.cases.fold(
+              0,
+              (sum, item) => item['جاهزة'] == true
+                  ? sum + (int.tryParse(item['عدد الأفراد'].toString()) ?? 0)
+                  : sum);
+          progress = total > 0 ? ready / total : 0;
+        }
+
+        return Container(
+          width: double.infinity,
+          height: 160,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF0961F5), Color(0xFF66A2F9)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0961F5).withValues(alpha: 0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const StatisticsScreen(initialTabIndex: 0),
+                  ),
+                );
+              },
+              splashColor: Colors.white.withValues(alpha: 0.1),
+              highlightColor: Colors.white.withValues(alpha: 0.05),
+              child: Stack(
+                children: [
+                  // Background Decor
+                  Positioned(
+                    top: -30,
+                    right: -30,
+                    child: Container(
+                      width: 150,
+                      height: 150,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: -40,
+                    left: -20,
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+
+                  // Content
+                  Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Text(
+                                  'ملخص اليوم',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              const Text(
+                                'توزيع الوجبات',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'DIN',
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                isLoading
+                                    ? 'جاري التحميل...'
+                                    : '$ready من $total وجبة جاهزة',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Progress Indicator
+                        Expanded(
+                          flex: 2,
+                          child: Center(
+                            child: SizedBox(
+                              width: 80,
+                              height: 80,
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  CircularProgressIndicator(
+                                    value: isLoading ? null : progress,
+                                    strokeWidth: 8,
+                                    backgroundColor:
+                                        Colors.black.withValues(alpha: 0.1),
+                                    valueColor: const AlwaysStoppedAnimation(
+                                        Colors.white),
+                                    strokeCap: StrokeCap.round,
+                                  ),
+                                  Center(
+                                    child: Text(
+                                      isLoading
+                                          ? '%'
+                                          : '${(progress * 100).toInt()}%',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                        fontFamily: 'DIN',
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // --- Operations Section ---
+  Widget _buildOperationsGrid(BuildContext context) {
+    return Column(
       children: [
-        Icon(icon, color: AppColors.primaryColor, size: 20),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primaryColor,
+        Row(
+          children: [
+            // 1. Distribute Card (Main)
+            Expanded(
+              child: _OperationsCard(
+                title: 'توزيع الوجبات',
+                icon: Icons.checklist_rtl_rounded,
+                color: const Color(0xFF0FAD74), // Greenish
+                onTap: () => _navigateToCasesDashboard(context),
+                delay: 100,
+              ),
+            ),
+            const SizedBox(width: 16),
+            // 2. Meal Setup Card
+            Expanded(
+              child: _OperationsCard(
+                title: 'وجبة اليوم',
+                icon: Icons.restaurant_menu_rounded,
+                color: const Color(0xFFF59E0B), // Amber
+                onTap: () => _navigateToDonationEdit(context),
+                delay: 200,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // 3. Expenses Card (Full Width)
+        SizedBox(
+          width: double.infinity,
+          child: _OperationsCard(
+            title: 'المصاريف اليومية',
+            icon: Icons.account_balance_wallet_rounded,
+            color: const Color(0xFF0EA5E9), // Sky Blue
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const DailyExpensesScreen())),
+            delay: 300,
+            isWide: true,
           ),
         ),
       ],
     );
   }
 
-  // 1. Daily Workflow Grid
-  Widget _buildDailyWorkflowGrid(BuildContext context) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 1.1,
+  // --- Admin Grid (Sliver) ---
+  Widget _buildAdminGrid(BuildContext context) {
+    final List<_AdminItem> items = [
+      _AdminItem(
+        title: 'سجل الأسر',
+        icon: Icons.people_alt_rounded,
+        color: const Color(0xFF8B5CF6), // Purple
+        onTap: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const ManageCaseDetailsScreen())),
+      ),
+      _AdminItem(
+        title: 'المجموعات',
+        icon: Icons.groups_3_rounded,
+        color: const Color(0xFFEC4899), // Pink
+        onTap: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const ManageGroupsScreen())),
+      ),
+      _AdminItem(
+        title: 'الإشعارات',
+        icon: Icons.notification_add_rounded,
+        color: const Color(0xFFFF5722), // Deep Orange
+        onTap: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const SendNotificationScreen())),
+      ),
+      _AdminItem(
+        title: 'الأيام السابقة',
+        icon: Icons.calendar_month_rounded,
+        color: const Color(0xFF64748B), // Slate
+        onTap: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const PreviousDaysScreen())),
+      ),
+      _AdminItem(
+        title: 'إجمالي الإحصائيات',
+        icon: Icons.bar_chart_rounded,
+        color: const Color(0xFF14B8A6), // Teal
+        onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => const StatisticsScreen(initialTabIndex: 1))),
+      ),
+      _AdminItem(
+        title: 'التقارير',
+        icon: Icons.assignment_outlined,
+        color: const Color(0xFF795548), // Brown
+        onTap: () => Navigator.push(
+            context, MaterialPageRoute(builder: (_) => ReportsScreen())),
+      ),
+    ];
+
+    return AnimationLimiter(
+      child: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 1.0, // Square like operations cards
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final item = items[index];
+            return AnimationConfiguration.staggeredGrid(
+              position: index,
+              duration: const Duration(milliseconds: 375),
+              columnCount: 2,
+              child: ScaleAnimation(
+                child: FadeInAnimation(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: item.onTap,
+                      borderRadius: BorderRadius.circular(24),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: item.color.withValues(alpha: 0.1),
+                              blurRadius: 15,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: item.color.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child:
+                                  Icon(item.icon, color: item.color, size: 32),
+                            ),
+                            const SizedBox(height: 12),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8.0),
+                              child: Text(
+                                item.title,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E293B),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+          childCount: items.length,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Row(
       children: [
-        DashboardCard(
-          title: 'توزيع الوجبات',
-          subtitle: 'متابعة وتسليم الحالات',
-          icon: Icons.checklist_rtl_rounded,
-          color: AppColors.primaryColor,
-          onTap: () => _navigateToCasesDashboard(context),
+        Container(
+          width: 4,
+          height: 18,
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor,
+            borderRadius: BorderRadius.circular(2),
+          ),
         ),
-        DashboardCard(
-          title: 'وجبة اليوم',
-          subtitle: 'تعديل الصورة والبيانات',
-          icon: Icons.restaurant_menu_rounded,
-          color: Colors.orange,
-          onTap: () => _navigateToDonationEdit(context),
-        ),
-        DashboardCard(
-          title: 'مصاريف اليوم',
-          subtitle: 'تسجيل المشتريات',
-          icon: Icons.account_balance_wallet_outlined,
-          color: Colors.green,
-          onTap: () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const DailyExpensesScreen())),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1E293B),
+            fontFamily: 'DIN',
+          ),
         ),
       ],
     );
   }
 
-  // 2. Data Management Grid (Uses Wide Layout)
-  Widget _buildDataManagementGrid(BuildContext context) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 1, // Full Width
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 3.5, // Wide Ratio
-      children: [
-        DashboardCard(
-          title: 'سجل الأٌسر',
-          subtitle: 'إضافة وتعديل بيانات الأٌسر ',
-          icon: Icons.people_alt_rounded,
-          color: Colors.purple,
-          onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => const ManageCaseDetailsScreen())),
-          isWide: true, // Triggers Horizontal Layout
-        ),
-        DashboardCard(
-          title: 'إدارة المجموعات',
-          subtitle: 'تقسيم الحالات إلى مجموعات (أ، ب، ج...)',
-          icon: Icons.groups_3_rounded,
-          color: Colors.redAccent,
-          onTap: () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const ManageGroupsScreen())),
-          isWide: true,
-        ),
-        DashboardCard(
-          title: 'إرسال إشعارات',
-          subtitle: 'إرسال تنبيهات عامة لجميع المستخدمين',
-          icon: Icons.notification_add_rounded,
-          color: Colors.deepOrange,
-          onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => const SendNotificationScreen())),
-          isWide: true,
-        ),
-      ],
-    );
-  }
-
-  // 3. History & Analytics Grid
-  Widget _buildHistoryAndAnalyticsGrid(BuildContext context) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 1.1,
-      children: [
-        DashboardCard(
-          title: 'الأيام السابقة',
-          subtitle: 'مراجعة الأيام الماضية',
-          icon: Icons.calendar_month_rounded,
-          color: Colors.indigo,
-          onTap: () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const PreviousDaysScreen())),
-        ),
-        DashboardCard(
-          title: 'إحصائيات التوزيع',
-          subtitle: 'تحليل توزيع الوجبات',
-          icon: Icons.pie_chart_rounded,
-          color: Colors.blue,
-          onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => const StatisticsScreen(initialTabIndex: 0))),
-        ),
-        DashboardCard(
-          title: 'إجمالي الإحصائيات ',
-          subtitle: 'ملخص عدد الوجبات',
-          icon: Icons.trending_up_rounded,
-          color: Colors.teal,
-          onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => const StatisticsScreen(initialTabIndex: 1))),
-        ),
-        DashboardCard(
-          title: 'التقارير',
-          subtitle: 'سجلات العمل النصية',
-          icon: Icons.assignment_outlined,
-          color: Colors.brown,
-          onTap: () => Navigator.push(
-              context, MaterialPageRoute(builder: (_) => ReportsScreen())),
-        ),
-      ],
-    );
-  }
-
-  // --- Helpers ---
+  // --- Logic Helpers ---
 
   void _showLogoutDialog(BuildContext context) {
     showGeneralDialog(
@@ -291,69 +577,89 @@ class AdminDashboardHub extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     color: AppColors.whiteColor,
-                    borderRadius: BorderRadius.circular(20.0),
+                    borderRadius: BorderRadius.circular(24.0),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 10,
+                        blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.all(20.0),
+                  padding: const EdgeInsets.all(24.0),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.exit_to_app_rounded,
-                          size: 60, color: AppColors.primaryColor),
-                      const SizedBox(height: 15),
-                      Text(
-                        'انتبه!',
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.power_settings_new_rounded,
+                            size: 40, color: Colors.red),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'تسجيل الخروج',
                         style: TextStyle(
-                            fontSize: 24,
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.primaryColor),
+                            fontFamily: 'DIN',
+                            color: Colors.black87),
                       ),
                       const SizedBox(height: 10),
                       const Text(
                         'هل أنت متأكد أنك تريد تسجيل الخروج؟',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: Colors.black),
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 30),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.whiteColor,
-                              side: BorderSide(color: AppColors.primaryColor),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10.0)),
+                          Expanded(
+                            child: TextButton(
+                              style: TextButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
+                              ),
+                              child: const Text('إلغاء',
+                                  style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold)),
+                              onPressed: () => Navigator.pop(context),
                             ),
-                            child: Text('إلغاء',
-                                style:
-                                    TextStyle(color: AppColors.primaryColor)),
-                            onPressed: () => Navigator.pop(context),
                           ),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primaryColor,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10.0)),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                elevation: 0,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
+                              ),
+                              child: const Text('خروج',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold)),
+                              onPressed: () async {
+                                Navigator.pop(context);
+                                await FirebaseAuthService().signOut();
+                                await Prefs.removeData(key: kUserData);
+                                if (!context.mounted) return;
+                                if (!FirebaseAuthService().isLoggedIn()) {
+                                  Navigator.pushReplacementNamed(
+                                      context, AppRoutes.login);
+                                }
+                              },
                             ),
-                            child: const Text('تسجيل الخروج',
-                                style: TextStyle(color: AppColors.whiteColor)),
-                            onPressed: () async {
-                              Navigator.pop(context);
-                              await FirebaseAuthService().signOut();
-                              await Prefs.removeData(key: kUserData);
-                              if (!context.mounted) return;
-                              if (!FirebaseAuthService().isLoggedIn()) {
-                                Navigator.pushReplacementNamed(
-                                    context, AppRoutes.login);
-                              }
-                            },
                           ),
                         ],
                       ),
@@ -463,4 +769,125 @@ class AdminDashboardHub extends StatelessWidget {
       return groups;
     });
   }
+}
+
+// --- Specific Widgets ---
+
+class _OperationsCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  final int delay;
+  final bool isWide;
+
+  const _OperationsCard({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+    required this.delay,
+    this.isWide = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: Future.delayed(Duration(milliseconds: delay)),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const SizedBox.shrink();
+        }
+        return AnimationConfiguration.synchronized(
+          duration: const Duration(milliseconds: 500),
+          child: SlideAnimation(
+            horizontalOffset: 50,
+            child: FadeInAnimation(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onTap,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    height: isWide ? 100 : 140, // Shorter if wide
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.1),
+                          blurRadius: 15,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: isWide
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(icon, color: color, size: 28),
+                              ),
+                              const SizedBox(width: 16),
+                              Text(
+                                title,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E293B),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(icon, color: color, size: 32),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                title,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E293B),
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AdminItem {
+  final String title;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  _AdminItem(
+      {required this.title,
+      required this.icon,
+      required this.color,
+      required this.onTap});
 }
