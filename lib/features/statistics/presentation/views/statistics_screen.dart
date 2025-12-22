@@ -7,10 +7,11 @@ import 'package:ramadan_kitchen_management/features/auth/data/repos/auth_repo.da
 import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_cubit.dart';
 import 'package:ramadan_kitchen_management/features/manage_cases/logic/cases_state.dart';
 import 'package:ramadan_kitchen_management/features/statistics/presentation/views/widgets/total_statistics_content.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 class StatisticsScreen extends StatelessWidget {
   final int initialTabIndex;
-  // Make AppBar title optional, if passed it will be used, otherwise default logic
   final String? title;
 
   const StatisticsScreen({super.key, this.initialTabIndex = 0, this.title});
@@ -20,22 +21,22 @@ class StatisticsScreen extends StatelessWidget {
     final authRepo = getIt<AuthRepo>();
     final isAdmin = authRepo.currentUser?.role == 'admin';
 
-    // Determine title based on index if not provided
     final String screenTitle = title ??
-        (initialTabIndex == 0 ? 'إحصائيات التوزيع' : 'إجمالي الإحصائيات');
+        (initialTabIndex == 0
+            ? 'إحصائيات التوزيع اليومي'
+            : 'إجمالي الإحصائيات');
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
-      // Add AppBar specifically for Admin views to provide context and back navigation
       appBar: isAdmin
           ? AppBar(
               title: Text(screenTitle),
               centerTitle: true,
-              backgroundColor: AppColors.whiteColor,
+              backgroundColor: Colors.white,
               elevation: 0,
               iconTheme: const IconThemeData(color: Colors.black),
               titleTextStyle: const TextStyle(
-                  color: Colors.black,
+                  color: Color(0xFF1E293B),
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'DIN'),
@@ -44,35 +45,28 @@ class StatisticsScreen extends StatelessWidget {
       body: BlocBuilder<CasesCubit, CasesState>(
         builder: (context, state) {
           if (state is CasesLoading) {
-            return const Center(
-                child:
-                    CircularProgressIndicator(color: AppColors.primaryColor));
+            return const Center(child: CircularProgressIndicator());
           }
           if (state is CasesError) {
             return Center(child: Text(state.message));
           }
           if (state is CasesLoaded) {
             if (isAdmin) {
-              // Directly return the specific content based on initialTabIndex
-              // No TabBar, No TabBarView. specific content + AppBar.
               if (initialTabIndex == 0) {
                 return _StatisticsContent(cases: state.cases);
               } else {
-                return TotalStatisticsContent();
+                return const TotalStatisticsContent();
               }
             } else {
-              // User View (Keep as is if needed, or update similarly)
-              return TotalStatisticsContent();
+              return const TotalStatisticsContent();
             }
           }
-          return const Center(child: Text('No statistics available'));
+          return const Center(child: Text('لا توجد بيانات متاحة'));
         },
       ),
     );
   }
 }
-
-// Deprecated: _AdminStatisticsView with Tabs is removed/refactored out since we now link directly.
 
 class _StatisticsContent extends StatefulWidget {
   final List<Map<String, dynamic>> cases;
@@ -112,162 +106,181 @@ class _StatisticsContentState extends State<_StatisticsContent> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+    return AnimationLimiter(
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: AnimationConfiguration.toStaggeredList(
+            duration: const Duration(milliseconds: 500),
+            childAnimationBuilder: (widget) => SlideAnimation(
+              verticalOffset: 50.0,
+              child: FadeInAnimation(child: widget),
+            ),
+            children: [
+              // 1. Progress Gauge Card
+              _buildProgressGauge(),
+              const SizedBox(height: 24),
+
+              // 2. Metrics Grid
+              GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: 1.1,
+                children: [
+                  _buildMetricCard(
+                    title: 'إجمالي الأفراد',
+                    value: '$totalIndividuals',
+                    unit: 'فرد',
+                    icon: Iconsax.user,
+                    color: AppColors.primaryColor,
+                  ),
+                  _buildMetricCard(
+                    title: 'تم التجهيز',
+                    value: '$totalCheckedIndividuals',
+                    unit: 'وجبة',
+                    icon: Iconsax.tick_circle,
+                    color: const Color(0xFF14B8A6), // Cyan/Teal
+                  ),
+                  _buildMetricCard(
+                    title: 'المتبقي',
+                    value: '$totalUndistributed',
+                    unit: 'وجبة',
+                    icon: Iconsax.timer_1,
+                    color: const Color(0xFFF59E0B), // Amber
+                  ),
+                  _buildMetricCard(
+                    title: 'نسبة الإنجاز',
+                    value: '${progressPercentage.toStringAsFixed(0)}%',
+                    unit: 'اليوم',
+                    icon: Iconsax.chart_21,
+                    color: const Color(0xFF8B5CF6), // Purple
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+
+              // 3. Status Summary
+              _buildStatusSummary(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressGauge() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
       child: Column(
         children: [
-          // Main Chart Card
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF1E293B).withValues(alpha: 0.05),
-                  spreadRadius: 0,
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                )
-              ],
+          const Text(
+            'نسبة الإنجاز اليومي',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1E293B),
+              fontFamily: 'DIN',
             ),
-            child: Column(
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            height: 200,
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                Text(
-                  'نسبة الإنجاز اليومي',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                PieChart(
+                  PieChartData(
+                    sectionsSpace: 0,
+                    centerSpaceRadius: 75,
+                    startDegreeOffset: -90,
+                    sections: [
+                      PieChartSectionData(
+                        value: totalCheckedIndividuals.toDouble(),
+                        color: AppColors.primaryColor,
+                        radius: 20,
+                        showTitle: false,
+                        badgeWidget: _buildBadgeIcon(Iconsax.tick_circle5),
+                        badgePositionPercentageOffset: 1.3,
                       ),
-                ),
-                const SizedBox(height: 30),
-                SizedBox(
-                  height: 220,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      PieChart(
-                        PieChartData(
-                          sections: [
-                            PieChartSectionData(
-                              value: totalCheckedIndividuals.toDouble(),
-                              color: const Color(0xFF10B981), // Emerald Green
-                              radius: 30,
-                              showTitle: false,
-                            ),
-                            PieChartSectionData(
-                              value: totalUndistributed.toDouble(),
-                              color: const Color(0xFFF1F5F9), // Slate 100
-                              radius: 25,
-                              showTitle: false,
-                            ),
-                          ],
-                          centerSpaceRadius: 70,
-                          sectionsSpace: 0,
-                          startDegreeOffset: -90,
-                          borderData: FlBorderData(show: false),
-                        ),
-                      ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '${progressPercentage.toStringAsFixed(1)}%',
-                            style: const TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF10B981),
-                            ),
-                          ),
-                          Text(
-                            'مكتمل',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[500],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+                      PieChartSectionData(
+                        value: totalUndistributed.toDouble(),
+                        color: const Color(0xFFF1F5F9),
+                        radius: 12,
+                        showTitle: false,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 30),
-                // Legend
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildLegendItem(
-                        color: const Color(0xFF10B981), label: 'تم التجهيز'),
-                    const SizedBox(width: 24),
-                    _buildLegendItem(
-                        color: const Color(0xFFCBD5E1), label: 'قيد الانتظار'),
+                    Text(
+                      '${progressPercentage.toStringAsFixed(1)}%',
+                      style: const TextStyle(
+                        fontSize: 42,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryColor,
+                        fontFamily: 'DIN',
+                      ),
+                    ),
+                    Text(
+                      'مكتمل العمل',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[500],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
-
-          // Detail Cards Grid
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
-            childAspectRatio: 0.85, // Taller cards
+          const SizedBox(height: 32),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildMetricCard(
-                title: 'إجمالي الأفراد',
-                value: totalIndividuals,
-                icon: Icons.groups_rounded,
-                color: const Color(0xFF6366F1), // Indigo
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF6366F1), Color(0xFF818CF8)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+              _buildLegendItem(
+                color: AppColors.primaryColor,
+                label: 'تم التجهيز',
               ),
-              _buildMetricCard(
-                title: 'تم التجهيز',
-                value: totalCheckedIndividuals,
-                icon: Icons.check_circle_outline_rounded,
-                color: const Color(0xFF10B981), // Emerald
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF10B981), Color(0xFF34D399)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              _buildMetricCard(
-                title: 'المتبقي',
-                value: totalUndistributed,
-                icon: Icons.hourglass_empty_rounded,
-                color: const Color(0xFFF59E0B), // Amber
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              _buildMetricCard(
-                title: 'نسبة الإنجاز',
-                value: '${progressPercentage.toStringAsFixed(0)}%',
-                icon: Icons.analytics_rounded,
-                color: const Color(0xFFEC4899), // Pink
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFEC4899), Color(0xFFF472B6)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+              const SizedBox(width: 24),
+              _buildLegendItem(
+                color: const Color(0xFFCBD5E1),
+                label: 'قيد الانتظار',
               ),
             ],
           ),
-          const SizedBox(height: 24),
         ],
       ),
+    );
+  }
+
+  Widget _buildBadgeIcon(IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+      ),
+      child: Icon(icon, color: AppColors.primaryColor, size: 20),
     );
   }
 
@@ -275,19 +288,16 @@ class _StatisticsContentState extends State<_StatisticsContent> {
     return Row(
       children: [
         Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 8),
         Text(
           label,
           style: TextStyle(
             color: Colors.grey[600],
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -297,103 +307,110 @@ class _StatisticsContentState extends State<_StatisticsContent> {
 
   Widget _buildMetricCard({
     required String title,
-    required dynamic value,
+    required String value,
+    required String unit,
     required IconData icon,
     required Color color,
-    required Gradient gradient,
   }) {
     return Container(
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.15),
-            offset: const Offset(0, 8),
-            blurRadius: 15,
-            spreadRadius: -4,
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: ClipRRect(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const Spacer(),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[500],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E293B),
+                  fontFamily: 'DIN',
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                unit,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.grey[400],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusSummary() {
+    bool isComplete = progressPercentage >= 100;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isComplete
+            ? AppColors.primaryColor.withValues(alpha: 0.05)
+            : const Color(0xFFF59E0B).withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
-        child: Stack(
-          children: [
-            // Decorative Circle 1
-            Positioned(
-              top: -20,
-              right: -20,
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.05),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-            // Decorative Circle 2
-            Positioned(
-              bottom: -20,
-              left: -20,
-              child: Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.05),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      gradient: gradient,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        )
-                      ],
-                    ),
-                    child: Icon(icon, color: Colors.white, size: 22),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$value',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.black87,
-                          fontFamily: 'DIN',
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
+        border: Border.all(
+          color: isComplete
+              ? AppColors.primaryColor.withValues(alpha: 0.1)
+              : const Color(0xFFF59E0B).withValues(alpha: 0.1),
         ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isComplete ? Iconsax.verify5 : Iconsax.info_circle5,
+            color:
+                isComplete ? AppColors.primaryColor : const Color(0xFFF59E0B),
+            size: 24,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              isComplete
+                  ? 'تم اكتمال توزيع جميع وجبات اليوم بفضل الله.'
+                  : 'جاري العمل الآن.. المتبقي $totalUndistributed وجبة ليكتمل التوزيع.',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF334155),
+                fontFamily: 'DIN',
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
