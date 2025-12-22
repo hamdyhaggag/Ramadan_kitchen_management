@@ -1,9 +1,10 @@
-import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 import '../../../../../core/utils/app_colors.dart';
 
@@ -14,44 +15,15 @@ class TotalStatisticsContent extends StatefulWidget {
   State<TotalStatisticsContent> createState() => _TotalStatisticsContentState();
 }
 
-class _TotalStatisticsContentState extends State<TotalStatisticsContent>
-    with TickerProviderStateMixin {
+class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
   int _totalIndividuals = 0;
   bool _isLoading = true;
-  late AnimationController _waveController;
-  late AnimationController _rotationController;
-  late AnimationController _particleController;
+  final int _goal = 8500;
 
   @override
   void initState() {
     super.initState();
     _loadDonationData();
-    _initializeAnimations();
-  }
-
-  @override
-  void dispose() {
-    _waveController.dispose();
-    _rotationController.dispose();
-    _particleController.dispose();
-    super.dispose();
-  }
-
-  void _initializeAnimations() {
-    _waveController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-
-    _rotationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 20),
-    )..repeat();
-
-    _particleController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat();
   }
 
   Future<void> _loadDonationData() async {
@@ -106,12 +78,14 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent>
         await prefs.setInt('lastUpdated', now.millisecondsSinceEpoch);
       }
 
-      setState(() {
-        _totalIndividuals = historicalTotal + dailyValue;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _totalIndividuals = historicalTotal + dailyValue;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -122,140 +96,360 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent>
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) return _buildShimmerLoading();
+
+    final percentage = (_totalIndividuals / _goal).clamp(0.0, 1.0);
+    final remaining = (_goal - _totalIndividuals).clamp(0, _goal);
+
     return Scaffold(
-      body: Stack(
-        children: [
-          _buildAnimatedBackground(),
-          _isLoading
-              ? _buildEnhancedShimmerLoading()
-              : Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildAnimatedRadialProgress(),
-                        const SizedBox(height: 40),
-                        _buildAnimatedProgressWave(),
-                        const SizedBox(height: 30),
-                        _buildFloatingParticles(),
-                      ],
+      backgroundColor: const Color(0xFFF8F9FE),
+      body: AnimationLimiter(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            children: AnimationConfiguration.toStaggeredList(
+              duration: const Duration(milliseconds: 500),
+              childAnimationBuilder: (widget) => SlideAnimation(
+                verticalOffset: 50.0,
+                child: FadeInAnimation(child: widget),
+              ),
+              children: [
+                // 1. Hero Summary Card
+                _buildHeroCard(),
+                const SizedBox(height: 24),
+
+                // 2. Goal Progress Section
+                _buildGoalSection(percentage, remaining),
+                const SizedBox(height: 24),
+
+                // 3. Stats Grid
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: 1.1,
+                  children: [
+                    _buildMinorStatCard(
+                      title: 'الهدف الكلي',
+                      value: '$_goal',
+                      unit: 'وجبة',
+                      icon: Iconsax.flag,
+                      color: const Color(0xFF6366F1),
                     ),
-                  ),
+                    _buildMinorStatCard(
+                      title: 'متبقي للهدف',
+                      value: '$remaining',
+                      unit: 'وجبة',
+                      icon: Iconsax.timer_1,
+                      color: const Color(0xFFF59E0B),
+                    ),
+                    _buildMinorStatCard(
+                      title: 'متوسط الأداء',
+                      value: '${(_totalIndividuals / 30).toStringAsFixed(0)}',
+                      unit: 'يومياً',
+                      icon: Iconsax.chart_21,
+                      color: const Color(0xFF8B5CF6), // Purple/Indigo
+                    ),
+                    _buildMinorStatCard(
+                      title: 'حالة الربط',
+                      value: 'متصل',
+                      unit: 'Firestore',
+                      icon: Iconsax.cloud_connection,
+                      color: AppColors.primaryColor,
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 32),
+
+                // 4. Motivational Quote
+                _buildQuote(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.primaryColor, Color(0xFF063EAF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryColor.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child:
+                const Icon(Iconsax.status_up5, color: Colors.white, size: 32),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'إجمالي عدد الوجبات',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 16,
+              fontFamily: 'DIN',
+            ),
+          ),
+          const SizedBox(height: 8),
+          AnimatedCount(
+            count: _totalIndividuals,
+            duration: const Duration(seconds: 2),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 52,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'DIN',
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'وجبة تم توزيعها بفضل الله',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildAnimatedBackground() {
-    return AnimatedBuilder(
-      animation: _particleController,
-      builder: (context, child) {
-        return CustomPaint(
-          painter: ParticlePainter(_particleController.value),
-          size: Size.infinite,
-        );
-      },
-    );
-  }
-
-  Widget _buildAnimatedRadialProgress() {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        RotationTransition(
-          turns: Tween(begin: 0.0, end: 1.0).animate(_rotationController),
-          child: CustomPaint(
-            painter: _AnimatedRadialPainter(),
-            size: const Size(350, 350),
+  Widget _buildGoalSection(double percentage, int remaining) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
-        ),
-        Column(
-          children: [
-            AnimatedCount(
-              count: _totalIndividuals,
-              duration: const Duration(seconds: 1),
-              style: TextStyle(
-                fontSize: 52,
-                fontWeight: FontWeight.bold,
-                foreground: Paint()
-                  ..shader = LinearGradient(
-                    colors: [
-                      AppColors.primaryColor,
-                      AppColors.secondaryColor,
-                    ],
-                  ).createShader(const Rect.fromLTWH(0, 0, 200, 70)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'التقدم نحو الهدف',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'DIN',
+                  color: Color(0xFF1E293B),
+                ),
               ),
-            ),
-            Text(
-              'تم إفطارهم حتى الان',
-              style: TextStyle(
-                fontSize: 20,
-                color: Colors.grey[600],
-                letterSpacing: 1.1,
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${(percentage * 100).toStringAsFixed(1)}%',
+                  style: const TextStyle(
+                    color: AppColors.primaryColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: percentage,
+              minHeight: 12,
+              backgroundColor: const Color(0xFFF1F5F9),
+              color: AppColors.primaryColor,
             ),
-          ],
-        ),
-      ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Icon(Iconsax.info_circle, size: 16, color: Colors.grey[400]),
+              const SizedBox(width: 8),
+              Text(
+                'باقي $remaining وجبة للوصول لشعار رمضان 1.2',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey[500],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildAnimatedProgressWave() {
-    return AnimatedBuilder(
-      animation: _waveController,
-      builder: (context, child) {
-        return CustomPaint(
-          painter: WavePainter(_waveController.value),
-          child: Container(
-            height: 30,
-            width: 250,
-            alignment: Alignment.center,
+  Widget _buildMinorStatCard({
+    required String title,
+    required String value,
+    required String unit,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const Spacer(),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[500],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E293B),
+                  fontFamily: 'DIN',
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                unit,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.grey[400],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuote() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.primaryColor.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(24),
+        border:
+            Border.all(color: AppColors.primaryColor.withValues(alpha: 0.1)),
+      ),
+      child: const Row(
+        children: [
+          Expanded(
             child: Text(
-              '${(_totalIndividuals / 8500 * 100).toStringAsFixed(1)}% من الهدف (8500 وجبة إفطار)',
-              style: const TextStyle(
-                color: AppColors.whiteColor,
-                fontWeight: FontWeight.bold,
+              '"وَمَن أَحيَاها فَكَأَنَّما أَحيَا النّاسَ جَميعاً"',
+              style: TextStyle(
                 fontSize: 14,
+                fontStyle: FontStyle.normal,
+                color: Color(0xFF334155),
+                fontFamily: 'DIN',
               ),
+              textAlign: TextAlign.center,
             ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
-  Widget _buildEnhancedShimmerLoading() {
-    return Center(
-      child: Shimmer.fromColors(
-        baseColor: Colors.grey[300]!,
-        highlightColor: Colors.grey[100]!,
+  Widget _buildShimmerLoading() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 200,
               height: 200,
+              width: double.infinity,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(100),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    spreadRadius: 2,
-                  )
-                ],
+                borderRadius: BorderRadius.circular(32),
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 24),
             Container(
-              width: 200,
-              height: 20,
+              height: 120,
+              width: double.infinity,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(24),
+              ),
+            ),
+            const SizedBox(height: 24),
+            GridView.count(
+              shrinkWrap: true,
+              crossAxisCount: 2,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+              children: List.generate(
+                4,
+                (index) => Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                ),
               ),
             ),
           ],
@@ -263,140 +457,6 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent>
       ),
     );
   }
-
-  Widget _buildFloatingParticles() {
-    return SizedBox(
-      width: 200,
-      height: 50,
-      child: AnimatedBuilder(
-        animation: _particleController,
-        builder: (context, child) {
-          return CustomPaint(
-            painter: FloatingParticlePainter(_particleController.value),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _AnimatedRadialPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final gradient = SweepGradient(
-      colors: [
-        AppColors.primaryColor.withValues(alpha: 0.2),
-        AppColors.secondaryColor.withValues(alpha: 0.2),
-      ],
-      stops: const [0.0, 0.8],
-    );
-
-    final paint = Paint()
-      ..shader = gradient.createShader(Rect.fromCircle(
-        center: size.center(Offset.zero),
-        radius: size.width / 2,
-      ))
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-
-    for (int i = 0; i < 8; i++) {
-      canvas.drawArc(
-        Rect.fromCenter(
-          center: size.center(Offset.zero),
-          width: size.width - i * 15,
-          height: size.height - i * 15,
-        ),
-        0,
-        pi * 1.5,
-        false,
-        paint..strokeWidth = 2 - (i * 0.2),
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-
-class WavePainter extends CustomPainter {
-  final double animationValue;
-
-  WavePainter(this.animationValue);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..style = PaintingStyle.fill
-      ..shader = LinearGradient(
-        colors: [AppColors.primaryColor, AppColors.secondaryColor],
-      ).createShader(Rect.fromLTRB(0, 0, size.width, size.height));
-
-    final path = Path();
-    final waveHeight = 10.0;
-    final waveLength = 100.0;
-    final phase = animationValue * 2 * pi;
-
-    path.moveTo(0, size.height / 2);
-    for (double x = 0; x <= size.width; x++) {
-      final y = waveHeight * sin((x / waveLength) * 2 * pi + phase);
-      path.lineTo(x, size.height / 2 + y);
-    }
-    path.lineTo(size.width, size.height);
-    path.lineTo(0, size.height);
-    path.close();
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant WavePainter oldDelegate) => true;
-}
-
-class ParticlePainter extends CustomPainter {
-  final double animationValue;
-
-  ParticlePainter(this.animationValue);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final random = Random(0);
-    final paint = Paint()
-      ..color = AppColors.primaryColor.withValues(alpha: 0.05)
-      ..style = PaintingStyle.fill;
-
-    for (int i = 0; i < 50; i++) {
-      final x = random.nextDouble() * size.width;
-      final y = random.nextDouble() * size.height;
-      final radius = random.nextDouble() * 3 + 1;
-      final offset = Offset(x, y + sin(animationValue * 2 * pi) * 10);
-      canvas.drawCircle(offset, radius, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-
-class FloatingParticlePainter extends CustomPainter {
-  final double animationValue;
-
-  FloatingParticlePainter(this.animationValue);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.primaryColor.withValues(alpha: 0.3)
-      ..style = PaintingStyle.fill;
-
-    for (int i = 0; i < 5; i++) {
-      final x = i * 40.0;
-      final y = sin(animationValue * 2 * pi + i) * 10;
-      canvas.drawCircle(Offset(x, size.height / 2 + y), 4, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 class AnimatedCount extends ImplicitlyAnimatedWidget {
