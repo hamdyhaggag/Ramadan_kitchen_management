@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:iconsax/iconsax.dart';
 import '../../../../core/utils/app_colors.dart';
 import '../../../daily_expenses/logic/expense_cubit.dart';
 import '../../../daily_expenses/logic/expense_state.dart';
@@ -26,33 +27,73 @@ class DonationCardOfPrevious extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      borderRadius: BorderRadius.circular(12),
-      elevation: 2,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => _navigateToDetailScreen(context),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[100]!),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _navigateToDetailScreen(context),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildImageHeader(),
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      mealTitle,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        height: 1.3,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            mealTitle,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E293B),
+                              fontFamily: 'DIN',
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color:
+                                AppColors.primaryColor.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Iconsax.user,
+                                  size: 14, color: AppColors.primaryColor),
+                              const SizedBox(width: 4),
+                              Text(
+                                '$participants',
+                                style: const TextStyle(
+                                  color: AppColors.primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -60,48 +101,15 @@ class DonationCardOfPrevious extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[600],
-                        height: 1.4,
+                        height: 1.5,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
-                    BlocBuilder<ExpenseCubit, ExpenseState>(
-                      builder: (context, state) {
-                        if (state is ExpenseLoaded) {
-                          final dateString =
-                              date.toIso8601String().split('T')[0];
-                          final totalExpenses = state.expenses
-                              .where((expense) => expense.date == dateString)
-                              .fold(
-                                  0.0, (sum, expense) => sum + expense.amount);
-                          final costPerMeal = participants > 0
-                              ? totalExpenses / participants
-                              : 0.0;
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Row(
-                              children: [
-                                Icon(Icons.attach_money,
-                                    size: 16, color: AppColors.primaryColor),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'التكلفة للفرد: ${costPerMeal == 0.0 ? 'لم تحدد بعد' : '${costPerMeal.toStringAsFixed(2)} ج.م'}',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                )
-                              ],
-                            ),
-                          );
-                        }
-                        return const SizedBox();
-                      },
-                    ),
-                    const SizedBox(height: 6),
-                    _buildMetaDataRow(),
+                    const SizedBox(height: 16),
+                    const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                    const SizedBox(height: 16),
+                    _buildFooter(context),
                   ],
                 ),
               ),
@@ -109,6 +117,129 @@ class DonationCardOfPrevious extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildFooter(BuildContext context) {
+    return BlocBuilder<ExpenseCubit, ExpenseState>(
+      builder: (context, state) {
+        String costText = 'تحميل التكلفة...';
+        if (state is ExpenseLoaded) {
+          final dateString = date.toIso8601String().split('T')[0];
+          final totalExpenses = state.expenses
+              .where((expense) => expense.date == dateString)
+              .fold(0.0, (sum, expense) => sum + expense.amount);
+          final costPerMeal =
+              participants > 0 ? totalExpenses / participants : 0.0;
+          costText = costPerMeal == 0.0
+              ? 'لم تحدد التكلفة'
+              : '${costPerMeal.toStringAsFixed(2)} ج.م / فرد';
+        }
+
+        return Row(
+          children: [
+            Icon(Iconsax.money_send, size: 18, color: Colors.grey[400]),
+            const SizedBox(width: 8),
+            Text(
+              costText,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              'التفاصيل',
+              style: TextStyle(
+                color: AppColors.primaryColor,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'DIN',
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Iconsax.arrow_right_1,
+                size: 16, color: AppColors.primaryColor),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildImageHeader() {
+    return Stack(
+      children: [
+        Hero(
+          tag: imageUrl,
+          child: CachedNetworkImage(
+            imageUrl: imageUrl,
+            height: 180,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => Shimmer.fromColors(
+              baseColor: Colors.grey[200]!,
+              highlightColor: Colors.grey[50]!,
+              child: Container(color: Colors.white),
+            ),
+            errorWidget: (context, url, error) => Container(
+              height: 180,
+              color: const Color(0xFFF1F5F9),
+              child: const Icon(Iconsax.image, size: 40, color: Colors.grey),
+            ),
+          ),
+        ),
+        // Gradient Overlay
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.5),
+                ],
+              ),
+            ),
+          ),
+        ),
+        // Date Pill
+        Positioned(
+          bottom: 15,
+          right: 15,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 10,
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Iconsax.calendar_1,
+                    size: 14, color: AppColors.primaryColor),
+                const SizedBox(width: 6),
+                Text(
+                  DateFormat('dd MMMM yyyy', 'ar').format(date),
+                  style: const TextStyle(
+                    color: Color(0xFF1E293B),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'DIN',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -124,139 +255,6 @@ class DonationCardOfPrevious extends StatelessWidget {
           imageUrl: imageUrl,
         ),
       ),
-    );
-  }
-
-  Widget _buildImageHeader() {
-    return Stack(
-      children: [
-        Hero(
-          tag: imageUrl,
-          child: Container(
-            height: 160,
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(12),
-              ),
-            ),
-            child: CachedNetworkImage(
-              imageUrl: imageUrl,
-              imageBuilder: (context, imageProvider) => Container(
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: imageProvider,
-                    fit: BoxFit.cover,
-                  ),
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.6),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-              placeholder: (context, url) => Shimmer.fromColors(
-                baseColor: Colors.grey[300]!,
-                highlightColor: Colors.grey[100]!,
-                child: Container(
-                  height: 160,
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(12),
-                    ),
-                    color: Colors.grey[300],
-                  ),
-                ),
-              ),
-              errorWidget: (context, url, error) => Container(
-                height: 160,
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(12),
-                  ),
-                  color: Colors.grey[200],
-                ),
-                child: const Center(
-                  child: Icon(Icons.error, color: Colors.red, size: 40),
-                ),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 12,
-          left: 16,
-          right: 16,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildPill(
-                DateFormat('dd MMM , yyyy').format(date),
-                Icons.calendar_today,
-              ),
-              _buildPill(
-                '$participants فرد تم إفطارهم',
-                Icons.people_outline,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPill(String text, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: Colors.white),
-          const SizedBox(width: 6),
-          Text(
-            text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMetaDataRow() {
-    return Row(
-      children: [
-        Icon(Icons.restaurant_menu, size: 16, color: AppColors.primaryColor),
-        const SizedBox(width: 6),
-        Text(
-          'وجبات الإفطار',
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const Spacer(),
-        Text(
-          ' عرض التفاصيل',
-          style: TextStyle(
-            color: AppColors.primaryColor,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Icon(Icons.arrow_forward_ios, size: 12, color: AppColors.primaryColor),
-      ],
     );
   }
 }
