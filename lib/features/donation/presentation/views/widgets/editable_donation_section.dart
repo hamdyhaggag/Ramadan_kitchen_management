@@ -37,11 +37,15 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
   String? _existingImageUrl;
   final List<File> _pickedCarouselImages = [];
   List<String> _existingCarouselImages = [];
+  DateTime _selectedDate = DateTime.now(); // Default to today
+  List<String> _suggestedIngredients = [];
+  String _selectedIngredientCategory = 'الكل';
 
   @override
   void initState() {
     super.initState();
     _initializeControllers();
+    _loadSuggestedIngredients();
   }
 
   void _initializeControllers() {
@@ -125,16 +129,20 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
         'contacts': _contacts.map((c) => c.toMap()).toList(),
         'updated_at': FieldValue.serverTimestamp(),
       };
-      final now = DateTime.now();
-      final startOfDay = DateTime(now.year, now.month, now.day);
+
+      // Use selected date for search/save
+      final startOfDay =
+          DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
       final endOfDay = startOfDay
           .add(const Duration(days: 1))
           .subtract(const Duration(milliseconds: 1));
+
       final querySnapshot = await FirebaseFirestore.instance
           .collection('donations')
           .where('created_at', isGreaterThanOrEqualTo: startOfDay)
           .where('created_at', isLessThanOrEqualTo: endOfDay)
           .get();
+
       DocumentReference docRef;
       if (querySnapshot.docs.isNotEmpty) {
         docRef = querySnapshot.docs.first.reference;
@@ -145,7 +153,7 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
           }
         }
       } else {
-        donationData['created_at'] = FieldValue.serverTimestamp();
+        donationData['created_at'] = Timestamp.fromDate(startOfDay); // Fix date
         docRef = await FirebaseFirestore.instance
             .collection('donations')
             .add(donationData);
@@ -229,11 +237,20 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Image Picker Section
+          // Date Selector
+          _buildDateSelector(),
+          const SizedBox(height: 24),
+
+          // Image Picker Section (The Meal Image)
+          _buildSectionHeader('صورة وجبة اليوم (تظهر للتبرع)', Iconsax.image),
+          const SizedBox(height: 12),
           _buildImagePicker(),
           const SizedBox(height: 24),
 
-          // Carousel Section
+          // Carousel Section (The Promo Images)
+          _buildSectionHeader(
+              'صور الشريط الإعلاني (Carousel)', Iconsax.gallery),
+          const SizedBox(height: 12),
           _buildCarouselImagesSection(),
           const SizedBox(height: 32),
 
@@ -243,21 +260,15 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
           _buildTextField(
             controller: _mealTitleController,
             label: 'عنوان الوجبة',
-            hint: 'مثال: وجبة إفطار صام',
+            hint: 'مثال: وجبة إفطار صائم',
             icon: Iconsax.clipboard_text,
           ),
           const SizedBox(height: 16),
-          _buildTextField(
-            controller: _mealDescriptionController,
-            label: 'مكونات الوجبة',
-            hint: 'أرز، خضار، دجاج...',
-            icon: Iconsax.menu_board,
-            maxLines: 4,
-          ),
+          _buildIngredientField(),
           const SizedBox(height: 16),
           _buildTextField(
             controller: _numberOfIndividualsController,
-            label: 'العدد المستهدف',
+            label: 'العدد المستهدف (الأفراد)',
             hint: '100',
             icon: Iconsax.people,
             keyboardType: TextInputType.number,
@@ -425,10 +436,10 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
           ),
           const SizedBox(height: 12),
           Text(
-            'أضف صورة الوجبة الرئيسية',
+            'أضف صورة الوجبة الفعلية من المطبخ',
             style: TextStyle(
                 color: Colors.grey[600],
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.w500),
           ),
         ],
@@ -444,7 +455,7 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
           children: [
             Icon(Iconsax.gallery, size: 18, color: Colors.grey),
             SizedBox(width: 8),
-            Text('معرض الصور الإضافية',
+            Text('إعلانات الشريط العلوي (اختياري)',
                 style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -607,6 +618,297 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
                 ],
               ),
       ),
+    );
+  }
+
+  Widget _buildDateSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('توقيت الوجبة', Iconsax.calendar),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _buildDateOption('اليوم', DateTime.now()),
+            const SizedBox(width: 12),
+            _buildDateOption(
+                'غداً', DateTime.now().add(const Duration(days: 1))),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDateOption(String label, DateTime date) {
+    bool isSelected = _selectedDate.day == date.day &&
+        _selectedDate.month == date.month &&
+        _selectedDate.year == date.year;
+
+    return Expanded(
+      child: InkWell(
+        onTap: () => setState(() => _selectedDate = date),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primaryColor : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? AppColors.primaryColor : Colors.grey[300]!,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.black87,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _loadSuggestedIngredients() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('donations')
+          .orderBy('created_at', descending: true)
+          .limit(50) // Look at last 50 meals
+          .get();
+
+      final Set<String> uniqueIngredients = {};
+      for (var doc in snapshot.docs) {
+        final desc = doc.data()['mealDescription'] as String?;
+        if (desc != null && desc.isNotEmpty) {
+          final items = desc.split(RegExp(r'\+|\,')).map((e) => e.trim());
+          for (var item in items) {
+            if (item.isNotEmpty) uniqueIngredients.add(item);
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _suggestedIngredients = uniqueIngredients.toList()..sort();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading suggested ingredients: $e');
+    }
+  }
+
+  void _appendIngredient(String ingredient) {
+    String currentText = _mealDescriptionController.text.trim();
+    if (currentText.isEmpty) {
+      _mealDescriptionController.text = ingredient;
+    } else {
+      // Check if it's already there to avoid duplicates
+      final items = currentText.split(RegExp(r'\+|\,')).map((e) => e.trim());
+      if (!items.contains(ingredient)) {
+        _mealDescriptionController.text = '$currentText + $ingredient';
+      }
+    }
+  }
+
+  List<String> _getFilteredIngredients() {
+    if (_selectedIngredientCategory == 'الكل') return _suggestedIngredients;
+
+    final Map<String, List<String>> categories = {
+      'بروتين': [
+        'لحم',
+        'دجاج',
+        'فراخ',
+        'كفتة',
+        'سمك',
+        'بط',
+        'أرنب',
+        'بيض',
+        'كبدة'
+      ],
+      'نشويات': [
+        'أرز',
+        'مكرونة',
+        'بطاطس',
+        'لسان',
+        'شعرية',
+        'خبز',
+        'عيش',
+        'محشي',
+        'رقاق'
+      ],
+      'خضروات': [
+        'فاصوليا',
+        'بسلة',
+        'خضار',
+        'سلطة',
+        'ملوخية',
+        'شوربة',
+        'لوبيا',
+        'بامية',
+        'سبانخ',
+        'عدس'
+      ],
+      'مقبلات': ['مخلل', 'طرشي', 'تمر', 'بلح', 'زيتون'],
+      'مشروبات': [
+        'عصير',
+        'سوبيا',
+        'عرقسوس',
+        'تمر هندي',
+        'قمر الدين',
+        'مانجو',
+        'فراولة',
+        'خشاف'
+      ],
+      'حلويات': ['كنافة', 'بسبوسة', 'قطايف', 'أرز بلبن', 'مهلبية'],
+    };
+
+    final keywords = categories[_selectedIngredientCategory] ?? [];
+    return _suggestedIngredients.where((ingredient) {
+      return keywords.any((k) => ingredient.contains(k));
+    }).toList();
+  }
+
+  Widget _buildIngredientField() {
+    final filtered = _getFilteredIngredients();
+    final categories = [
+      'الكل',
+      'بروتين',
+      'نشويات',
+      'خضروات',
+      'مقبلات',
+      'مشروبات',
+      'حلويات'
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('مكونات الوجبة (استخدم علامة + للفصل)',
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppColors.blackColor)),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _mealDescriptionController,
+          maxLines: 2,
+          style: const TextStyle(fontWeight: FontWeight.w500),
+          decoration: InputDecoration(
+            hintText: 'أرز + خضار + لحم...',
+            hintStyle: TextStyle(color: Colors.grey[400]),
+            prefixIcon:
+                const Icon(Iconsax.menu_board, color: Colors.grey, size: 22),
+            filled: true,
+            fillColor: Colors.grey[50],
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[200]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide:
+                  const BorderSide(color: AppColors.primaryColor, width: 1.5),
+            ),
+          ),
+        ),
+        if (_suggestedIngredients.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          // Category Selector
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: categories.map((cat) {
+                bool isSelected = _selectedIngredientCategory == cat;
+                return Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: ChoiceChip(
+                    label: Text(cat),
+                    selected: isSelected,
+                    onSelected: (val) =>
+                        setState(() => _selectedIngredientCategory = cat),
+                    selectedColor:
+                        AppColors.primaryColor.withValues(alpha: 0.1),
+                    labelStyle: TextStyle(
+                      color: isSelected ? AppColors.primaryColor : Colors.grey,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontSize: 12,
+                    ),
+                    side: BorderSide(
+                      color: isSelected
+                          ? AppColors.primaryColor
+                          : Colors.grey[200]!,
+                    ),
+                    backgroundColor: Colors.white,
+                    showCheckmark: false,
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Grouped Chips
+          if (filtered.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 10),
+              child: Text('لا توجد مكونات في هذا القسم حالياً',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                      fontStyle: FontStyle.italic)),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: filtered.map((item) {
+                return InkWell(
+                  onTap: () => _appendIngredient(item),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey[100]!),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.02),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.add_circle_outline,
+                            size: 14, color: AppColors.primaryColor),
+                        const SizedBox(width: 6),
+                        Text(
+                          item,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF334155),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+        ],
+        const SizedBox(height: 16),
+        const Text(
+          '💡 سيتم عرض كل صنف في بطاقة منفصلة للمستخدم.',
+          style: TextStyle(
+              fontSize: 11, color: Colors.orange, fontWeight: FontWeight.w500),
+        ),
+      ],
     );
   }
 }
