@@ -811,7 +811,9 @@ class _AdminDashboardHubState extends State<AdminDashboardHub> {
     return query.snapshots().map((snapshot) {
       final groups = <String, List<int>>{};
       for (var doc in snapshot.docs) {
-        groups[doc.id] = List<int>.from(doc.get('caseNumbers') ?? []);
+        final data = doc.data();
+        final String name = data['name'] ?? doc.id;
+        groups[name] = List<int>.from(data['caseNumbers'] ?? []);
       }
       return groups;
     });
