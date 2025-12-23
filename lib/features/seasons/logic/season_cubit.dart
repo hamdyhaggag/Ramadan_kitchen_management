@@ -54,6 +54,8 @@ class SeasonCubit extends Cubit<SeasonState> {
   }
 
   /// Create a new season
+  // Legacy migration removed
+
   Future<void> createSeason({
     required String name,
     required String hijriYear,

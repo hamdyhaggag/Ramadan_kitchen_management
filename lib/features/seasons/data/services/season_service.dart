@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/ramadan_season_model.dart';
 
 /// Service for managing Ramadan seasons in Firestore
@@ -27,9 +28,7 @@ class SeasonService {
 
   /// Get the currently active season
   Future<RamadanSeasonModel?> getActiveSeason() async {
-    if (_activeSeasonCache != null) {
-      return _activeSeasonCache;
-    }
+    if (_activeSeasonCache != null) return _activeSeasonCache;
 
     final snapshot = await _firestore
         .collection(_seasonsCollection)
@@ -67,13 +66,11 @@ class SeasonService {
   Future<RamadanSeasonModel?> getSeasonById(String seasonId) async {
     final doc =
         await _firestore.collection(_seasonsCollection).doc(seasonId).get();
-    if (doc.exists) {
-      return RamadanSeasonModel.fromFirestore(doc);
-    }
+    if (doc.exists) return RamadanSeasonModel.fromFirestore(doc);
     return null;
   }
 
-  /// Get all archived seasons (for viewing history)
+  /// Get all archived seasons
   Stream<List<RamadanSeasonModel>> getArchivedSeasonsStream() {
     return _firestore
         .collection(_seasonsCollection)
@@ -87,67 +84,47 @@ class SeasonService {
 
   /// Create a new season
   Future<String> createSeason(RamadanSeasonModel season) async {
-    // If new season is active, deactivate all other seasons first
-    if (season.isActive) {
-      await _deactivateAllSeasons();
-    }
-
+    if (season.isActive) await _deactivateAllSeasons();
     final docRef = await _firestore
         .collection(_seasonsCollection)
         .add(season.toFirestore());
-
-    if (season.isActive) {
-      _activeSeasonCache = season.copyWith(id: docRef.id);
-    }
-
+    if (season.isActive) _activeSeasonCache = season.copyWith(id: docRef.id);
     return docRef.id;
   }
 
   /// Update an existing season
   Future<void> updateSeason(RamadanSeasonModel season) async {
-    // If activating this season, deactivate others first
     if (season.isActive) {
       await _deactivateAllSeasons();
       _activeSeasonCache = season;
     }
-
     await _firestore
         .collection(_seasonsCollection)
         .doc(season.id)
         .update(season.toFirestore());
   }
 
-  /// Activate a specific season (deactivates all others)
+  /// Activate a specific season
   Future<void> activateSeason(String seasonId) async {
     await _deactivateAllSeasons();
-
     await _firestore.collection(_seasonsCollection).doc(seasonId).update({
       'isActive': true,
       'updatedAt': FieldValue.serverTimestamp(),
     });
-
-    // Update cache
     _activeSeasonCache = await getSeasonById(seasonId);
   }
 
-  /// Archive a season (marks it as completed)
+  /// Archive a season
   Future<void> archiveSeason(String seasonId) async {
-    final season = await getSeasonById(seasonId);
-    if (season == null) return;
-
-    // Calculate final statistics before archiving
-    final stats = await _calculateSeasonStatistics(seasonId);
+    // Recalculate stats before archiving to ensure accuracy
+    await recalculateSeasonStatistics(seasonId);
 
     await _firestore.collection(_seasonsCollection).doc(seasonId).update({
       'isActive': false,
       'isArchived': true,
-      'statistics': stats.toMap(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
-
-    if (_activeSeasonCache?.id == seasonId) {
-      _activeSeasonCache = null;
-    }
+    if (_activeSeasonCache?.id == seasonId) _activeSeasonCache = null;
   }
 
   /// Deactivate all seasons
@@ -156,7 +133,6 @@ class SeasonService {
         .collection(_seasonsCollection)
         .where('isActive', isEqualTo: true)
         .get();
-
     final batch = _firestore.batch();
     for (var doc in activeSeasonsQuery.docs) {
       batch.update(doc.reference, {'isActive': false});
@@ -165,53 +141,22 @@ class SeasonService {
     _activeSeasonCache = null;
   }
 
-  /// Calculate statistics for a season
-  Future<SeasonStatistics> _calculateSeasonStatistics(String seasonId) async {
-    // Get cases count
-    final casesSnapshot = await _firestore
-        .collection('cases')
-        .where('seasonId', isEqualTo: seasonId)
-        .get();
-
-    // Get groups count
-    final groupsSnapshot = await _firestore
-        .collection('caseGroups')
-        .where('seasonId', isEqualTo: seasonId)
-        .get();
-
-    // Get donations (meals served)
-    final donationsSnapshot = await _firestore
-        .collection('donations')
-        .where('seasonId', isEqualTo: seasonId)
-        .get();
-
-    int totalMeals = 0;
-    for (var doc in donationsSnapshot.docs) {
-      totalMeals += (doc.data()['numberOfIndividuals'] as int?) ?? 0;
+  /// Delete a season and its associated data
+  Future<void> deleteSeason(String seasonId) async {
+    final collections = ['donations', 'expenses', 'cases', 'caseGroups'];
+    for (var collection in collections) {
+      final snapshot = await _firestore
+          .collection(collection)
+          .where('seasonId', isEqualTo: seasonId)
+          .get();
+      final batch = _firestore.batch();
+      for (var doc in snapshot.docs) batch.delete(doc.reference);
+      await batch.commit();
     }
-
-    // Get expenses
-    final expensesSnapshot = await _firestore
-        .collection('expenses')
-        .where('seasonId', isEqualTo: seasonId)
-        .get();
-
-    double totalExpenses = 0.0;
-    for (var doc in expensesSnapshot.docs) {
-      totalExpenses += (doc.data()['amount'] as num?)?.toDouble() ?? 0.0;
-    }
-
-    return SeasonStatistics(
-      totalCases: casesSnapshot.docs.length,
-      totalGroups: groupsSnapshot.docs.length,
-      totalMealsServed: totalMeals,
-      totalExpenses: totalExpenses,
-      totalDays: donationsSnapshot.docs.length,
-      lastUpdated: DateTime.now(),
-    );
+    await _firestore.collection(_seasonsCollection).doc(seasonId).delete();
   }
 
-  /// Copy data from one season to another with granular control
+  /// Copy data between seasons
   Future<void> copyDataToSeason({
     required String sourceSeasonId,
     required String targetSeasonId,
@@ -220,149 +165,462 @@ class SeasonService {
     bool copyDonationSettings = false,
   }) async {
     final batch = _firestore.batch();
-    int copiedCasesCount = 0;
-    int copiedGroupsCount = 0;
-
-    // 1. Copy cases
     if (copyCases) {
-      final casesSnapshot = await _firestore
+      final snapshot = await _firestore
           .collection('cases')
           .where('seasonId', isEqualTo: sourceSeasonId)
           .get();
-
-      copiedCasesCount = casesSnapshot.docs.length;
-
-      for (var doc in casesSnapshot.docs) {
+      for (var doc in snapshot.docs) {
         final data = doc.data();
-        // Reset the checkbox values (استلم) for the new season
         data['seasonId'] = targetSeasonId;
-        data['استلم'] = false; // Reset received status
-        data['جاهزة'] = false; // Reset ready status
-        data['هنا؟'] = false; // Reset present status
-
-        // Remove document ID from data if it exists to let Firestore generate a new one
-        data.remove('id');
-
-        final newDocRef = _firestore.collection('cases').doc();
-        batch.set(newDocRef, data);
+        data['استلم'] = false;
+        data['جاهزة'] = false;
+        data['هنا؟'] = false;
+        batch.set(_firestore.collection('cases').doc(), data);
       }
     }
-
-    // 2. Copy case groups
     if (copyGroups) {
-      final groupsSnapshot = await _firestore
+      final snapshot = await _firestore
           .collection('caseGroups')
           .where('seasonId', isEqualTo: sourceSeasonId)
           .get();
-
-      copiedGroupsCount = groupsSnapshot.docs.length;
-
-      for (var doc in groupsSnapshot.docs) {
+      for (var doc in snapshot.docs) {
         final data = doc.data();
         data['seasonId'] = targetSeasonId;
-        data.remove('id');
-
-        final newDocRef = _firestore.collection('caseGroups').doc();
-        batch.set(newDocRef, data);
+        batch.set(_firestore.collection('caseGroups').doc(), data);
       }
     }
 
-    // 3. Copy Donation Settings (Contacts & Images)
     if (copyDonationSettings) {
       try {
-        final latestDonationSnapshot = await _firestore
+        final snapshot = await _firestore
             .collection('donations')
             .where('seasonId', isEqualTo: sourceSeasonId)
             .orderBy('created_at', descending: true)
             .limit(1)
             .get();
-
-        if (latestDonationSnapshot.docs.isNotEmpty) {
-          final latestData = latestDonationSnapshot.docs.first.data();
-
-          final newDonationRef = _firestore.collection('donations').doc();
-
-          // Create initial "Draft" donation with copied settings
-          final newDonationData = {
+        if (snapshot.docs.isNotEmpty) {
+          final oldData = snapshot.docs.first.data();
+          final newData = {
             'seasonId': targetSeasonId,
             'created_at': FieldValue.serverTimestamp(),
             'updated_at': FieldValue.serverTimestamp(),
-
-            // Copied Settings
-            'contacts': latestData['contacts'] ?? [],
-            'carouselImages': latestData['carouselImages'] ?? [],
-            'mealImageUrl': latestData['mealImageUrl'],
-
-            // Default Values
-            'mealTitle': 'إعدادات أول وجبة (مسودة)',
-            'mealDescription': 'تم نسخ بيانات التواصل والصور من الموسم السابق.',
+            'contacts': oldData['contacts'] ?? [],
+            'carouselImages': oldData['carouselImages'] ?? [],
+            'mealImageUrl': oldData['mealImageUrl'],
             'numberOfIndividuals': 0,
             'cost': 0,
-            'name_publication_status': 'public',
             'seasonable': true,
           };
-
-          batch.set(newDonationRef, newDonationData);
+          batch.set(_firestore.collection('donations').doc(), newData);
         }
       } catch (e) {
-        print('Error copying donation settings: $e');
-        // Continue without failing the whole batch
+        debugPrint('Error copying donation settings: $e');
       }
     }
-
-    // 4. Update Season Statistics
-    if (copyCases || copyGroups) {
-      final seasonRef =
-          _firestore.collection(_seasonsCollection).doc(targetSeasonId);
-
-      // We overwrite the statistics map with the new counts
-      // Assuming this is a fresh import where we want to set the baseline
-      final statsUpdate = {
-        'statistics': {
-          'totalCases': copiedCasesCount,
-          'totalGroups': copiedGroupsCount,
-          'totalMealsServed': 0,
-          'totalExpenses': 0.0,
-          'totalDays': 0,
-          'lastUpdated': FieldValue.serverTimestamp(),
-        }
-      };
-
-      batch.set(seasonRef, statsUpdate, SetOptions(merge: true));
-    }
-
     await batch.commit();
   }
 
-  /// Delete a season and all its associated data
-  /// DANGEROUS: Use with caution!
-  Future<void> deleteSeason(String seasonId) async {
-    // Delete in order: donations, expenses, cases, groups, then season
-    final collections = ['donations', 'expenses', 'cases', 'caseGroups'];
+  void clearCache() => _activeSeasonCache = null;
 
-    for (var collection in collections) {
-      final snapshot = await _firestore
-          .collection(collection)
-          .where('seasonId', isEqualTo: seasonId)
-          .get();
+  /// IMPORT & RESTORE LOGIC (With Double De-duplication)
+  Future<int> importLegacyData(String targetSeasonId,
+      {Function(int current, int total)? onProgress}) async {
+    debugPrint('MIGRATION: Starting fetch with double de-duplication...');
+    if (onProgress != null) onProgress(0, -1);
 
-      final batch = _firestore.batch();
-      for (var doc in snapshot.docs) {
-        batch.delete(doc.reference);
+    const String knownOldSeasonId = 'bYepWHg3z70Ssa4jahKi';
+    final results = await Future.wait([
+      _firestore
+          .collection('cases')
+          .where('seasonId', isEqualTo: knownOldSeasonId)
+          .get(),
+      _firestore
+          .collection('caseGroups')
+          .where('seasonId', isEqualTo: knownOldSeasonId)
+          .get(),
+      _firestore
+          .collection('cases')
+          .where('seasonId', isEqualTo: targetSeasonId)
+          .get(),
+      _firestore
+          .collection('caseGroups')
+          .where('seasonId', isEqualTo: targetSeasonId)
+          .get(),
+    ]);
+
+    final oldCases = results[0];
+    final oldGroups = results[1];
+    final targetCasesDocs = results[2].docs;
+    final targetGroupsDocs = results[3].docs;
+
+    // List of allowed groups (Whitelist)
+    final whitelist = [
+      'الشنط الفردية',
+      'المجموعة الأولى',
+      'المجموعة الثانية',
+      'المجموعة الثالثة ( أ )',
+      'المجموعة الثالثة (ب)',
+      'المجموعة الرابعة',
+      'المجموعة الخامسة',
+      'المجموعة السادسة',
+      'المجموعة السابعة',
+      'المجموعة الثامنة',
+      'المجموعة التاسعة',
+    ];
+
+    String normalize(String s) {
+      return s
+          .replaceAll(RegExp(r'["' ']|bYep[a-zA-Z0-9]+|zU7[a-zA-Z0-9]+'), '')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .replaceAll('أ', 'ا')
+          .replaceAll('إ', 'ا')
+          .replaceAll('آ', 'ا')
+          .trim()
+          .toLowerCase();
+    }
+
+    final normalizedWhitelist = whitelist.map((e) => normalize(e)).toList();
+
+    // Aggressive name cleaner to extract REAL group names (e.g. "الشنط الفردية")
+    String extractName(Map<String, dynamic> data, String docId) {
+      final fields = ['name', 'اسم المجموعة', 'label', 'title'];
+      for (var f in fields) {
+        final val = data[f]?.toString() ?? "";
+        if (RegExp(r'[\u0600-\u06FF]').hasMatch(val)) return val;
       }
-      await batch.commit();
+      for (var val in data.values) {
+        final s = val.toString();
+        if (RegExp(r'[\u0600-\u06FF]').hasMatch(s)) return s;
+      }
+      return docId;
     }
 
-    // Finally delete the season document
-    await _firestore.collection(_seasonsCollection).doc(seasonId).delete();
-
-    if (_activeSeasonCache?.id == seasonId) {
-      _activeSeasonCache = null;
+    // Helper to get consistent case key
+    String getCaseKey(Map<String, dynamic> d) {
+      final name =
+          (d['اسم الحالة'] ?? d['الاسم'] ?? "").toString().trim().toLowerCase();
+      final num = (d['رقم الحالة'] ?? d['رقم_الحالة'] ?? "").toString().trim();
+      return num.isNotEmpty ? 'num_$num' : 'name_$name';
     }
+
+    // Helper to get consistent group key
+    String getGroupKey(Map<String, dynamic> d, String docId) {
+      return normalize(extractName(d, docId));
+    }
+
+    // 1. Map target already has
+    final Set<String> targetCaseKeys =
+        targetCasesDocs.map((doc) => getCaseKey(doc.data())).toSet();
+    final Set<String> targetGroupKeys =
+        targetGroupsDocs.map((doc) => getGroupKey(doc.data(), doc.id)).toSet();
+
+    // 2. Filter old cases
+    final Map<String, QueryDocumentSnapshot<Map<String, dynamic>>>
+        uniqueSourceCases = {};
+    for (var doc in oldCases.docs) {
+      final key = getCaseKey(doc.data());
+      if (key == 'num_' || key == 'name_') continue;
+      if (targetCaseKeys.contains(key)) continue;
+      if (uniqueSourceCases.containsKey(key)) continue;
+      uniqueSourceCases[key] = doc;
+    }
+
+    // 3. Filter old groups (Strict Whitelist)
+    final Map<String, QueryDocumentSnapshot<Map<String, dynamic>>>
+        uniqueSourceGroups = {};
+    for (var doc in oldGroups.docs) {
+      final String rawName = extractName(doc.data(), doc.id);
+      final String normName = normalize(rawName);
+
+      if (!normalizedWhitelist.contains(normName))
+        continue; // SKIP if not in whitelist
+      if (targetGroupKeys.contains(normName)) continue;
+      if (uniqueSourceGroups.containsKey(normName)) continue;
+
+      uniqueSourceGroups[normName] = doc;
+    }
+
+    final sourceCases = uniqueSourceCases.values.toList();
+    final sourceGroups = uniqueSourceGroups.values.toList();
+    int totalToImport = sourceCases.length + sourceGroups.length;
+    debugPrint(
+        'MIGRATION: Unique to import - Cases: ${sourceCases.length}, Groups: ${sourceGroups.length}');
+
+    if (onProgress != null) onProgress(0, totalToImport);
+
+    WriteBatch batch = _firestore.batch();
+    int importedCount = 0;
+    int batchCount = 0;
+
+    for (var doc in sourceCases) {
+      final data = doc.data();
+      data['seasonId'] = targetSeasonId;
+      data['استلم'] = false;
+      data['جاهزة'] = false;
+      data['هنا؟'] = false;
+      batch.set(_firestore.collection('cases').doc(), data);
+      importedCount++;
+      batchCount++;
+      if (batchCount >= 450) {
+        await batch.commit();
+        batch = _firestore.batch();
+        batchCount = 0;
+      }
+      if (onProgress != null && importedCount % 50 == 0)
+        onProgress(importedCount, totalToImport);
+    }
+
+    for (var doc in sourceGroups) {
+      final data = Map<String, dynamic>.from(doc.data());
+      // Identify the group by its clean name from whitelist
+      final String arabName = extractName(data, doc.id);
+      data['name'] = arabName;
+      data['seasonId'] = targetSeasonId;
+
+      batch.set(_firestore.collection('caseGroups').doc(), data);
+      importedCount++;
+      batchCount++;
+      if (batchCount >= 450) {
+        await batch.commit();
+        batch = _firestore.batch();
+        batchCount = 0;
+      }
+      if (onProgress != null && importedCount % 50 == 0)
+        onProgress(importedCount, totalToImport);
+    }
+
+    if (batchCount > 0) await batch.commit();
+
+    // Update Stats & Purge Both
+    await recalculateSeasonStatistics(targetSeasonId);
+    await purgeDuplicates(targetSeasonId); // Clean UP target
+    await purgeDuplicates(knownOldSeasonId); // Clean UP source
+
+    return importedCount;
   }
 
-  /// Clear cache (useful when user logs out)
-  void clearCache() {
-    _activeSeasonCache = null;
+  /// THE FINAL PURGE - STRICT WHITELIST (Keep only 11 groups)
+  Future<int> purgeDuplicates(String seasonId) async {
+    debugPrint(
+        'PURGE: Starting STRICT Whitelist cleanup for season $seasonId...');
+
+    // 1. Define the Only Groups Allowed
+    final whitelist = [
+      'الشنط الفردية',
+      'المجموعة الأولى',
+      'المجموعة الثانية',
+      'المجموعة الثالثة ( أ )',
+      'المجموعة الثالثة (ب)',
+      'المجموعة الرابعة',
+      'المجموعة الخامسة',
+      'المجموعة السادسة',
+      'المجموعة السابعة',
+      'المجموعة الثامنة',
+      'المجموعة التاسعة',
+    ];
+
+    // Normalizer to handle spaces, brackets, etc.
+    String normalize(String s) {
+      return s
+          .replaceAll(RegExp(r'["' ']|bYep[a-zA-Z0-9]+|zU7[a-zA-Z0-9]+'), '')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .replaceAll('أ', 'ا')
+          .replaceAll('إ', 'ا')
+          .replaceAll('آ', 'ا')
+          .trim();
+    }
+
+    final normalizedWhitelist =
+        whitelist.map((e) => normalize(e).toLowerCase()).toList();
+
+    // Helper to extract the REAL Arabic name from anything
+    String extractArabicName(Map<String, dynamic> data, String docId) {
+      final fields = ['name', 'اسم المجموعة', 'label', 'title'];
+      for (var f in fields) {
+        final val = data[f]?.toString() ?? "";
+        if (RegExp(r'[\u0600-\u06FF]').hasMatch(val)) return val;
+      }
+      for (var val in data.values) {
+        final s = val.toString();
+        if (RegExp(r'[\u0600-\u06FF]').hasMatch(s)) return s;
+      }
+      if (RegExp(r'[\u0600-\u06FF]').hasMatch(docId)) return docId;
+      return "";
+    }
+
+    // 1. Purge Cases (Standard De-duplication)
+    final casesSnapshot = await _firestore
+        .collection('cases')
+        .where('seasonId', isEqualTo: seasonId)
+        .get();
+    final Map<String, List<DocumentSnapshot>> caseIdentityMap = {};
+    for (var doc in casesSnapshot.docs) {
+      final d = doc.data();
+      final name =
+          (d['اسم الحالة'] ?? d['الاسم'] ?? "").toString().trim().toLowerCase();
+      final num = (d['رقم الحالة'] ?? d['رقم_الحالة'] ?? "").toString().trim();
+      String key =
+          num.isNotEmpty ? 'num_$num' : (name.isNotEmpty ? 'name_$name' : "");
+      if (key.isNotEmpty) caseIdentityMap.putIfAbsent(key, () => []).add(doc);
+    }
+
+    // 2. Fetch All Groups
+    final groupsSnapshot = await _firestore
+        .collection('caseGroups')
+        .where('seasonId', isEqualTo: seasonId)
+        .get();
+
+    // Map of: Whitelist Name Index -> List of Documents matching it
+    final Map<int, List<DocumentSnapshot>> validGroups = {};
+    final List<DocumentSnapshot> junkGroups = [];
+
+    for (var doc in groupsSnapshot.docs) {
+      final data = doc.data();
+      final rawName = extractArabicName(data, doc.id);
+      final normName = normalize(rawName).toLowerCase();
+
+      int index = normalizedWhitelist.indexOf(normName);
+      if (index != -1) {
+        validGroups.putIfAbsent(index, () => []).add(doc);
+      } else {
+        // Doesn't match any whitelisted Arabic group
+        junkGroups.add(doc);
+      }
+    }
+
+    int deletedCount = 0;
+    WriteBatch batch = _firestore.batch();
+    int batchCount = 0;
+
+    // A. Delete Standard Case Duplicates
+    for (var docs in caseIdentityMap.values) {
+      if (docs.length > 1) {
+        for (int i = 1; i < docs.length; i++) {
+          batch.delete(docs[i].reference);
+          deletedCount++;
+          batchCount++;
+          if (batchCount >= 450) {
+            await batch.commit();
+            batch = _firestore.batch();
+            batchCount = 0;
+          }
+        }
+      }
+    }
+
+    // B. Merge and Purge WHITESLISTED Groups
+    for (int i = 0; i < whitelist.length; i++) {
+      final name = whitelist[i];
+      final docs = validGroups[i] ?? [];
+
+      final Set<int> allCases = {};
+      for (var doc in docs) {
+        final d = doc.data() as Map<String, dynamic>;
+        final list = d['caseNumbers'] as List?;
+        for (var n in list ?? []) if (n is num) allCases.add(n.toInt());
+      }
+
+      if (docs.isNotEmpty) {
+        // Update the existing first group
+        batch.update(docs.first.reference, {
+          'name': name,
+          'caseNumbers': allCases.toList()..sort(),
+          'updated_at': FieldValue.serverTimestamp(),
+        });
+        // Delete extras
+        for (int j = 1; j < docs.length; j++) {
+          batch.delete(docs[j].reference);
+          deletedCount++;
+          batchCount++;
+          if (batchCount >= 450) {
+            await batch.commit();
+            batch = _firestore.batch();
+            batchCount = 0;
+          }
+        }
+      } else {
+        // CRITICAL: If a whitelisted group is MISSING in this season, create it!
+        // This fixes seasons where groups were accidentally wiped or never existed.
+        batch.set(_firestore.collection('caseGroups').doc(), {
+          'name': name,
+          'seasonId': seasonId,
+          'caseNumbers': [], // Manager can fill this or we can auto-link later
+          'created_at': FieldValue.serverTimestamp(),
+        });
+        batchCount++;
+        if (batchCount >= 450) {
+          await batch.commit();
+          batch = _firestore.batch();
+          batchCount = 0;
+        }
+      }
+    }
+
+    // C. Delete ALL JUNK Groups (Not in Whitelist)
+    for (var doc in junkGroups) {
+      batch.delete(doc.reference);
+      deletedCount++;
+      batchCount++;
+      if (batchCount >= 450) {
+        await batch.commit();
+        batch = _firestore.batch();
+        batchCount = 0;
+      }
+    }
+
+    if (batchCount > 0) await batch.commit();
+    await recalculateSeasonStatistics(seasonId);
+    debugPrint('PURGE: Completed. Deleted $deletedCount junk/duplicate items.');
+    return deletedCount;
+  }
+
+  /// RE-CALCULATE Statistics (Real-time count)
+  Future<void> recalculateSeasonStatistics(String seasonId) async {
+    debugPrint('STATS: Recalculating for season $seasonId...');
+
+    final results = await Future.wait([
+      _firestore
+          .collection('cases')
+          .where('seasonId', isEqualTo: seasonId)
+          .get(),
+      _firestore
+          .collection('caseGroups')
+          .where('seasonId', isEqualTo: seasonId)
+          .get(),
+      _firestore
+          .collection('donations')
+          .where('seasonId', isEqualTo: seasonId)
+          .get(),
+      _firestore
+          .collection('expenses')
+          .where('seasonId', isEqualTo: seasonId)
+          .get(),
+    ]);
+
+    final casesCount = results[0].docs.length;
+    final groupsCount = results[1].docs.length;
+
+    int totalMeals = 0;
+    for (var doc in results[2].docs) {
+      totalMeals += (doc.data()['numberOfIndividuals'] as int?) ?? 0;
+    }
+
+    double totalExpenses = 0.0;
+    for (var doc in results[3].docs) {
+      totalExpenses += (doc.data()['amount'] as num?)?.toDouble() ?? 0.0;
+    }
+
+    await _firestore.collection(_seasonsCollection).doc(seasonId).update({
+      'statistics.totalCases': casesCount,
+      'statistics.totalGroups': groupsCount,
+      'statistics.totalMealsServed': totalMeals,
+      'statistics.totalExpenses': totalExpenses,
+      'statistics.totalDays': results[2].docs.length,
+      'statistics.lastUpdated': FieldValue.serverTimestamp(),
+    });
+
+    debugPrint(
+        'STATS: Sync complete. Cases: $casesCount, Groups: $groupsCount');
   }
 }

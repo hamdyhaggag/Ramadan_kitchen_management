@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/core/widgets/general_button.dart';
+import 'package:ramadan_kitchen_management/features/seasons/data/services/season_service.dart';
 
 class ManageGroupsScreen extends StatefulWidget {
   const ManageGroupsScreen({super.key});
@@ -13,13 +14,42 @@ class ManageGroupsScreen extends StatefulWidget {
 
 class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
   List<DocumentSnapshot>? _localDocs;
+  String? _activeSeasonId;
+  final SeasonService _seasonService = SeasonService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadActiveSeason();
+  }
+
+  Future<void> _loadActiveSeason() async {
+    final activeSeason = await _seasonService.getActiveSeason();
+    if (mounted) {
+      setState(() {
+        _activeSeasonId = activeSeason?.id;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_activeSeasonId == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF8F9FE),
+        body: Center(
+            child: CircularProgressIndicator(color: AppColors.primaryColor)),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('caseGroups').snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('caseGroups')
+            .where('seasonId', isEqualTo: _activeSeasonId)
+            .orderBy('order')
+            .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting &&
               _localDocs == null) {
@@ -38,7 +68,8 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
 
           if (snapshot.hasData) {
             _localDocs = snapshot.data!.docs;
-            _sortDocsInMemory();
+            // No need to sort in memory if orderBy is working, but just in case
+            // _sortDocsInMemory();
           }
 
           final docs = _localDocs!;
@@ -75,12 +106,14 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
                     },
                     itemBuilder: (context, index) {
                       final doc = docs[index];
-                      final groupName = doc.id;
-                      final cases = List<int>.from(doc['caseNumbers'] ?? []);
+                      // Use name field, fallback to doc.id for compatibility
+                      final data = doc.data() as Map<String, dynamic>;
+                      final groupName = data['name'] ?? doc.id;
+                      final cases = List<int>.from(data['caseNumbers'] ?? []);
                       cases.sort();
 
                       return Container(
-                        key: Key(groupName),
+                        key: Key(doc.id), // Use doc.id for Key stability
                         margin: const EdgeInsets.only(bottom: 12),
                         child: AnimationConfiguration.staggeredList(
                           position: index,
@@ -89,7 +122,7 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
                             verticalOffset: 50.0,
                             child: FadeInAnimation(
                               child: _buildGroupCard(
-                                  context, groupName, cases, index),
+                                  context, doc.id, groupName, cases, index),
                             ),
                           ),
                         ),
@@ -103,17 +136,6 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
         },
       ),
     );
-  }
-
-  void _sortDocsInMemory() {
-    _localDocs!.sort((a, b) {
-      final dataA = a.data() as Map<String, dynamic>;
-      final dataB = b.data() as Map<String, dynamic>;
-      int orderA = dataA.containsKey('order') ? dataA['order'] : 9999;
-      int orderB = dataB.containsKey('order') ? dataB['order'] : 9999;
-      if (orderA != orderB) return orderA.compareTo(orderB);
-      return a.id.compareTo(b.id);
-    });
   }
 
   void _onReorder(int oldIndex, int newIndex) async {
@@ -199,10 +221,10 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
             Row(
               children: [
                 _buildStatItem('المجموعات', '$totalGroups',
-                    Icons.category_rounded, Colors.orange),
+                    Icons.category_rounded, Colors.white),
                 const SizedBox(width: 12),
                 _buildStatItem('إجمالي الأسر', '$totalFamilies',
-                    Icons.people_alt_rounded, Colors.white),
+                    Icons.people_alt_rounded, Colors.orange),
               ],
             ),
           ],
@@ -255,8 +277,8 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
     );
   }
 
-  Widget _buildGroupCard(
-      BuildContext context, String groupName, List<int> cases, int index) {
+  Widget _buildGroupCard(BuildContext context, String docId, String groupName,
+      List<int> cases, int index) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -276,7 +298,7 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () => _showGroupDialog(context,
-              groupName: groupName, currentCases: cases),
+              docId: docId, groupName: groupName, currentCases: cases),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -330,7 +352,7 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            groupName, // Full name here
+                            groupName,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -355,13 +377,16 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
                           icon: Icons.edit_rounded,
                           color: Colors.blue,
                           onTap: () => _showGroupDialog(context,
-                              groupName: groupName, currentCases: cases),
+                              docId: docId,
+                              groupName: groupName,
+                              currentCases: cases),
                         ),
                         const SizedBox(width: 8),
                         _buildActionButton(
                           icon: Icons.delete_rounded,
                           color: Colors.red,
-                          onTap: () => _confirmDelete(context, groupName),
+                          onTap: () =>
+                              _confirmDelete(context, docId, groupName),
                         ),
                       ],
                     ),
@@ -441,6 +466,34 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // Header inside body to allow back navigation if empty
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: InkWell(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                        )
+                      ],
+                    ),
+                    child: const Icon(Icons.arrow_forward_ios_rounded,
+                        size: 20, color: Colors.black),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const Spacer(flex: 1),
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
@@ -452,7 +505,7 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'لا توجد مجموعات حتى الآن',
+            'لا توجد مجموعات لهذا الموسم',
             style: TextStyle(
                 fontSize: 18,
                 color: Colors.grey[800],
@@ -473,18 +526,18 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
               onPressed: () => _showGroupDialog(context),
             ),
           ),
+          const Spacer(flex: 2),
         ],
       ),
     );
   }
 
   void _showGroupDialog(BuildContext context,
-      {String? groupName, List<int>? currentCases}) {
+      {String? docId, String? groupName, List<int>? currentCases}) {
     final nameController = TextEditingController(text: groupName);
     final casesController =
         TextEditingController(text: currentCases?.join(', ') ?? '');
-    final isEditing = groupName != null;
-    final String oldName = groupName ?? '';
+    final isEditing = docId != null;
 
     showDialog(
       context: context,
@@ -499,7 +552,7 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
               controller: nameController,
               decoration: InputDecoration(
                 labelText: 'اسم المجموعة',
-                hintText: 'مثال: أ',
+                hintText: 'مثال: المجموعة الأولى',
                 filled: true,
                 fillColor: Colors.grey[50],
                 border: OutlineInputBorder(
@@ -558,49 +611,38 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
               final newName = nameController.text.trim();
               final cases = _parseCases(casesController.text);
 
-              if (isEditing && newName != oldName) {
-                // Rename
-                final batch = FirebaseFirestore.instance.batch();
-                final oldRef = FirebaseFirestore.instance
-                    .collection('caseGroups')
-                    .doc(oldName);
-                final newRef = FirebaseFirestore.instance
-                    .collection('caseGroups')
-                    .doc(newName);
-
-                final oldDocSnapshot = await oldRef.get();
-                final currentOrder = oldDocSnapshot.data()?['order'] ?? 0;
-
-                batch
-                    .set(newRef, {'caseNumbers': cases, 'order': currentOrder});
-                batch.delete(oldRef);
-                await batch.commit();
-              } else if (isEditing) {
-                // Update
+              if (isEditing) {
+                // Update existing
                 await FirebaseFirestore.instance
                     .collection('caseGroups')
-                    .doc(groupName)
+                    .doc(docId)
                     .update({
+                  'name': newName,
                   'caseNumbers': cases,
                 });
               } else {
-                // Create
+                // Create New
+                // Get highest order for this season
                 final snapshot = await FirebaseFirestore.instance
                     .collection('caseGroups')
+                    .where('seasonId', isEqualTo: _activeSeasonId)
                     .orderBy('order', descending: true)
                     .limit(1)
                     .get();
+
                 int newOrder = 0;
                 if (snapshot.docs.isNotEmpty) {
                   newOrder = (snapshot.docs.first.data()['order'] ?? 0) + 1;
                 }
 
-                await FirebaseFirestore.instance
-                    .collection('caseGroups')
-                    .doc(newName)
-                    .set({'caseNumbers': cases, 'order': newOrder});
+                await FirebaseFirestore.instance.collection('caseGroups').add({
+                  'name': newName,
+                  'caseNumbers': cases,
+                  'order': newOrder,
+                  'seasonId': _activeSeasonId,
+                });
               }
-              Navigator.pop(context);
+              if (context.mounted) Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryColor,
@@ -644,7 +686,7 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
     return cases.toList()..sort();
   }
 
-  void _confirmDelete(BuildContext context, String groupName) {
+  void _confirmDelete(BuildContext context, String docId, String groupName) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -660,7 +702,7 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
             onPressed: () async {
               await FirebaseFirestore.instance
                   .collection('caseGroups')
-                  .doc(groupName)
+                  .doc(docId)
                   .delete();
               Navigator.pop(context);
             },

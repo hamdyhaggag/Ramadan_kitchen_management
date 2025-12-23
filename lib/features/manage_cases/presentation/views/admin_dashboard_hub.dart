@@ -21,6 +21,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/send_notification_screen.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:ramadan_kitchen_management/features/seasons/seasons.dart';
+import 'package:ramadan_kitchen_management/features/seasons/data/services/season_service.dart';
 
 class AdminDashboardHub extends StatefulWidget {
   const AdminDashboardHub({super.key});
@@ -157,8 +158,302 @@ class _AdminDashboardHubState extends State<AdminDashboardHub> {
           ],
         ),
         const Spacer(),
+        _buildImportButton(context),
+        const SizedBox(width: 12),
         _buildLogoutButton(context),
       ],
+    );
+  }
+
+  Widget _buildImportButton(BuildContext context) {
+    return InkWell(
+      onTap: () => _showImportDialog(context),
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.primaryColor.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: AppColors.primaryColor.withValues(alpha: 0.2), width: 1.5),
+        ),
+        child: Icon(Icons.cloud_download_rounded,
+            color: AppColors.primaryColor, size: 22),
+      ),
+    );
+  }
+
+  void _showImportDialog(BuildContext context) {
+    showGeneralDialog(
+      barrierLabel: "استيراد البيانات",
+      barrierDismissible: true,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      transitionDuration: const Duration(milliseconds: 300),
+      context: context,
+      pageBuilder: (context, anim1, anim2) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Align(
+            alignment: Alignment.center,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryColor.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.cloud_sync_rounded,
+                            size: 40, color: AppColors.primaryColor),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'استيراد البيانات السابقة',
+                        style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'DIN',
+                            color: Colors.black87),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'هل تريد نسخ بيانات الأسر والمجموعات من النسخة السابقة إلى الموسم الحالي؟\nستظهر البيانات فوراً بعد الاستيراد.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 30),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              style: TextButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
+                              ),
+                              child: const Text('إلغاء',
+                                  style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold)),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryColor,
+                                elevation: 0,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
+                              ),
+                              child: const Text('استيراد الآن',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold)),
+                              onPressed: () async {
+                                Navigator.pop(context); // Close confirm dialog
+
+                                try {
+                                  final seasonId = context
+                                      .read<CasesCubit>()
+                                      .currentSeasonId;
+                                  if (seasonId == null) {
+                                    throw Exception('لا يوجد موسم نشط');
+                                  }
+
+                                  final progressNotifier =
+                                      ValueNotifier<Map<String, int>>(
+                                          {'current': 0, 'total': -1});
+
+                                  // Show real-time progress dialog
+                                  if (!context.mounted) return;
+                                  showDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (context) =>
+                                        ValueListenableBuilder<
+                                                Map<String, int>>(
+                                            valueListenable: progressNotifier,
+                                            builder: (context, stats, _) {
+                                              final current =
+                                                  stats['current'] ?? 0;
+                                              final total =
+                                                  stats['total'] ?? -1;
+                                              return AlertDialog(
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            24)),
+                                                content: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    if (total <= 0)
+                                                      LoadingAnimationWidget
+                                                          .threeArchedCircle(
+                                                              color: AppColors
+                                                                  .primaryColor,
+                                                              size: 50)
+                                                    else
+                                                      SizedBox(
+                                                        height: 60,
+                                                        width: 60,
+                                                        child:
+                                                            CircularProgressIndicator(
+                                                          value: total > 0
+                                                              ? current / total
+                                                              : null,
+                                                          strokeWidth: 6,
+                                                          color: AppColors
+                                                              .primaryColor,
+                                                        ),
+                                                      ),
+                                                    const SizedBox(height: 24),
+                                                    Text(
+                                                      total == -1
+                                                          ? 'جاري تحميل البيانات من السيرفر...'
+                                                          : (total == 0
+                                                              ? 'جاري تصفية البيانات المكررة...'
+                                                              : 'جاري استيراد البيانات ($current من $total)'),
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: const TextStyle(
+                                                        fontFamily: 'DIN',
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 16,
+                                                      ),
+                                                    ),
+                                                    if (total > 0) ...[
+                                                      const SizedBox(
+                                                          height: 16),
+                                                      ClipRRect(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(10),
+                                                        child:
+                                                            LinearProgressIndicator(
+                                                          value:
+                                                              current / total,
+                                                          minHeight: 8,
+                                                          backgroundColor:
+                                                              Colors.grey[200],
+                                                          valueColor:
+                                                              AlwaysStoppedAnimation<
+                                                                      Color>(
+                                                                  AppColors
+                                                                      .primaryColor),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ],
+                                                ),
+                                              );
+                                            }),
+                                  );
+
+                                  final count =
+                                      await SeasonService().importLegacyData(
+                                    seasonId,
+                                    onProgress: (current, total) {
+                                      progressNotifier.value = {
+                                        'current': current,
+                                        'total': total
+                                      };
+                                    },
+                                  );
+
+                                  // AUTO CLEANUP: Purge any duplicates that might have been created before
+                                  final purged = await SeasonService()
+                                      .purgeDuplicates(seasonId);
+
+                                  if (context.mounted) {
+                                    Navigator.pop(
+                                        context); // Close progress dialog
+
+                                    if (count == 0 && purged == 0) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              'لم يتم العثور على بيانات جديدة، والبيانات الحالية نظيفة.'),
+                                          backgroundColor: Colors.blue,
+                                        ),
+                                      );
+                                    } else {
+                                      String msg = 'تم استيراد $count سجل جديد';
+                                      if (purged > 0)
+                                        msg += '، وتم مسح $purged سجل مكرر.';
+
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(msg),
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      );
+                                      // Refresh Data
+                                      context.read<CasesCubit>().loadCases();
+                                    }
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    Navigator.pop(
+                                        context); // Close progress dialog
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('حدث خطأ: $e'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (context, anim1, anim2, child) {
+        return ScaleTransition(
+          scale: CurvedAnimation(
+              parent: anim1,
+              curve: Curves.easeOutBack,
+              reverseCurve: Curves.easeInBack),
+          child: FadeTransition(opacity: anim1, child: child),
+        );
+      },
     );
   }
 
@@ -692,11 +987,14 @@ class _AdminDashboardHubState extends State<AdminDashboardHub> {
   }
 
   void _navigateToCasesDashboard(BuildContext context) {
+    // Get current season ID from cubit
+    final seasonId = context.read<CasesCubit>().currentSeasonId;
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => StreamBuilder<Map<String, List<int>>>(
-          stream: _getCaseGroupsStream(),
+          stream: _getCaseGroupsStream(seasonId),
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
               return Scaffold(
@@ -751,11 +1049,43 @@ class _AdminDashboardHubState extends State<AdminDashboardHub> {
               AppBar(title: const Text('إعداد وجبة اليوم'), centerTitle: true),
           body: BlocBuilder<DonationCubit, DonationState>(
             builder: (context, state) {
-              if (state is DonationLoaded && state.donations.isNotEmpty) {
-                return EditableDonationSection(
-                  donationData: state.donations.first,
-                  documentId: state.donations.first['id'],
-                );
+              if (state is DonationLoaded) {
+                if (state.donations.isNotEmpty) {
+                  return EditableDonationSection(
+                    donationData: state.donations.first,
+                    documentId: state.donations.first['id'],
+                  );
+                } else {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.restaurant_menu,
+                            size: 80, color: Colors.grey),
+                        const SizedBox(height: 16),
+                        const Text('لم يتم إعداد وجبة لليوم',
+                            style: TextStyle(fontSize: 18, color: Colors.grey)),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            context.read<DonationCubit>().createNewDonation({
+                              'mealTitle': 'وجبة جديدة',
+                              'mealDescription': '',
+                              'mealImageUrl': '',
+                              'contacts': [],
+                            });
+                          },
+                          icon: const Icon(Icons.add),
+                          label: const Text('إنشاء وجبة جديدة'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryColor,
+                            foregroundColor: Colors.white,
+                          ),
+                        )
+                      ],
+                    ),
+                  );
+                }
               }
               return const Center(child: CircularProgressIndicator());
             },
@@ -765,11 +1095,15 @@ class _AdminDashboardHubState extends State<AdminDashboardHub> {
     );
   }
 
-  Stream<Map<String, List<int>>> _getCaseGroupsStream() {
-    return FirebaseFirestore.instance
-        .collection('caseGroups')
-        .snapshots()
-        .map((snapshot) {
+  Stream<Map<String, List<int>>> _getCaseGroupsStream(String? seasonId) {
+    Query<Map<String, dynamic>> query =
+        FirebaseFirestore.instance.collection('caseGroups');
+
+    if (seasonId != null) {
+      query = query.where('seasonId', isEqualTo: seasonId);
+    }
+
+    return query.snapshots().map((snapshot) {
       final groups = <String, List<int>>{};
       for (var doc in snapshot.docs) {
         groups[doc.id] = List<int>.from(doc.get('caseNumbers') ?? []);

@@ -43,6 +43,7 @@ class _ManageSeasonsScreenState extends State<ManageSeasonsScreen> {
           icon: Icon(Iconsax.arrow_right_3, color: AppColors.primaryColor),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateSeasonDialog(context),
@@ -853,6 +854,8 @@ class _ManageSeasonsScreenState extends State<ManageSeasonsScreen> {
       ),
     );
   }
+
+  // Legacy migration dialog removed
 
   void _showImportDialog(RamadanSeasonModel currentSeason) {
     // Capture the screen context to use later for providers safely

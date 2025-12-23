@@ -6,6 +6,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
+import 'package:ramadan_kitchen_management/features/seasons/data/services/season_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 
 class TotalStatisticsContent extends StatefulWidget {
@@ -28,10 +29,24 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
 
   Future<void> _loadDonationData() async {
     try {
+      final seasonService = SeasonService(); // Or get from IoC
+      final activeSeason = await seasonService.getActiveSeason();
+      final seasonId = activeSeason?.id;
+
+      if (seasonId == null) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
       final prefs = await SharedPreferences.getInstance();
-      int historicalTotal = prefs.getInt('historicalTotal') ?? 0;
-      int dailyValue = prefs.getInt('dailyValue') ?? 0;
-      int cachedDateMillis = prefs.getInt('lastUpdated') ?? 0;
+      // Cache keys are now season-specific
+      final historicalTotalKey = 'historicalTotal_$seasonId';
+      final dailyValueKey = 'dailyValue_$seasonId';
+      final lastUpdatedKey = 'lastUpdated_$seasonId';
+
+      int historicalTotal = prefs.getInt(historicalTotalKey) ?? 0;
+      int dailyValue = prefs.getInt(dailyValueKey) ?? 0;
+      int cachedDateMillis = prefs.getInt(lastUpdatedKey) ?? 0;
 
       DateTime cachedDate = cachedDateMillis == 0
           ? DateTime(1970)
@@ -45,16 +60,18 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
       if (isNewDay) {
         historicalTotal += dailyValue;
         dailyValue = 0;
-        await prefs.setInt('historicalTotal', historicalTotal);
-        await prefs.setInt('dailyValue', dailyValue);
-        await prefs.setInt('lastUpdated', startOfDay.millisecondsSinceEpoch);
+        await prefs.setInt(historicalTotalKey, historicalTotal);
+        await prefs.setInt(dailyValueKey, dailyValue);
+        await prefs.setInt(lastUpdatedKey, startOfDay.millisecondsSinceEpoch);
       }
 
       final isOnline = await _checkConnectivity();
 
       if (isOnline) {
+        // Fetch Today's Donations for Active Season
         final currentDaySnapshot = await FirebaseFirestore.instance
             .collection('donations')
+            .where('seasonId', isEqualTo: seasonId)
             .where('created_at', isGreaterThanOrEqualTo: startOfDay)
             .get();
 
@@ -63,8 +80,10 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
           (sum, doc) => sum + (doc['numberOfIndividuals'] as int? ?? 0),
         );
 
+        // Fetch Historical Donations for Active Season
         final previousDaysSnapshot = await FirebaseFirestore.instance
             .collection('donations')
+            .where('seasonId', isEqualTo: seasonId)
             .where('created_at', isLessThan: startOfDay)
             .get();
 
@@ -73,9 +92,9 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
           (sum, doc) => sum + (doc['numberOfIndividuals'] as int? ?? 0),
         );
 
-        await prefs.setInt('dailyValue', dailyValue);
-        await prefs.setInt('historicalTotal', historicalTotal);
-        await prefs.setInt('lastUpdated', now.millisecondsSinceEpoch);
+        await prefs.setInt(dailyValueKey, dailyValue);
+        await prefs.setInt(historicalTotalKey, historicalTotal);
+        await prefs.setInt(lastUpdatedKey, now.millisecondsSinceEpoch);
       }
 
       if (mounted) {
@@ -86,6 +105,7 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
+      print("Err loading stats: $e");
     }
   }
 
