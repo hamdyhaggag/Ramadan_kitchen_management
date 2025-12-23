@@ -16,7 +16,12 @@ class DonationCubit extends Cubit<DonationState> {
   StreamSubscription? _casesSubscription;
 
   DonationCubit(this._casesCubit) : super(DonationInitial()) {
-    _casesSubscription = _casesCubit.stream.listen((_) => getDonations());
+    _casesSubscription = _casesCubit.stream.listen((state) {
+      if (state is CasesLoaded) {
+        getDonations();
+      }
+    });
+    // Initial load
     getDonations();
   }
 

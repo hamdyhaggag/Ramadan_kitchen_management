@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:ramadan_kitchen_management/core/networking/firestore_constants.dart';
+import 'package:ramadan_kitchen_management/features/seasons/data/services/season_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/notficiation_model.dart';
 import 'local_notfiication_service.dart';
@@ -38,40 +41,51 @@ class PushNotificationService {
     log(message.messageId.hashCode.toString());
   }
 
+  static StreamSubscription? _firestoreSubscription;
+  static StreamSubscription? _seasonSubscription;
+
   static void setupNotificationListener() async {
-    final lastProcessedTime = await _getLastProcessedTime();
+    // Cancel existing listeners if any
+    await _seasonSubscription?.cancel();
+    await _firestoreSubscription?.cancel();
 
-    FirebaseFirestore.instance
-        .collection('notifications')
-        .where('timestamp',
-            isGreaterThan:
-                Timestamp.fromMillisecondsSinceEpoch(lastProcessedTime))
-        .orderBy('timestamp', descending: true)
-        .snapshots()
-        .listen((snapshot) async {
-      if (snapshot.docs.isNotEmpty) {
-        final latestDoc = snapshot.docs.first;
-        final data = latestDoc.data();
-        final timestamp =
-            (data['timestamp'] as Timestamp).millisecondsSinceEpoch;
+    _seasonSubscription =
+        SeasonService().getActiveSeasonStream().listen((activeSeason) async {
+      await _firestoreSubscription?.cancel();
 
-        // Skip if already processed
-        if (timestamp <= lastProcessedTime) return;
+      final lastProcessedTime = await _getLastProcessedTime();
+      final collection =
+          SeasonService().getCollection(FirestoreCollections.notifications);
 
-        final safeId = timestamp % 2147483647;
+      _firestoreSubscription = collection
+          .where('timestamp',
+              isGreaterThan:
+                  Timestamp.fromMillisecondsSinceEpoch(lastProcessedTime))
+          .orderBy('timestamp', descending: true)
+          .snapshots()
+          .listen((snapshot) async {
+        if (snapshot.docs.isNotEmpty) {
+          final latestDoc = snapshot.docs.first;
+          final data = latestDoc.data();
+          final timestamp =
+              (data['timestamp'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
 
-        LocalNotificationService.showBasicNotification(
-          notificationModel: NotificationModel(
-            id: safeId,
-            title: data['title'] ?? 'إشعار جديد',
-            body: data['body'] ?? 'يوجد تحديث جديد',
-            payload: '',
-          ),
-        );
+          if (timestamp <= lastProcessedTime) return;
 
-        // Save the new timestamp
-        await _saveLastProcessedTime(timestamp);
-      }
+          final safeId = timestamp % 2147483647;
+
+          LocalNotificationService.showBasicNotification(
+            notificationModel: NotificationModel(
+              id: safeId,
+              title: data['title'] ?? 'إشعار جديد',
+              body: data['body'] ?? 'يوجد تحديث جديد',
+              payload: '',
+            ),
+          );
+
+          await _saveLastProcessedTime(timestamp);
+        }
+      });
     });
   }
 

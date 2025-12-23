@@ -138,6 +138,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ),
       ),
+      floatingActionButton: _isAdminUser
+          ? FloatingActionButton.extended(
+              onPressed: () => _showSendNotificationDialog(context),
+              label: const Text('إرسال إشعار',
+                  style: TextStyle(color: Colors.white)),
+              icon: const Icon(Icons.send_rounded, color: Colors.white),
+              backgroundColor: AppColors.primaryColor,
+            )
+          : null,
       body: StreamBuilder<QuerySnapshot>(
         stream: query.orderBy('timestamp', descending: true).snapshots(),
         builder: (context, snapshot) {
@@ -209,7 +218,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(15),
-            onTap: () {},
+            onTap: () => _showNotificationDetails(context, data),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -272,6 +281,44 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showNotificationDetails(
+      BuildContext context, Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.info_outline, color: AppColors.primaryColor),
+            const SizedBox(width: 10),
+            Expanded(child: Text(data['title'] ?? 'تفاصيل الإشعار')),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _formatTimestamp(data['timestamp']),
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              data['body'] ?? 'لا يوجد نص',
+              style: const TextStyle(fontSize: 16, height: 1.5),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إغلاق'),
+          ),
+        ],
       ),
     );
   }
@@ -348,6 +395,91 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         );
       },
+    );
+  }
+
+  void _showSendNotificationDialog(BuildContext context) {
+    final titleController = TextEditingController();
+    final bodyController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('إرسال إشعار جديد'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'العنوان',
+                  hintText: 'مثلاً: حالة جديدة محتاجة دعم',
+                ),
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'رجاءً أدخل العنوان' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: bodyController,
+                decoration: const InputDecoration(
+                  labelText: 'نص الإشعار',
+                  hintText: 'اكتب نص الإشعار هنا...',
+                ),
+                maxLines: 3,
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'رجاءً أدخل نص الإشعار' : null,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState?.validate() ?? false) {
+                final NavigatorState nav = Navigator.of(context);
+                try {
+                  await _notificationsCollection.add({
+                    'title': titleController.text.trim(),
+                    'body': bodyController.text.trim(),
+                    'timestamp': FieldValue.serverTimestamp(),
+                    'seasonId': _activeSeason?.id,
+                  });
+                  nav.pop();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('تم إرسال الإشعار بنجاح'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('فشل الإرسال: ${e.toString()}'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('إرسال'),
+          ),
+        ],
+      ),
     );
   }
 

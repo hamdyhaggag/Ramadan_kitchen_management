@@ -32,104 +32,48 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
     return BlocBuilder<DonationCubit, DonationState>(
       builder: (context, state) {
         if (state is DonationLoaded) {
-          // Filter out drafts (donations with 0 individuals) or explicit "Draft" titles if needed
           final activeDonations = state.donations.where((d) {
             final individuals = d['numberOfIndividuals'] as int? ?? 0;
-            // You can add more conditions here (e.g. title not containing "مسودة")
-            // But usually drafts have 0 individuals initially.
-            // If you want to show drafts to Admin, that's different, but this is User Dashboard.
-            // Assuming User Dashboard should only show REAL meals.
             return individuals > 0;
           }).toList();
-
-          if (activeDonations.isEmpty) {
-            return Scaffold(
-              backgroundColor: const Color(0xFFF8FAFC),
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryColor.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Iconsax.calendar_tick,
-                          size: 60, color: AppColors.primaryColor),
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'أهلاً بك في مطبخ الخير',
-                      style: TextStyle(
-                        fontFamily: 'DIN',
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'لم يتم تسجيل وجبات لهذا الموسم بعد.\nتابعنا لتعرف تفاصيل أول وجبة قريباً!',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'DIN',
-                        fontSize: 16,
-                        color: Color(0xFF64748B),
-                        height: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        context.read<DonationCubit>().getDonations();
-                      },
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('تحديث'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryColor,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
-                      ),
-                    )
-                  ],
-                ),
-              ),
-            );
-          }
 
           final now = DateTime.now();
           final todayStr = "${now.year}-${now.month}-${now.day}";
 
-          // Use filtered list
-          var donation = activeDonations.firstWhere(
-            (d) {
-              final createdAt = d['created_at'];
-              if (createdAt is Timestamp) {
-                final date = createdAt.toDate();
-                return "${date.year}-${date.month}-${date.day}" == todayStr;
-              }
-              return false;
-            },
-            orElse: () => activeDonations.first,
-          );
+          // Attempt to find today's donation or the latest one for info
+          Map<String, dynamic>? donation;
+          if (activeDonations.isNotEmpty) {
+            donation = activeDonations.firstWhere(
+              (d) {
+                final createdAt = d['created_at'];
+                if (createdAt is Timestamp) {
+                  final date = createdAt.toDate();
+                  return "${date.year}-${date.month}-${date.day}" == todayStr;
+                }
+                return false;
+              },
+              orElse: () => activeDonations.first,
+            );
+          }
 
-          final contacts = (donation['contacts'] as List<dynamic>?)
+          // Get contacts from any available donation record
+          final contacts = (state.donations.isNotEmpty
+                      ? (state.donations.first['contacts'] as List<dynamic>?)
+                      : null)
                   ?.map((e) => ContactPerson.fromMap(e))
                   .toList() ??
               [];
-          final imageUrl = donation['mealImageUrl'] as String?;
-          final List<String> carouselImages =
-              (donation['carouselImages'] != null &&
+
+          final imageUrl = donation?['mealImageUrl'] as String?;
+          final List<String> carouselImages = (donation != null)
+              ? ((donation['carouselImages'] != null &&
                       (donation['carouselImages'] as List).isNotEmpty)
                   ? List<String>.from(donation['carouselImages'])
-                  : (imageUrl != null && imageUrl.isNotEmpty ? [imageUrl] : []);
-          final title = donation['mealTitle'] ?? 'وجبة اليوم';
-          final description = donation['mealDescription'] ?? '';
-          final individuals = donation['numberOfIndividuals'] as int? ?? 1;
+                  : (imageUrl != null && imageUrl.isNotEmpty ? [imageUrl] : []))
+              : [];
+          final title = donation?['mealTitle'] ?? 'وجبة اليوم';
+          final description = donation?['mealDescription'] ?? '';
+          final individuals = donation?['numberOfIndividuals'] as int? ?? 0;
 
           return Scaffold(
             backgroundColor: const Color(0xFFF8FAFC),
@@ -141,116 +85,179 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
               },
               color: AppColors.primaryColor,
               child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                      child: Column(
-                        children: [
-                          Container(
-                            height: 200,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(32),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.15),
-                                  blurRadius: 25,
-                                  offset: const Offset(0, 12),
-                                ),
-                              ],
+                  if (activeDonations.isEmpty)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 40, 24, 8),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryColor.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Iconsax.calendar_tick,
+                                  size: 60, color: AppColors.primaryColor),
                             ),
-                            clipBehavior: Clip.antiAlias,
-                            child: carouselImages.isEmpty
-                                ? Container(
-                                    color: AppColors.primaryColor
-                                        .withValues(alpha: 0.1),
-                                    child: const Icon(Icons.restaurant,
-                                        size: 60,
-                                        color: AppColors.primaryColor),
-                                  )
-                                : Stack(
-                                    fit: StackFit.expand,
-                                    children: [
-                                      CarouselSlider(
-                                        items: carouselImages.map((url) {
-                                          return GestureDetector(
-                                            onTap: () {
-                                              _showFullScreenImage(
-                                                  context, url, title);
-                                            },
-                                            child: Center(
-                                              child: CachedNetworkImage(
-                                                imageUrl: url,
-                                                fit: BoxFit.cover,
-                                                width: double.infinity,
-                                                placeholder: (context, url) =>
-                                                    Shimmer.fromColors(
-                                                  baseColor: Colors.grey[300]!,
-                                                  highlightColor:
-                                                      Colors.grey[100]!,
-                                                  child: Container(
-                                                      color: Colors.white),
-                                                ),
-                                                errorWidget: (context, url,
-                                                        _) =>
-                                                    Container(
-                                                        color:
-                                                            Colors.grey[300]),
-                                              ),
-                                            ),
-                                          );
-                                        }).toList(),
-                                        options: CarouselOptions(
-                                          height: 200,
-                                          viewportFraction: 1.0,
-                                          autoPlay: carouselImages.length > 1,
-                                          onPageChanged: (index, reason) {
-                                            setState(() {
-                                              _currentCarouselIndex = index;
-                                            });
-                                          },
-                                        ),
-                                      ),
-                                      const DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                            colors: [
-                                              Colors.transparent,
-                                              Color(
-                                                  0x99000000), // black with 0.6 opacity (approx)
-                                            ],
-                                            stops: [0.6, 1.0],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                          ),
-                          if (carouselImages.length > 1) ...[
+                            const SizedBox(height: 24),
+                            const Text(
+                              'أهلاً بك في مطبخ الخير',
+                              style: TextStyle(
+                                fontFamily: 'DIN',
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1E293B),
+                              ),
+                            ),
                             const SizedBox(height: 12),
-                            DotsIndicator(
-                              dotsCount: carouselImages.length,
-                              position: _currentCarouselIndex,
-                              decorator: DotsDecorator(
-                                color: Colors.grey[200]!,
-                                activeColor: AppColors.primaryColor,
-                                size: const Size.square(6.0),
-                                activeSize: const Size(18.0, 6.0),
-                                activeShape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(5.0)),
-                                spacing:
-                                    const EdgeInsets.symmetric(horizontal: 4.0),
+                            const Text(
+                              'لم يتم تسجيل وجبات لهذا الموسم بعد.\nتابعنا لتعرف تفاصيل أول وجبة قريباً!',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'DIN',
+                                fontSize: 16,
+                                color: Color(0xFF64748B),
+                                height: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                context.read<DonationCubit>().getDonations();
+                              },
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('تحديث'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryColor,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 24, vertical: 12),
+                                textStyle: const TextStyle(
+                                    fontFamily: 'DIN',
+                                    fontWeight: FontWeight.bold),
                               ),
                             ),
                           ],
-                        ],
+                        ),
+                      ),
+                    )
+                  else
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                        child: Column(
+                          children: [
+                            Container(
+                              height: 200,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Colors.black,
+                                borderRadius: BorderRadius.circular(32),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.15),
+                                    blurRadius: 25,
+                                    offset: const Offset(0, 12),
+                                  ),
+                                ],
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: carouselImages.isEmpty
+                                  ? Container(
+                                      color: AppColors.primaryColor
+                                          .withValues(alpha: 0.1),
+                                      child: const Icon(Icons.restaurant,
+                                          size: 60,
+                                          color: AppColors.primaryColor),
+                                    )
+                                  : Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        CarouselSlider(
+                                          items: carouselImages.map((url) {
+                                            return GestureDetector(
+                                              onTap: () {
+                                                _showFullScreenImage(
+                                                    context, url, title);
+                                              },
+                                              child: Center(
+                                                child: CachedNetworkImage(
+                                                  imageUrl: url,
+                                                  fit: BoxFit.cover,
+                                                  width: double.infinity,
+                                                  placeholder: (context, url) =>
+                                                      Shimmer.fromColors(
+                                                    baseColor:
+                                                        Colors.grey[300]!,
+                                                    highlightColor:
+                                                        Colors.grey[100]!,
+                                                    child: Container(
+                                                        color: Colors.white),
+                                                  ),
+                                                  errorWidget: (context, url,
+                                                          _) =>
+                                                      Container(
+                                                          color:
+                                                              Colors.grey[300]),
+                                                ),
+                                              ),
+                                            );
+                                          }).toList(),
+                                          options: CarouselOptions(
+                                            height: 200,
+                                            viewportFraction: 1.0,
+                                            autoPlay: carouselImages.length > 1,
+                                            onPageChanged: (index, reason) {
+                                              setState(() {
+                                                _currentCarouselIndex = index;
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                        const DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                              colors: [
+                                                Colors.transparent,
+                                                Color(
+                                                    0x99000000), // black with 0.6 opacity (approx)
+                                              ],
+                                              stops: [0.6, 1.0],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                            if (carouselImages.length > 1) ...[
+                              const SizedBox(height: 12),
+                              DotsIndicator(
+                                dotsCount: carouselImages.length,
+                                position: _currentCarouselIndex,
+                                decorator: DotsDecorator(
+                                  color: Colors.grey[200]!,
+                                  activeColor: AppColors.primaryColor,
+                                  size: const Size.square(6.0),
+                                  activeSize: const Size(18.0, 6.0),
+                                  activeShape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(5.0)),
+                                  spacing: const EdgeInsets.symmetric(
+                                      horizontal: 4.0),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
 
                   // 2. Content Body
                   SliverToBoxAdapter(
@@ -266,74 +273,78 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
                               child: FadeInAnimation(child: widget),
                             ),
                             children: [
-                              // 1. Today's Stats (Core Context)
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildStatCard(
-                                      context,
-                                      label: 'عدد الأفراد',
-                                      value: '$individuals',
-                                      icon: Iconsax.people,
-                                      color: Colors.orange,
+                              // 1. Today's Stats (Core Context) - Only if active
+                              if (activeDonations.isNotEmpty) ...[
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildStatCard(
+                                        context,
+                                        label: 'عدد الأفراد',
+                                        value: '$individuals',
+                                        icon: Iconsax.people,
+                                        color: Colors.orange,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child:
-                                        BlocBuilder<ExpenseCubit, ExpenseState>(
-                                      builder: (context, expenseState) {
-                                        double costPerPerson = 0.0;
-                                        if (expenseState is ExpenseLoaded) {
-                                          final today = DateTime.now()
-                                              .toIso8601String()
-                                              .split('T')[0];
-                                          double totalExpenses = expenseState
-                                              .expenses
-                                              .where((e) => e.date == today)
-                                              .fold(0.0,
-                                                  (sum, e) => sum + e.amount);
-                                          if (individuals > 0) {
-                                            costPerPerson =
-                                                totalExpenses / individuals;
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: BlocBuilder<ExpenseCubit,
+                                          ExpenseState>(
+                                        builder: (context, expenseState) {
+                                          double costPerPerson = 0.0;
+                                          if (expenseState is ExpenseLoaded) {
+                                            final today = DateTime.now()
+                                                .toIso8601String()
+                                                .split('T')[0];
+                                            double totalExpenses = expenseState
+                                                .expenses
+                                                .where((e) => e.date == today)
+                                                .fold(0.0,
+                                                    (sum, e) => sum + e.amount);
+                                            if (individuals > 0) {
+                                              costPerPerson =
+                                                  totalExpenses / individuals;
+                                            }
                                           }
-                                        }
-                                        return _buildStatCard(
-                                          context,
-                                          label: 'تكلفة الفرد',
-                                          value: costPerPerson > 0
-                                              ? '${costPerPerson.toStringAsFixed(1)} ج'
-                                              : '---',
-                                          icon: Iconsax.money_send,
-                                          color: Colors.green,
-                                        );
-                                      },
+                                          return _buildStatCard(
+                                            context,
+                                            label: 'تكلفة الفرد',
+                                            value: costPerPerson > 0
+                                                ? '${costPerPerson.toStringAsFixed(1)} ج'
+                                                : '---',
+                                            icon: Iconsax.money_send,
+                                            color: Colors.green,
+                                          );
+                                        },
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
+                                  ],
+                                ),
+                                const SizedBox(height: 20),
+                              ],
 
-                              // 2. Primary Action (Conversion Point)
+                              // 2. Primary Action (Conversion Point) - Always show
                               _buildActionCards(context, contacts),
                               const SizedBox(height: 24),
 
-                              // 3. Today's Meal & Components (Visual Context)
-                              _buildTodayMealImage(
-                                  imageUrl, title, description),
-                              const SizedBox(height: 24),
+                              // 3. Today's Meal & Components (Visual Context) - Only if active
+                              if (activeDonations.isNotEmpty) ...[
+                                _buildTodayMealImage(
+                                    imageUrl, title, description),
+                                const SizedBox(height: 24),
+                              ],
 
-                              const SizedBox(height: 24),
-                              // 4. Total Impact (Social Proof/Trust)
+                              // 4. Total Impact (Social Proof/Trust) - Always show
                               _buildTotalImpact(activeDonations),
                               const SizedBox(height: 24),
 
-                              // 5. Yesterday's Highlight (Confirmation of Action)
-                              if (activeDonations.length > 1)
+                              // 5. Yesterday's Highlight (Confirmation of Action) - Only if multiple donations exist
+                              if (activeDonations.length > 1) ...[
                                 _buildYesterdayHighlight(activeDonations[1]),
-                              const SizedBox(height: 24),
+                                const SizedBox(height: 24),
+                              ],
 
-                              // 6. Quick Support
+                              // 6. Quick Support - Always show
                               _buildSupportCard(),
                             ],
                           ),
