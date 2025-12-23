@@ -2,15 +2,38 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../seasons/data/services/season_service.dart';
 import 'cases_state.dart';
 
 class CasesCubit extends Cubit<CasesState> {
   final FirebaseFirestore _firestore;
+  final SeasonService _seasonService;
   List<Map<String, dynamic>> _localCache = [];
+  StreamSubscription? _casesSubscription;
+  String? _currentSeasonId;
 
-  CasesCubit()
+  CasesCubit({SeasonService? seasonService})
       : _firestore = FirebaseFirestore.instance,
+        _seasonService = seasonService ?? SeasonService(),
         super(CasesInitial()) {
+    _initWithSeason();
+  }
+
+  /// Initialize by getting the active season first
+  Future<void> _initWithSeason() async {
+    final activeSeason = await _seasonService.getActiveSeason();
+    _currentSeasonId = activeSeason?.id;
+    loadCases();
+  }
+
+  /// Get current season ID
+  String? get currentSeasonId => _currentSeasonId;
+
+  /// Update the season and reload cases
+  Future<void> setSeasonId(String? seasonId) async {
+    if (_currentSeasonId == seasonId) return;
+    _currentSeasonId = seasonId;
+    await _casesSubscription?.cancel();
     loadCases();
   }
 
@@ -29,7 +52,18 @@ class CasesCubit extends Cubit<CasesState> {
   Future<void> loadCases() async {
     emit(CasesLoading());
     try {
-      _firestore.collection('cases').snapshots().listen((snapshot) {
+      // Cancel existing subscription
+      await _casesSubscription?.cancel();
+
+      // Build query based on season
+      Query<Map<String, dynamic>> query = _firestore.collection('cases');
+
+      // Only filter by season if we have an active season
+      if (_currentSeasonId != null) {
+        query = query.where('seasonId', isEqualTo: _currentSeasonId);
+      }
+
+      _casesSubscription = query.snapshots().listen((snapshot) {
         _localCache =
             snapshot.docs.map((doc) => {...doc.data(), 'id': doc.id}).toList();
         _sortLocalCache();
@@ -84,6 +118,11 @@ class CasesCubit extends Cubit<CasesState> {
 
   Future<void> addCase(Map<String, dynamic> caseData) async {
     try {
+      // Add seasonId to the case data
+      if (_currentSeasonId != null) {
+        caseData['seasonId'] = _currentSeasonId;
+      }
+
       final docId = caseData['الرقم'].toString();
       final newCase = {...caseData, 'id': docId};
       _localCache = [..._localCache, newCase];
@@ -121,5 +160,11 @@ class CasesCubit extends Cubit<CasesState> {
     } catch (e) {
       emit(CasesError('Failed to delete case: $e'));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _casesSubscription?.cancel();
+    return super.close();
   }
 }

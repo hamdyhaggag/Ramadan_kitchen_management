@@ -20,6 +20,7 @@ import '../../../donation/presentation/cubit/donation_cubit.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/send_notification_screen.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:ramadan_kitchen_management/features/seasons/seasons.dart';
 
 class AdminDashboardHub extends StatefulWidget {
   const AdminDashboardHub({super.key});
@@ -453,6 +454,13 @@ class _AdminDashboardHubState extends State<AdminDashboardHub> {
         color: const Color(0xFF795548), // Brown
         onTap: () => Navigator.push(
             context, MaterialPageRoute(builder: (_) => ReportsScreen())),
+      ),
+      _AdminItem(
+        title: 'مواسم رمضان',
+        icon: Icons.calendar_view_month_rounded,
+        color: const Color(0xFF1E3A5F), // Dark Blue
+        onTap: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const ManageSeasonsScreen())),
       ),
     ];
 

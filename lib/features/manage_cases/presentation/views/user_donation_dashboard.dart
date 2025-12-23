@@ -15,6 +15,7 @@ import 'package:dots_indicator/dots_indicator.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:ramadan_kitchen_management/features/seasons/seasons.dart';
 
 class UserDonationDashboard extends StatefulWidget {
   const UserDonationDashboard({super.key});
@@ -553,13 +554,29 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
   }
 
   Widget _buildActionCards(BuildContext context, List<ContactPerson> contacts) {
-    return _buildSingleActionCard(
-      title: 'كفالة وجبة إفطار',
-      subtitle: 'ساهم في إطعام صائم بضغطة زر واحدة',
-      icon: Iconsax.wallet_3, // Professional wallet icon
-      color: AppColors.primaryColor,
-      isFullWidth: true,
-      onTap: () => _showDonationOptions(context, contacts),
+    return Column(
+      children: [
+        _buildSingleActionCard(
+          title: 'كفالة وجبة إفطار',
+          subtitle: 'ساهم في إطعام صائم بضغطة زر واحدة',
+          icon: Iconsax.wallet_3,
+          color: AppColors.primaryColor,
+          isFullWidth: true,
+          onTap: () => _showDonationOptions(context, contacts),
+        ),
+        const SizedBox(height: 12),
+        _buildSingleActionCard(
+          title: 'سجل المواسم السابقة',
+          subtitle: 'استعرض تاريخ مطبخ الخير',
+          icon: Iconsax.archive_book,
+          color: const Color(0xFF1E3A5F),
+          isFullWidth: true,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PreviousSeasonsScreen()),
+          ),
+        ),
+      ],
     );
   }
 

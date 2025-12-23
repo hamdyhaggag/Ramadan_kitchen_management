@@ -14,6 +14,7 @@ import 'core/utils/app_theme.dart';
 import 'features/daily_expenses/logic/expense_cubit.dart';
 import 'features/donation/presentation/cubit/donation_cubit.dart';
 import 'features/manage_cases/logic/cases_cubit.dart';
+import 'features/seasons/logic/season_cubit.dart';
 import 'firebase_options.dart';
 import 'generated/l10n.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -58,6 +59,7 @@ class KitchenApp extends StatelessWidget {
         BlocProvider(create: (context) => CasesCubit()),
         BlocProvider(create: (context) => ExpenseCubit()),
         BlocProvider(create: (context) => getIt<DonationCubit>()),
+        BlocProvider(create: (context) => SeasonCubit()),
       ],
       child: MaterialApp(
         theme: lightTheme,
