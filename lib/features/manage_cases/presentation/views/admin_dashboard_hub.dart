@@ -17,10 +17,11 @@ import 'package:ramadan_kitchen_management/features/previous_days/presentation/v
 import 'package:ramadan_kitchen_management/features/manage_cases/presentation/views/manage_groups_screen.dart';
 import '../../../donation/presentation/views/widgets/editable_donation_section.dart';
 import '../../../donation/presentation/cubit/donation_cubit.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:ramadan_kitchen_management/features/donation/presentation/views/widgets/send_notification_screen.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:ramadan_kitchen_management/features/seasons/seasons.dart';
+import 'package:ramadan_kitchen_management/features/seasons/data/services/season_service.dart';
 
 class AdminDashboardHub extends StatefulWidget {
   const AdminDashboardHub({super.key});
@@ -800,20 +801,31 @@ class _AdminDashboardHubState extends State<AdminDashboardHub> {
     );
   }
 
-  Stream<Map<String, List<int>>> _getCaseGroupsStream(String? seasonId) {
-    Query<Map<String, dynamic>> query =
-        FirebaseFirestore.instance.collection('caseGroups');
-
-    if (seasonId != null) {
-      query = query.where('seasonId', isEqualTo: seasonId);
+  Stream<Map<String, List<int>>> _getCaseGroupsStream(String? seasonId) async* {
+    if (seasonId == null) {
+      yield {};
+      return;
     }
 
-    return query.snapshots().map((snapshot) {
+    // Get the correct collection reference (root or sub-collection) handling V2 migration
+    final collection =
+        await SeasonService().getCollectionForSeason(seasonId, 'caseGroups');
+
+    // Always filter by seasonId for security rules compliance
+    final query = collection.where('seasonId', isEqualTo: seasonId);
+
+    yield* query.snapshots().map((snapshot) {
       final groups = <String, List<int>>{};
       for (var doc in snapshot.docs) {
         final data = doc.data();
         final String name = data['name'] ?? doc.id;
-        groups[name] = List<int>.from(data['caseNumbers'] ?? []);
+        final rawNumbers = data['caseNumbers'];
+        // Safely parse numbers list
+        if (rawNumbers is List) {
+          groups[name] = rawNumbers.map((e) => e is int ? e : 0).toList();
+        } else {
+          groups[name] = [];
+        }
       }
       return groups;
     });

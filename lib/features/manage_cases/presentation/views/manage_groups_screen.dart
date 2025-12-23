@@ -48,9 +48,8 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
     }
 
     Query<Map<String, dynamic>> query = _groupsCollection;
-    if (!_activeSeason!.isMigratedToV2) {
-      query = query.where('seasonId', isEqualTo: _activeSeason!.id);
-    }
+    // Always filter by seasonId for security rules compliance
+    query = query.where('seasonId', isEqualTo: _activeSeason!.id);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
@@ -614,9 +613,8 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
                 });
               } else {
                 Query<Map<String, dynamic>> query = _groupsCollection;
-                if (!_activeSeason!.isMigratedToV2) {
-                  query = query.where('seasonId', isEqualTo: _activeSeason!.id);
-                }
+                // Always filter by seasonId for security rules compliance
+                query = query.where('seasonId', isEqualTo: _activeSeason!.id);
 
                 final snapshot = await query
                     .orderBy('order', descending: true)

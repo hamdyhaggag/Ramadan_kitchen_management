@@ -106,9 +106,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
 
     Query<Map<String, dynamic>> query = _notificationsCollection;
-    if (!_activeSeason!.isMigratedToV2) {
-      query = query.where('seasonId', isEqualTo: _activeSeason!.id);
-    }
+    // Always filter by seasonId for security rules compliance
+    query = query.where('seasonId', isEqualTo: _activeSeason!.id);
 
     return Scaffold(
       appBar: AppBar(

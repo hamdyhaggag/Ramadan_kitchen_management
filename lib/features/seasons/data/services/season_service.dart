@@ -105,7 +105,7 @@ class SeasonService {
   Stream<List<RamadanSeasonModel>> getArchivedSeasonsStream() {
     return _firestore
         .collection(_seasonsCollection)
-        .where('isArchived', isEqualTo: true)
+        .where('isActive', isEqualTo: false)
         .orderBy('startDate', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs

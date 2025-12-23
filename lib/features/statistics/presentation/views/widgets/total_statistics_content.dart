@@ -77,13 +77,11 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
         Query previousDaysQuery =
             donationsCol.where('created_at', isLessThan: startOfDay);
 
-        // Only filter by season if we have an active season AND it's not migrated
-        if (!activeSeason.isMigratedToV2) {
-          currentDayQuery =
-              currentDayQuery.where('seasonId', isEqualTo: seasonId);
-          previousDaysQuery =
-              previousDaysQuery.where('seasonId', isEqualTo: seasonId);
-        }
+        // Always filter by seasonId for security rules compliance
+        currentDayQuery =
+            currentDayQuery.where('seasonId', isEqualTo: seasonId);
+        previousDaysQuery =
+            previousDaysQuery.where('seasonId', isEqualTo: seasonId);
 
         final currentDaySnapshot = await currentDayQuery.get();
         dailyValue = currentDaySnapshot.docs.fold(

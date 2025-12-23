@@ -41,10 +41,8 @@ class ExpenseCubit extends Cubit<ExpenseState> {
 
       Query query = _expensesCollection;
 
-      // Only filter by season if we have an active season AND it's not migrated
-      if (!activeSeason.isMigratedToV2) {
-        query = query.where('seasonId', isEqualTo: activeSeason.id);
-      }
+      // Always filter by seasonId to satisfy Firestore security rules
+      query = query.where('seasonId', isEqualTo: activeSeason.id);
 
       _expenseSubscription = query
           .orderBy('timestamp', descending: true)

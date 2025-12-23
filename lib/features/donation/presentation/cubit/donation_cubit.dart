@@ -37,10 +37,9 @@ class DonationCubit extends Cubit<DonationState> {
           _seasonService.getCollection(FirestoreCollections.donations);
       Query query = collection;
 
-      // Only filter by seasonId if we're using the legacy root collection
-      if (!activeSeason.isMigratedToV2) {
-        query = query.where('seasonId', isEqualTo: activeSeason.id);
-      }
+      // Always filter by seasonId to satisfy Firestore security rules
+      // (Even if using sub-collections, some rules enforce this check)
+      query = query.where('seasonId', isEqualTo: activeSeason.id);
 
       final snapshot =
           await query.orderBy('created_at', descending: true).get();

@@ -58,14 +58,11 @@ class CasesCubit extends Cubit<CasesState> {
       // Cancel existing subscription
       await _casesSubscription?.cancel();
 
-      final activeSeason = await _seasonService.getActiveSeason();
-
       // Build query based on season
       Query<Map<String, dynamic>> query = _casesCollection;
 
-      // Only filter by season if we have an active season AND it's not migrated
-      if (_currentSeasonId != null &&
-          (activeSeason == null || !activeSeason.isMigratedToV2)) {
+      // Ensure we filter by seasonId to satisfy Firestore security rules
+      if (_currentSeasonId != null) {
         query = query.where('seasonId', isEqualTo: _currentSeasonId);
       }
 
