@@ -4,6 +4,8 @@ import 'package:ramadan_kitchen_management/core/services/firebase_auth_service.d
 
 import '../../../../../core/cache/prefs.dart';
 import '../../../../../core/constants/constatnts.dart';
+import '../../../../../core/services/local_notfiication_service.dart';
+import '../../../../../core/services/push_notification_service.dart';
 import '../../../../../core/utils/app_assets.dart';
 
 class SplashViewBody extends StatefulWidget {
@@ -17,7 +19,18 @@ class _SplashViewBodyState extends State<SplashViewBody> {
   @override
   void initState() {
     super.initState();
+    _initServices();
     excuteNavigation();
+  }
+
+  Future<void> _initServices() async {
+    try {
+      await PushNotificationService.initialize();
+      PushNotificationService.setupNotificationListener();
+      await LocalNotificationService.init();
+    } catch (e) {
+      debugPrint("Error initializing services: $e");
+    }
   }
 
   @override
