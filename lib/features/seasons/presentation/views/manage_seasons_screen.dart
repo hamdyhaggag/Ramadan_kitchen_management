@@ -247,6 +247,26 @@ class _ManageSeasonsScreenState extends State<ManageSeasonsScreen> {
                     ),
                   ),
                 ),
+                if (season.isMigratedToV2) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white30),
+                    ),
+                    child: const Text(
+                      'V2',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -293,7 +313,14 @@ class _ManageSeasonsScreenState extends State<ManageSeasonsScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                if (!isActive && !season.isArchived)
+                if (isActive)
+                  _buildActionButton(
+                    icon: Iconsax.info_circle,
+                    label: 'إيقاف تفعيل',
+                    color: Colors.blueGrey,
+                    onTap: () => _confirmDeactivate(season),
+                  ),
+                if (!isActive)
                   _buildActionButton(
                     icon: Iconsax.tick_circle,
                     label: 'تفعيل',
@@ -307,6 +334,13 @@ class _ManageSeasonsScreenState extends State<ManageSeasonsScreen> {
                     color: Colors.orange,
                     onTap: () => _confirmArchive(season),
                   ),
+                if (season.isArchived)
+                  _buildActionButton(
+                    icon: Iconsax.refresh_2,
+                    label: 'إلغاء أرشفة',
+                    color: Colors.teal,
+                    onTap: () => _confirmUnarchive(season),
+                  ),
                 _buildActionButton(
                   icon: Iconsax.import_1,
                   label: 'استيراد بيانات',
@@ -319,6 +353,13 @@ class _ManageSeasonsScreenState extends State<ManageSeasonsScreen> {
                   color: AppColors.primaryColor,
                   onTap: () => _showEditSeasonDialog(context, season),
                 ),
+                if (!season.isMigratedToV2)
+                  _buildActionButton(
+                    icon: Iconsax.recovery_convert,
+                    label: 'هجرة V2',
+                    color: Colors.blueAccent,
+                    onTap: () => _confirmMigration(season),
+                  ),
                 _buildActionButton(
                   icon: Iconsax.trash,
                   label: 'حذف',
@@ -400,6 +441,7 @@ class _ManageSeasonsScreenState extends State<ManageSeasonsScreen> {
     DateTime? endDate;
     bool copyFromPrevious = false;
     bool copyDonationSettings = false;
+    bool isMigratedToV2 = false;
     String? sourceSeasonId;
 
     showDialog(
@@ -498,17 +540,34 @@ class _ManageSeasonsScreenState extends State<ManageSeasonsScreen> {
                   activeColor: AppColors.primaryColor,
                   contentPadding: EdgeInsets.zero,
                 ),
-                CheckboxListTile(
-                  title: const Text(
-                    'نسخ بيانات التواصل والصور (من آخر تبرع)',
-                    style: TextStyle(fontSize: 14),
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: AppColors.primaryColor.withOpacity(0.1)),
                   ),
-                  value: copyDonationSettings,
-                  onChanged: (value) {
-                    setState(() => copyDonationSettings = value ?? false);
-                  },
-                  activeColor: AppColors.primaryColor,
-                  contentPadding: EdgeInsets.zero,
+                  child: CheckboxListTile(
+                    title: const Text(
+                      'نظام التخزين المطور (V2)',
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryColor),
+                    ),
+                    subtitle: const Text(
+                      'تفعيل هيكلة البيانات الجديدة المحسنة لهذا الموسم.',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    value: isMigratedToV2,
+                    onChanged: (value) {
+                      setState(() => isMigratedToV2 = value ?? false);
+                    },
+                    activeColor: AppColors.primaryColor,
+                    contentPadding: EdgeInsets.zero,
+                  ),
                 ),
               ],
             ),
@@ -539,6 +598,7 @@ class _ManageSeasonsScreenState extends State<ManageSeasonsScreen> {
                       startDate: startDate!,
                       endDate: endDate!,
                       isActive: false,
+                      isMigratedToV2: isMigratedToV2,
                       copyFromPreviousSeason: copyFromPrevious,
                       copyDonationSettings:
                           copyDonationSettings, // Pass new param
@@ -610,6 +670,7 @@ class _ManageSeasonsScreenState extends State<ManageSeasonsScreen> {
         TextEditingController(text: season.gregorianYear);
     DateTime startDate = season.startDate;
     DateTime endDate = season.endDate;
+    bool isMigratedToV2 = season.isMigratedToV2;
 
     showDialog(
       context: context,
@@ -681,6 +742,31 @@ class _ManageSeasonsScreenState extends State<ManageSeasonsScreen> {
                   selectedDate: endDate,
                   onSelect: (date) => setState(() => endDate = date),
                 ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: AppColors.primaryColor.withOpacity(0.1)),
+                  ),
+                  child: CheckboxListTile(
+                    title: const Text(
+                      'نظام التخزين المطور (V2)',
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryColor),
+                    ),
+                    value: isMigratedToV2,
+                    onChanged: (value) {
+                      setState(() => isMigratedToV2 = value ?? false);
+                    },
+                    activeColor: AppColors.primaryColor,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
               ],
             ),
           ),
@@ -699,6 +785,7 @@ class _ManageSeasonsScreenState extends State<ManageSeasonsScreen> {
                         gregorianYear: gregorianYearController.text,
                         startDate: startDate,
                         endDate: endDate,
+                        isMigratedToV2: isMigratedToV2,
                         updatedAt: DateTime.now(),
                       ),
                     );
@@ -787,6 +874,76 @@ class _ManageSeasonsScreenState extends State<ManageSeasonsScreen> {
     );
   }
 
+  void _confirmDeactivate(RamadanSeasonModel season) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Iconsax.info_circle, color: Colors.blueGrey),
+            const SizedBox(width: 12),
+            const Text('إيقاف تفعيل الموسم',
+                style: TextStyle(fontFamily: 'DIN')),
+          ],
+        ),
+        content: Text(
+          'هل تريد إيقاف تفعيل "${season.name}"؟\n\nلن يظهر هذا الموسم في الشاشة الرئيسية حتى يتم تفعيله مرة أخرى.',
+          style: const TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<SeasonCubit>().deactivateSeason(season.id);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey),
+            child: const Text('تأكيد', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmUnarchive(RamadanSeasonModel season) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Iconsax.refresh_2, color: Colors.teal),
+            const SizedBox(width: 12),
+            const Text('إلغاء أرشفة الموسم',
+                style: TextStyle(fontFamily: 'DIN')),
+          ],
+        ),
+        content: Text(
+          'هل تريد إلغاء أرشفة "${season.name}"؟\n\nسيعود الموسم لقائمة المواسم الحالية ويمكنك التعديل عليه.',
+          style: const TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<SeasonCubit>().unarchiveSeason(season.id);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+            child: const Text('تأكيد', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _confirmDelete(RamadanSeasonModel season) {
     showDialog(
       context: context,
@@ -815,6 +972,42 @@ class _ManageSeasonsScreenState extends State<ManageSeasonsScreen> {
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('حذف', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmMigration(RamadanSeasonModel season) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Iconsax.recovery_convert, color: Colors.blueAccent),
+            const SizedBox(width: 12),
+            const Text('تحويل للنظام الجديد',
+                style: TextStyle(fontFamily: 'DIN')),
+          ],
+        ),
+        content: Text(
+          'سيتم نقل جميع بيانات موسم "${season.name}" (الحالات، المجموعات، التبرعات، المصاريف، الإشعارات) إلى هيكلة V2 المنظمة.\n\nهذه العملية آمنة وتحافظ على البيانات الأصلية.',
+          style: const TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              context.read<SeasonCubit>().migrateSeasonToV2(season.id);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+            child: const Text('بدء التحويل',
+                style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

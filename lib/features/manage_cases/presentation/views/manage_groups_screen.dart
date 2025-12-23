@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:ramadan_kitchen_management/core/networking/firestore_constants.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:ramadan_kitchen_management/core/widgets/general_button.dart';
+import 'package:ramadan_kitchen_management/features/seasons/data/models/ramadan_season_model.dart';
 import 'package:ramadan_kitchen_management/features/seasons/data/services/season_service.dart';
 
 class ManageGroupsScreen extends StatefulWidget {
@@ -14,7 +16,7 @@ class ManageGroupsScreen extends StatefulWidget {
 
 class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
   List<DocumentSnapshot>? _localDocs;
-  String? _activeSeasonId;
+  RamadanSeasonModel? _activeSeason;
   final SeasonService _seasonService = SeasonService();
 
   @override
@@ -27,14 +29,17 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
     final activeSeason = await _seasonService.getActiveSeason();
     if (mounted) {
       setState(() {
-        _activeSeasonId = activeSeason?.id;
+        _activeSeason = activeSeason;
       });
     }
   }
 
+  CollectionReference<Map<String, dynamic>> get _groupsCollection =>
+      _seasonService.getCollection(FirestoreCollections.caseGroups);
+
   @override
   Widget build(BuildContext context) {
-    if (_activeSeasonId == null) {
+    if (_activeSeason == null) {
       return const Scaffold(
         backgroundColor: Color(0xFFF8F9FE),
         body: Center(
@@ -42,14 +47,15 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
       );
     }
 
+    Query<Map<String, dynamic>> query = _groupsCollection;
+    if (!_activeSeason!.isMigratedToV2) {
+      query = query.where('seasonId', isEqualTo: _activeSeason!.id);
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('caseGroups')
-            .where('seasonId', isEqualTo: _activeSeasonId)
-            .orderBy('order')
-            .snapshots(),
+        stream: query.orderBy('order').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting &&
               _localDocs == null) {
@@ -68,8 +74,6 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
 
           if (snapshot.hasData) {
             _localDocs = snapshot.data!.docs;
-            // No need to sort in memory if orderBy is working, but just in case
-            // _sortDocsInMemory();
           }
 
           final docs = _localDocs!;
@@ -106,14 +110,13 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
                     },
                     itemBuilder: (context, index) {
                       final doc = docs[index];
-                      // Use name field, fallback to doc.id for compatibility
                       final data = doc.data() as Map<String, dynamic>;
                       final groupName = data['name'] ?? doc.id;
                       final cases = List<int>.from(data['caseNumbers'] ?? []);
                       cases.sort();
 
                       return Container(
-                        key: Key(doc.id), // Use doc.id for Key stability
+                        key: Key(doc.id),
                         margin: const EdgeInsets.only(bottom: 12),
                         child: AnimationConfiguration.staggeredList(
                           position: index,
@@ -173,7 +176,6 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
         bottom: false,
         child: Column(
           children: [
-            // Header Row
             Row(
               children: [
                 InkWell(
@@ -217,7 +219,6 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
               ],
             ),
             const SizedBox(height: 24),
-            // Stats Grid
             Row(
               children: [
                 _buildStatItem('المجموعات', '$totalGroups',
@@ -307,10 +308,8 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Drag Handle
                     Icon(Icons.drag_indicator_rounded, color: Colors.grey[300]),
                     const SizedBox(width: 12),
-                    // Group Letter Avatar - Only show first char
                     Container(
                       width: 48,
                       height: 48,
@@ -346,7 +345,6 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    // Info
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -369,7 +367,6 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
                         ],
                       ),
                     ),
-                    // Actions
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -466,7 +463,6 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Header inside body to allow back navigation if empty
           SafeArea(
             child: Align(
               alignment: Alignment.topRight,
@@ -612,20 +608,17 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
               final cases = _parseCases(casesController.text);
 
               if (isEditing) {
-                // Update existing
-                await FirebaseFirestore.instance
-                    .collection('caseGroups')
-                    .doc(docId)
-                    .update({
+                await _groupsCollection.doc(docId).update({
                   'name': newName,
                   'caseNumbers': cases,
                 });
               } else {
-                // Create New
-                // Get highest order for this season
-                final snapshot = await FirebaseFirestore.instance
-                    .collection('caseGroups')
-                    .where('seasonId', isEqualTo: _activeSeasonId)
+                Query<Map<String, dynamic>> query = _groupsCollection;
+                if (!_activeSeason!.isMigratedToV2) {
+                  query = query.where('seasonId', isEqualTo: _activeSeason!.id);
+                }
+
+                final snapshot = await query
                     .orderBy('order', descending: true)
                     .limit(1)
                     .get();
@@ -635,11 +628,11 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
                   newOrder = (snapshot.docs.first.data()['order'] ?? 0) + 1;
                 }
 
-                await FirebaseFirestore.instance.collection('caseGroups').add({
+                await _groupsCollection.add({
                   'name': newName,
                   'caseNumbers': cases,
                   'order': newOrder,
-                  'seasonId': _activeSeasonId,
+                  'seasonId': _activeSeason!.id,
                 });
               }
               if (context.mounted) Navigator.pop(context);
@@ -700,11 +693,8 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
           ),
           TextButton(
             onPressed: () async {
-              await FirebaseFirestore.instance
-                  .collection('caseGroups')
-                  .doc(docId)
-                  .delete();
-              Navigator.pop(context);
+              await _groupsCollection.doc(docId).delete();
+              if (context.mounted) Navigator.pop(context);
             },
             child: const Text('حذف', style: TextStyle(color: Colors.red)),
           ),

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:ramadan_kitchen_management/core/networking/firestore_constants.dart';
 import '../models/ramadan_season_model.dart';
 
 /// Service for managing Ramadan seasons in Firestore
@@ -10,6 +11,36 @@ class SeasonService {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static const String _seasonsCollection = 'ramadan_seasons';
+
+  /// Get the correct collection reference (root or sub-collection) based on migration status
+  CollectionReference<Map<String, dynamic>> getCollection(
+      String collectionName) {
+    final activeSeason = _activeSeasonCache;
+
+    // If we have an active season and it's migrated to V2, use sub-collections
+    if (activeSeason != null && activeSeason.isMigratedToV2) {
+      return _firestore
+          .collection(_seasonsCollection)
+          .doc(activeSeason.id)
+          .collection(collectionName);
+    }
+
+    // Fallback to legacy root collection
+    return _firestore.collection(collectionName);
+  }
+
+  /// Get a collection for a specific season (ignoring cache)
+  Future<CollectionReference<Map<String, dynamic>>> getCollectionForSeason(
+      String seasonId, String collectionName) async {
+    final season = await getSeasonById(seasonId);
+    if (season != null && season.isMigratedToV2) {
+      return _firestore
+          .collection(_seasonsCollection)
+          .doc(seasonId)
+          .collection(collectionName);
+    }
+    return _firestore.collection(collectionName);
+  }
 
   // Cache the active season for quick access
   RamadanSeasonModel? _activeSeasonCache;
@@ -106,12 +137,27 @@ class SeasonService {
 
   /// Activate a specific season
   Future<void> activateSeason(String seasonId) async {
+    // 1. Deactivate any currently active season first (Safety Priority)
     await _deactivateAllSeasons();
+
+    // 2. Activate target season and ensure it's not archived
     await _firestore.collection(_seasonsCollection).doc(seasonId).update({
       'isActive': true,
+      'isArchived': false,
       'updatedAt': FieldValue.serverTimestamp(),
     });
     _activeSeasonCache = await getSeasonById(seasonId);
+  }
+
+  /// Deactivate a season (make it inactive but not archived)
+  Future<void> deactivateSeason(String seasonId) async {
+    await _firestore.collection(_seasonsCollection).doc(seasonId).update({
+      'isActive': false,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    if (_activeSeasonCache?.id == seasonId) {
+      _activeSeasonCache = _activeSeasonCache?.copyWith(isActive: false);
+    }
   }
 
   /// Archive a season
@@ -125,6 +171,14 @@ class SeasonService {
       'updatedAt': FieldValue.serverTimestamp(),
     });
     if (_activeSeasonCache?.id == seasonId) _activeSeasonCache = null;
+  }
+
+  /// Unarchive a season (Return it to active list as inactive)
+  Future<void> unarchiveSeason(String seasonId) async {
+    await _firestore.collection(_seasonsCollection).doc(seasonId).update({
+      'isArchived': false,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   /// Deactivate all seasons
@@ -143,15 +197,38 @@ class SeasonService {
 
   /// Delete a season and its associated data
   Future<void> deleteSeason(String seasonId) async {
-    final collections = ['donations', 'expenses', 'cases', 'caseGroups'];
-    for (var collection in collections) {
-      final snapshot = await _firestore
-          .collection(collection)
+    final season = await getSeasonById(seasonId);
+    final collections = [
+      FirestoreCollections.donations,
+      FirestoreCollections.expenses,
+      FirestoreCollections.cases,
+      FirestoreCollections.caseGroups,
+      FirestoreCollections.notifications
+    ];
+
+    for (var collectionName in collections) {
+      // 1. Always check root collection for legacy data
+      final legacySnapshot = await _firestore
+          .collection(collectionName)
           .where('seasonId', isEqualTo: seasonId)
           .get();
+
       final batch = _firestore.batch();
-      for (var doc in snapshot.docs) batch.delete(doc.reference);
+      for (var doc in legacySnapshot.docs) batch.delete(doc.reference);
       await batch.commit();
+
+      // 2. Check sub-collections if migrated
+      if (season != null && season.isMigratedToV2) {
+        final subSnapshot = await _firestore
+            .collection(_seasonsCollection)
+            .doc(seasonId)
+            .collection(collectionName)
+            .get();
+
+        final subBatch = _firestore.batch();
+        for (var doc in subSnapshot.docs) subBatch.delete(doc.reference);
+        await subBatch.commit();
+      }
     }
     await _firestore.collection(_seasonsCollection).doc(seasonId).delete();
   }
@@ -164,19 +241,34 @@ class SeasonService {
     bool copyGroups = false,
     bool copyDonationSettings = false,
   }) async {
+    final sourceSeason = await getSeasonById(sourceSeasonId);
+    final targetSeason = await getSeasonById(targetSeasonId);
+
     final batch = _firestore.batch();
     if (copyCases) {
-      final snapshot = await _firestore
-          .collection('cases')
-          .where('seasonId', isEqualTo: sourceSeasonId)
-          .get();
+      final sourceCol = sourceSeason != null && sourceSeason.isMigratedToV2
+          ? _firestore
+              .collection(_seasonsCollection)
+              .doc(sourceSeasonId)
+              .collection(FirestoreCollections.cases)
+          : _firestore.collection(FirestoreCollections.cases);
+
+      final targetCol = targetSeason != null && targetSeason.isMigratedToV2
+          ? _firestore
+              .collection(_seasonsCollection)
+              .doc(targetSeasonId)
+              .collection(FirestoreCollections.cases)
+          : _firestore.collection(FirestoreCollections.cases);
+
+      final snapshot =
+          await sourceCol.where('seasonId', isEqualTo: sourceSeasonId).get();
       for (var doc in snapshot.docs) {
         final data = doc.data();
         data['seasonId'] = targetSeasonId;
         data['استلم'] = false;
         data['جاهزة'] = false;
         data['هنا؟'] = false;
-        batch.set(_firestore.collection('cases').doc(), data);
+        batch.set(targetCol.doc(), data);
       }
     }
     if (copyGroups) {
@@ -353,13 +445,28 @@ class SeasonService {
     int importedCount = 0;
     int batchCount = 0;
 
+    final targetSeason = await getSeasonById(targetSeasonId);
+    final targetCasesCol = targetSeason != null && targetSeason.isMigratedToV2
+        ? _firestore
+            .collection(_seasonsCollection)
+            .doc(targetSeasonId)
+            .collection(FirestoreCollections.cases)
+        : _firestore.collection(FirestoreCollections.cases);
+
+    final targetGroupsCol = targetSeason != null && targetSeason.isMigratedToV2
+        ? _firestore
+            .collection(_seasonsCollection)
+            .doc(targetSeasonId)
+            .collection(FirestoreCollections.caseGroups)
+        : _firestore.collection(FirestoreCollections.caseGroups);
+
     for (var doc in sourceCases) {
       final data = doc.data();
       data['seasonId'] = targetSeasonId;
       data['استلم'] = false;
       data['جاهزة'] = false;
       data['هنا؟'] = false;
-      batch.set(_firestore.collection('cases').doc(), data);
+      batch.set(targetCasesCol.doc(), data);
       importedCount++;
       batchCount++;
       if (batchCount >= 450) {
@@ -378,7 +485,7 @@ class SeasonService {
       data['name'] = arabName;
       data['seasonId'] = targetSeasonId;
 
-      batch.set(_firestore.collection('caseGroups').doc(), data);
+      batch.set(targetGroupsCol.doc(), data);
       importedCount++;
       batchCount++;
       if (batchCount >= 450) {
@@ -578,22 +685,40 @@ class SeasonService {
   /// RE-CALCULATE Statistics (Real-time count)
   Future<void> recalculateSeasonStatistics(String seasonId) async {
     debugPrint('STATS: Recalculating for season $seasonId...');
+    final season = await getSeasonById(seasonId);
+    if (season == null) return;
 
     final results = await Future.wait([
-      _firestore
-          .collection('cases')
+      (season.isMigratedToV2
+              ? _firestore
+                  .collection(_seasonsCollection)
+                  .doc(seasonId)
+                  .collection(FirestoreCollections.cases)
+              : _firestore.collection(FirestoreCollections.cases))
           .where('seasonId', isEqualTo: seasonId)
           .get(),
-      _firestore
-          .collection('caseGroups')
+      (season.isMigratedToV2
+              ? _firestore
+                  .collection(_seasonsCollection)
+                  .doc(seasonId)
+                  .collection(FirestoreCollections.caseGroups)
+              : _firestore.collection(FirestoreCollections.caseGroups))
           .where('seasonId', isEqualTo: seasonId)
           .get(),
-      _firestore
-          .collection('donations')
+      (season.isMigratedToV2
+              ? _firestore
+                  .collection(_seasonsCollection)
+                  .doc(seasonId)
+                  .collection(FirestoreCollections.donations)
+              : _firestore.collection(FirestoreCollections.donations))
           .where('seasonId', isEqualTo: seasonId)
           .get(),
-      _firestore
-          .collection('expenses')
+      (season.isMigratedToV2
+              ? _firestore
+                  .collection(_seasonsCollection)
+                  .doc(seasonId)
+                  .collection(FirestoreCollections.expenses)
+              : _firestore.collection(FirestoreCollections.expenses))
           .where('seasonId', isEqualTo: seasonId)
           .get(),
     ]);
@@ -622,5 +747,78 @@ class SeasonService {
 
     debugPrint(
         'STATS: Sync complete. Cases: $casesCount, Groups: $groupsCount');
+  }
+
+  /// THE COMPLETE MIGRATION ENGINE (V2)
+  /// Moves all data from root collections to sub-collections for a specific season
+  Future<Map<String, int>> migrateSeasonToV2(String seasonId) async {
+    final season = await getSeasonById(seasonId);
+    if (season == null) throw Exception('الموسم غير موجود');
+
+    final Map<String, int> results = {};
+    final collections = [
+      FirestoreCollections.donations,
+      FirestoreCollections.expenses,
+      FirestoreCollections.cases,
+      FirestoreCollections.caseGroups,
+      FirestoreCollections.notifications
+    ];
+
+    for (var collectionName in collections) {
+      // 1. Fetch all docs related to this season from root
+      final snapshot = await _firestore
+          .collection(collectionName)
+          .where('seasonId', isEqualTo: seasonId)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        results[collectionName] = 0;
+        continue;
+      }
+
+      // 2. Prepare sub-collection reference
+      final subColRef = _firestore
+          .collection(_seasonsCollection)
+          .doc(seasonId)
+          .collection(collectionName);
+
+      // 3. Batch write to sub-collection
+      WriteBatch batch = _firestore.batch();
+      int count = 0;
+      int processed = 0;
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        batch.set(subColRef.doc(doc.id), data);
+
+        count++;
+        processed++;
+
+        if (count >= 450) {
+          await batch.commit();
+          batch = _firestore.batch();
+          count = 0;
+        }
+      }
+
+      if (count > 0) await batch.commit();
+      results[collectionName] = processed;
+    }
+
+    // 4. Mark season as migrated
+    await _firestore
+        .collection(_seasonsCollection)
+        .doc(seasonId)
+        .update({'isMigratedToV2': true});
+
+    // Clear cache to force refresh
+    if (_activeSeasonCache?.id == seasonId) {
+      _activeSeasonCache = season.copyWith(isMigratedToV2: true);
+    }
+
+    // Recalculate stats using the new path
+    await recalculateSeasonStatistics(seasonId);
+
+    return results;
   }
 }

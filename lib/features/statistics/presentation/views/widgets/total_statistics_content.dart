@@ -6,6 +6,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
+import 'package:ramadan_kitchen_management/core/networking/firestore_constants.dart';
 import 'package:ramadan_kitchen_management/features/seasons/data/services/season_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 
@@ -20,6 +21,7 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
   int _totalIndividuals = 0;
   bool _isLoading = true;
   final int _goal = 8500;
+  final SeasonService _seasonService = SeasonService();
 
   @override
   void initState() {
@@ -29,16 +31,15 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
 
   Future<void> _loadDonationData() async {
     try {
-      final seasonService = SeasonService(); // Or get from IoC
-      final activeSeason = await seasonService.getActiveSeason();
-      final seasonId = activeSeason?.id;
-
-      if (seasonId == null) {
+      final activeSeason = await _seasonService.getActiveSeason();
+      if (activeSeason == null) {
         if (mounted) setState(() => _isLoading = false);
         return;
       }
 
+      final seasonId = activeSeason.id;
       final prefs = await SharedPreferences.getInstance();
+
       // Cache keys are now season-specific
       final historicalTotalKey = 'historicalTotal_$seasonId';
       final dailyValueKey = 'dailyValue_$seasonId';
@@ -68,25 +69,29 @@ class _TotalStatisticsContentState extends State<TotalStatisticsContent> {
       final isOnline = await _checkConnectivity();
 
       if (isOnline) {
-        // Fetch Today's Donations for Active Season
-        final currentDaySnapshot = await FirebaseFirestore.instance
-            .collection('donations')
-            .where('seasonId', isEqualTo: seasonId)
-            .where('created_at', isGreaterThanOrEqualTo: startOfDay)
-            .get();
+        final donationsCol =
+            _seasonService.getCollection(FirestoreCollections.donations);
 
+        Query currentDayQuery = donationsCol.where('created_at',
+            isGreaterThanOrEqualTo: startOfDay);
+        Query previousDaysQuery =
+            donationsCol.where('created_at', isLessThan: startOfDay);
+
+        // Only filter by season if we have an active season AND it's not migrated
+        if (!activeSeason.isMigratedToV2) {
+          currentDayQuery =
+              currentDayQuery.where('seasonId', isEqualTo: seasonId);
+          previousDaysQuery =
+              previousDaysQuery.where('seasonId', isEqualTo: seasonId);
+        }
+
+        final currentDaySnapshot = await currentDayQuery.get();
         dailyValue = currentDaySnapshot.docs.fold(
           0,
           (sum, doc) => sum + (doc['numberOfIndividuals'] as int? ?? 0),
         );
 
-        // Fetch Historical Donations for Active Season
-        final previousDaysSnapshot = await FirebaseFirestore.instance
-            .collection('donations')
-            .where('seasonId', isEqualTo: seasonId)
-            .where('created_at', isLessThan: startOfDay)
-            .get();
-
+        final previousDaysSnapshot = await previousDaysQuery.get();
         historicalTotal = previousDaysSnapshot.docs.fold(
           0,
           (sum, doc) => sum + (doc['numberOfIndividuals'] as int? ?? 0),

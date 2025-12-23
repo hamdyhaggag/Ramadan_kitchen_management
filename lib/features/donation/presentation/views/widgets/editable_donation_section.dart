@@ -11,6 +11,8 @@ import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 
 import 'package:iconsax/iconsax.dart';
 import '../../../../../cloudinary_config.dart';
+import '../../../../seasons/data/services/season_service.dart';
+import '../../../../../core/networking/firestore_constants.dart';
 import '../../cubit/donation_cubit.dart';
 import 'contact_person.dart';
 
@@ -40,6 +42,7 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
   DateTime _selectedDate = DateTime.now(); // Default to today
   List<String> _suggestedIngredients = [];
   String _selectedIngredientCategory = 'الكل';
+  final SeasonService _seasonService = SeasonService();
 
   @override
   void initState() {
@@ -139,11 +142,21 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
           .add(const Duration(days: 1))
           .subtract(const Duration(milliseconds: 1));
 
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('donations')
+      final activeSeason = await _seasonService.getActiveSeason();
+      if (activeSeason == null) return _showSnackbar('لا يوجد موسم نشط');
+
+      final donationsCol =
+          _seasonService.getCollection(FirestoreCollections.donations);
+      Query query = donationsCol
           .where('created_at', isGreaterThanOrEqualTo: startOfDay)
-          .where('created_at', isLessThanOrEqualTo: endOfDay)
-          .get();
+          .where('created_at', isLessThanOrEqualTo: endOfDay);
+
+      // Only filter by season if we have an active season AND it's not migrated
+      if (!activeSeason.isMigratedToV2) {
+        query = query.where('seasonId', isEqualTo: activeSeason.id);
+      }
+
+      final querySnapshot = await query.get();
 
       DocumentReference docRef;
       if (querySnapshot.docs.isNotEmpty) {
@@ -156,9 +169,9 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
         }
       } else {
         donationData['created_at'] = Timestamp.fromDate(startOfDay); // Fix date
-        docRef = await FirebaseFirestore.instance
-            .collection('donations')
-            .add(donationData);
+        donationData['seasonId'] =
+            activeSeason.id; // Always add for backward compatibility if needed
+        docRef = await donationsCol.add(donationData);
       }
       final updatedDoc = await docRef.get();
       if (updatedDoc.exists) {
@@ -631,14 +644,23 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
         .subtract(const Duration(milliseconds: 1));
 
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('donations')
+      final activeSeason = await _seasonService.getActiveSeason();
+      if (activeSeason == null) return;
+
+      final donationsCol =
+          _seasonService.getCollection(FirestoreCollections.donations);
+      Query query = donationsCol
           .where('created_at', isGreaterThanOrEqualTo: startOfDay)
-          .where('created_at', isLessThanOrEqualTo: endOfDay)
-          .get();
+          .where('created_at', isLessThanOrEqualTo: endOfDay);
+
+      if (!activeSeason.isMigratedToV2) {
+        query = query.where('seasonId', isEqualTo: activeSeason.id);
+      }
+
+      final snapshot = await query.get();
 
       if (snapshot.docs.isNotEmpty) {
-        final data = snapshot.docs.first.data();
+        final data = snapshot.docs.first.data() as Map<String, dynamic>;
         setState(() {
           _mealTitleController.text = data['mealTitle'] ?? '';
           _mealDescriptionController.text = data['mealDescription'] ?? '';
@@ -727,15 +749,23 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
 
   Future<void> _loadSuggestedIngredients() async {
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('donations')
-          .orderBy('created_at', descending: true)
-          .limit(50) // Look at last 50 meals
-          .get();
+      final activeSeason = await _seasonService.getActiveSeason();
+      if (activeSeason == null) return;
+
+      final donationsCol =
+          _seasonService.getCollection(FirestoreCollections.donations);
+      Query query = donationsCol.orderBy('created_at', descending: true);
+
+      if (!activeSeason.isMigratedToV2) {
+        query = query.where('seasonId', isEqualTo: activeSeason.id);
+      }
+
+      final snapshot = await query.limit(50).get();
 
       final Set<String> uniqueIngredients = {};
       for (var doc in snapshot.docs) {
-        final desc = doc.data()['mealDescription'] as String?;
+        final data = doc.data() as Map<String, dynamic>;
+        final desc = data['mealDescription'] as String?;
         if (desc != null && desc.isNotEmpty) {
           final items = desc.split(RegExp(r'\+|\,')).map((e) => e.trim());
           for (var item in items) {

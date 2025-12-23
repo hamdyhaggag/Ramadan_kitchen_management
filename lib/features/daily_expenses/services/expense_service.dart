@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
+import '../../seasons/data/services/season_service.dart';
+import '../../../core/networking/firestore_constants.dart';
 import '../model/expense_model.dart';
 
 class ExpenseService {
@@ -7,8 +9,8 @@ class ExpenseService {
   factory ExpenseService() => _instance;
   ExpenseService._internal();
 
-  final CollectionReference _expensesCollection =
-      FirebaseFirestore.instance.collection('expenses');
+  CollectionReference get _expensesCollection =>
+      SeasonService().getCollection(FirestoreCollections.expenses);
 
   Stream<List<Expense>> getExpensesStream() {
     return _expensesCollection

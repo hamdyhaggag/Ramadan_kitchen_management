@@ -11,6 +11,7 @@ class RamadanSeasonModel {
   final DateTime endDate;
   final bool isActive; // Only one season can be active at a time
   final bool isArchived; // Marked as completed/archived
+  final bool isMigratedToV2; // If the data is moved to sub-collections
   final DateTime createdAt;
   final DateTime? updatedAt;
   final SeasonStatistics? statistics; // Cached statistics for quick access
@@ -24,6 +25,7 @@ class RamadanSeasonModel {
     required this.endDate,
     this.isActive = false,
     this.isArchived = false,
+    this.isMigratedToV2 = false,
     required this.createdAt,
     this.updatedAt,
     this.statistics,
@@ -40,6 +42,7 @@ class RamadanSeasonModel {
       endDate: (data['endDate'] as Timestamp).toDate(),
       isActive: data['isActive'] ?? false,
       isArchived: data['isArchived'] ?? false,
+      isMigratedToV2: data['isMigratedToV2'] ?? false,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: data['updatedAt'] != null
           ? (data['updatedAt'] as Timestamp).toDate()
@@ -59,6 +62,7 @@ class RamadanSeasonModel {
       'endDate': Timestamp.fromDate(endDate),
       'isActive': isActive,
       'isArchived': isArchived,
+      'isMigratedToV2': isMigratedToV2,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
       'statistics': statistics?.toMap(),
@@ -74,6 +78,7 @@ class RamadanSeasonModel {
     DateTime? endDate,
     bool? isActive,
     bool? isArchived,
+    bool? isMigratedToV2,
     DateTime? createdAt,
     DateTime? updatedAt,
     SeasonStatistics? statistics,
@@ -87,6 +92,7 @@ class RamadanSeasonModel {
       endDate: endDate ?? this.endDate,
       isActive: isActive ?? this.isActive,
       isArchived: isArchived ?? this.isArchived,
+      isMigratedToV2: isMigratedToV2 ?? this.isMigratedToV2,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       statistics: statistics ?? this.statistics,

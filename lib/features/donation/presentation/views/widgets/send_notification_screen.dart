@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ramadan_kitchen_management/core/networking/firestore_constants.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:ramadan_kitchen_management/features/seasons/data/services/season_service.dart';
 
 class SendNotificationScreen extends StatefulWidget {
   const SendNotificationScreen({super.key});
@@ -16,16 +18,28 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _bodyController = TextEditingController();
   bool _isLoading = false;
+  final SeasonService _seasonService = SeasonService();
 
   Future<void> _sendNotification() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
-        await FirebaseFirestore.instance.collection('notifications').add({
+        final activeSeason = await _seasonService.getActiveSeason();
+        final notificationsCol =
+            _seasonService.getCollection(FirestoreCollections.notifications);
+
+        final data = {
           'title': _titleController.text.trim(),
           'body': _bodyController.text.trim(),
           'timestamp': FieldValue.serverTimestamp(),
-        });
+        };
+
+        if (activeSeason != null) {
+          data['seasonId'] =
+              activeSeason.id; // Always add for backward compatibility
+        }
+
+        await notificationsCol.add(data);
 
         if (!mounted) return;
 

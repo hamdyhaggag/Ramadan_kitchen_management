@@ -2,12 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'package:ramadan_kitchen_management/core/networking/firestore_constants.dart';
 import 'package:ramadan_kitchen_management/core/utils/app_colors.dart';
+import 'package:ramadan_kitchen_management/features/seasons/data/models/ramadan_season_model.dart';
+import 'package:ramadan_kitchen_management/features/seasons/data/services/season_service.dart';
 
-class NotificationsScreen extends StatelessWidget {
+class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
-  Future<bool> _isAdmin() async {
+  @override
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends State<NotificationsScreen> {
+  final SeasonService _seasonService = SeasonService();
+  RamadanSeasonModel? _activeSeason;
+  bool _isAdminUser = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    final season = await _seasonService.getActiveSeason();
+    final admin = await _checkAdminStatus();
+    if (mounted) {
+      setState(() {
+        _activeSeason = season;
+        _isAdminUser = admin;
+      });
+    }
+  }
+
+  Future<bool> _checkAdminStatus() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return false;
     final userDoc = await FirebaseFirestore.instance
@@ -16,6 +45,9 @@ class NotificationsScreen extends StatelessWidget {
         .get();
     return userDoc.data()?['role'] == 'admin';
   }
+
+  CollectionReference<Map<String, dynamic>> get _notificationsCollection =>
+      _seasonService.getCollection(FirestoreCollections.notifications);
 
   void _deleteNotification(BuildContext context, String notificationId) {
     showDialog(
@@ -32,23 +64,24 @@ class NotificationsScreen extends StatelessWidget {
             onPressed: () async {
               Navigator.pop(context);
               try {
-                await FirebaseFirestore.instance
-                    .collection('notifications')
-                    .doc(notificationId)
-                    .delete();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('تم حذف الإشعار بنجاح'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+                await _notificationsCollection.doc(notificationId).delete();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('تم حذف الإشعار بنجاح'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('فشل الحذف: ${e.toString()}'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('فشل الحذف: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
             },
             child: const Text('حذف', style: TextStyle(color: Colors.red)),
@@ -65,6 +98,18 @@ class NotificationsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (_activeSeason == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("الإشعارات")),
+        body: _buildLoadingState(),
+      );
+    }
+
+    Query<Map<String, dynamic>> query = _notificationsCollection;
+    if (!_activeSeason!.isMigratedToV2) {
+      query = query.where('seasonId', isEqualTo: _activeSeason!.id);
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -81,7 +126,7 @@ class NotificationsScreen extends StatelessWidget {
             onPressed: () => Navigator.pop(context)),
         shadowColor: AppColors.primaryColor.withValues(alpha: 0.2),
         flexibleSpace: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [
                 AppColors.primaryColor,
@@ -94,10 +139,7 @@ class NotificationsScreen extends StatelessWidget {
         ),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('notifications')
-            .orderBy('timestamp', descending: true)
-            .snapshots(),
+        stream: query.orderBy('timestamp', descending: true).snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return _buildErrorState();
@@ -112,23 +154,17 @@ class NotificationsScreen extends StatelessWidget {
             return _buildEmptyState(context);
           }
 
-          return FutureBuilder<bool>(
-            future: _isAdmin(),
-            builder: (context, adminSnapshot) {
-              final isAdmin = adminSnapshot.data ?? false;
-              return ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: notifications.length,
-                itemBuilder: (context, index) {
-                  final notification = notifications[index];
-                  final data = notification.data() as Map<String, dynamic>;
-                  return _buildNotificationCard(
-                    context,
-                    data,
-                    notification.id,
-                    isAdmin,
-                  );
-                },
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: notifications.length,
+            itemBuilder: (context, index) {
+              final notification = notifications[index];
+              final data = notification.data() as Map<String, dynamic>;
+              return _buildNotificationCard(
+                context,
+                data,
+                notification.id,
+                _isAdminUser,
               );
             },
           );
@@ -186,7 +222,7 @@ class NotificationsScreen extends StatelessWidget {
                       color: AppColors.primaryColor.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.notifications_none,
                       color: AppColors.primaryColor,
                     ),
@@ -322,12 +358,12 @@ class NotificationsScreen extends StatelessWidget {
         children: [
           const Icon(Icons.error_outline, size: 50, color: Colors.red),
           const SizedBox(height: 20),
-          Text(
+          const Text(
             'فشل في تحميل الإشعارات',
           ),
           const SizedBox(height: 10),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () => _loadInitialData(),
             child: const Text('إعادة المحاولة'),
           ),
         ],
@@ -351,8 +387,8 @@ class ShimmerLoading extends StatelessWidget {
           Colors.grey.shade300,
         ],
         stops: const [0.1, 0.5, 0.9],
-        begin: Alignment(-1.0, -0.5),
-        end: Alignment(1.0, 0.5),
+        begin: const Alignment(-1.0, -0.5),
+        end: const Alignment(1.0, 0.5),
       ).createShader(bounds),
       child: child,
     );

@@ -1,7 +1,7 @@
 import 'dart:async';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ramadan_kitchen_management/core/networking/firestore_constants.dart';
 import '../../seasons/data/services/season_service.dart';
 import 'cases_state.dart';
 
@@ -25,6 +25,9 @@ class CasesCubit extends Cubit<CasesState> {
     _currentSeasonId = activeSeason?.id;
     loadCases();
   }
+
+  CollectionReference<Map<String, dynamic>> get _casesCollection =>
+      _seasonService.getCollection(FirestoreCollections.cases);
 
   /// Get current season ID
   String? get currentSeasonId => _currentSeasonId;
@@ -55,11 +58,14 @@ class CasesCubit extends Cubit<CasesState> {
       // Cancel existing subscription
       await _casesSubscription?.cancel();
 
-      // Build query based on season
-      Query<Map<String, dynamic>> query = _firestore.collection('cases');
+      final activeSeason = await _seasonService.getActiveSeason();
 
-      // Only filter by season if we have an active season
-      if (_currentSeasonId != null) {
+      // Build query based on season
+      Query<Map<String, dynamic>> query = _casesCollection;
+
+      // Only filter by season if we have an active season AND it's not migrated
+      if (_currentSeasonId != null &&
+          (activeSeason == null || !activeSeason.isMigratedToV2)) {
         query = query.where('seasonId', isEqualTo: _currentSeasonId);
       }
 
@@ -84,7 +90,7 @@ class CasesCubit extends Cubit<CasesState> {
         final updated = Map<String, dynamic>.from(caseItem);
         updated['جاهزة'] = false;
         updated['هنا؟'] = false;
-        batch.update(_firestore.collection('cases').doc(updated['id']),
+        batch.update(_casesCollection.doc(updated['id']),
             {'جاهزة': false, 'هنا؟': false});
         return updated;
       }).toList();
@@ -108,7 +114,7 @@ class CasesCubit extends Cubit<CasesState> {
       updatedCase[field] = newValue;
       _localCache[index] = updatedCase;
 
-      await _firestore.collection('cases').doc(docId).update({field: newValue});
+      await _casesCollection.doc(docId).update({field: newValue});
       _sortLocalCache();
       emit(CasesLoaded(List.from(_localCache)));
     } catch (e) {
@@ -126,7 +132,7 @@ class CasesCubit extends Cubit<CasesState> {
       final docId = caseData['الرقم'].toString();
       final newCase = {...caseData, 'id': docId};
       _localCache = [..._localCache, newCase];
-      await _firestore.collection('cases').doc(docId).set(caseData);
+      await _casesCollection.doc(docId).set(caseData);
       _sortLocalCache();
       emit(CasesLoaded(List.from(_localCache)));
     } catch (e) {
@@ -143,7 +149,7 @@ class CasesCubit extends Cubit<CasesState> {
       final updatedCase = {..._localCache[index], ...updates};
       _localCache[index] = updatedCase;
 
-      await _firestore.collection('cases').doc(docId).update(updates);
+      await _casesCollection.doc(docId).update(updates);
       _sortLocalCache();
       emit(CasesLoaded(List.from(_localCache)));
     } catch (e) {
@@ -154,7 +160,7 @@ class CasesCubit extends Cubit<CasesState> {
   Future<void> deleteCase(String docId) async {
     try {
       _localCache.removeWhere((c) => c['id'] == docId);
-      await _firestore.collection('cases').doc(docId).delete();
+      await _casesCollection.doc(docId).delete();
       _sortLocalCache();
       emit(CasesLoaded(List.from(_localCache)));
     } catch (e) {

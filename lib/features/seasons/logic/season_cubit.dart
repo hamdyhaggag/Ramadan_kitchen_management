@@ -63,6 +63,7 @@ class SeasonCubit extends Cubit<SeasonState> {
     required DateTime startDate,
     required DateTime endDate,
     bool isActive = false,
+    bool isMigratedToV2 = false,
     bool copyFromPreviousSeason = false,
     bool copyDonationSettings = false,
     String? sourceSeasonId,
@@ -77,6 +78,7 @@ class SeasonCubit extends Cubit<SeasonState> {
         startDate: startDate,
         endDate: endDate,
         isActive: isActive,
+        isMigratedToV2: isMigratedToV2,
         createdAt: DateTime.now(),
       );
 
@@ -161,6 +163,18 @@ class SeasonCubit extends Cubit<SeasonState> {
     }
   }
 
+  /// Deactivate a season
+  Future<void> deactivateSeason(String seasonId) async {
+    emit(SeasonLoading());
+    try {
+      await _seasonService.deactivateSeason(seasonId);
+      emit(SeasonUpdated(seasonId: seasonId));
+      await loadAllSeasons();
+    } catch (e) {
+      emit(SeasonError('فشل إلغاء تفعيل الموسم: $e'));
+    }
+  }
+
   /// Archive a season
   Future<void> archiveSeason(String seasonId) async {
     emit(SeasonLoading());
@@ -173,6 +187,18 @@ class SeasonCubit extends Cubit<SeasonState> {
     }
   }
 
+  /// Unarchive a season
+  Future<void> unarchiveSeason(String seasonId) async {
+    emit(SeasonLoading());
+    try {
+      await _seasonService.unarchiveSeason(seasonId);
+      emit(SeasonUpdated(seasonId: seasonId));
+      await loadAllSeasons();
+    } catch (e) {
+      emit(SeasonError('فشل إلغاء الأرشفة: $e'));
+    }
+  }
+
   /// Delete a season (with confirmation)
   Future<void> deleteSeason(String seasonId) async {
     emit(SeasonLoading());
@@ -182,6 +208,18 @@ class SeasonCubit extends Cubit<SeasonState> {
       await loadAllSeasons();
     } catch (e) {
       emit(SeasonError('فشل حذف الموسم: $e'));
+    }
+  }
+
+  /// Migrate season data to V2 sub-collections
+  Future<void> migrateSeasonToV2(String seasonId) async {
+    emit(SeasonLoading());
+    try {
+      await _seasonService.migrateSeasonToV2(seasonId);
+      emit(SeasonUpdated(seasonId: seasonId));
+      await loadAllSeasons();
+    } catch (e) {
+      emit(SeasonError('فشل عملية الهجرة: $e'));
     }
   }
 

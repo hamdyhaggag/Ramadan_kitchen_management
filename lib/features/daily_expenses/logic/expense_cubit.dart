@@ -3,21 +3,23 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ramadan_kitchen_management/features/daily_expenses/logic/expense_state.dart';
 import 'package:ramadan_kitchen_management/features/seasons/data/services/season_service.dart';
+import 'package:ramadan_kitchen_management/core/networking/firestore_constants.dart';
 import '../model/expense_model.dart';
 
 class ExpenseCubit extends Cubit<ExpenseState> {
   final FirebaseFirestore _firestore;
-  final CollectionReference _expensesCollection;
   final SeasonService _seasonService = SeasonService();
   List<Expense> _localCache = [];
   StreamSubscription? _expenseSubscription;
 
   ExpenseCubit()
       : _firestore = FirebaseFirestore.instance,
-        _expensesCollection = FirebaseFirestore.instance.collection('expenses'),
         super(ExpenseInitial()) {
     _loadInitialData();
   }
+
+  CollectionReference get _expensesCollection =>
+      _seasonService.getCollection(FirestoreCollections.expenses);
 
   Future<void> _loadInitialData() async {
     await loadExpenses();
@@ -28,9 +30,7 @@ class ExpenseCubit extends Cubit<ExpenseState> {
       emit(ExpenseLoading());
 
       final activeSeason = await _seasonService.getActiveSeason();
-      final activeSeasonId = activeSeason?.id;
-
-      if (activeSeasonId == null) {
+      if (activeSeason == null) {
         _localCache = [];
         emit(const ExpenseLoaded([]));
         return;
@@ -39,8 +39,14 @@ class ExpenseCubit extends Cubit<ExpenseState> {
       // Cancel previous subscription if exists to avoid duplicates when reloading
       await _expenseSubscription?.cancel();
 
-      _expenseSubscription = _expensesCollection
-          .where('seasonId', isEqualTo: activeSeasonId)
+      Query query = _expensesCollection;
+
+      // Only filter by season if we have an active season AND it's not migrated
+      if (!activeSeason.isMigratedToV2) {
+        query = query.where('seasonId', isEqualTo: activeSeason.id);
+      }
+
+      _expenseSubscription = query
           .orderBy('timestamp', descending: true)
           .snapshots()
           .listen((snapshot) {
@@ -63,9 +69,7 @@ class ExpenseCubit extends Cubit<ExpenseState> {
     String tempId = '';
     try {
       final activeSeason = await _seasonService.getActiveSeason();
-      final activeSeasonId = activeSeason?.id;
-
-      if (activeSeasonId == null) {
+      if (activeSeason == null) {
         emit(ExpenseError('لا يوجد موسم نشط لإضافة مصروف'));
         return;
       }
@@ -88,7 +92,7 @@ class ExpenseCubit extends Cubit<ExpenseState> {
       emit(ExpenseLoaded(List.from(_localCache)));
 
       final data = tempExpense.toFirestore();
-      data['seasonId'] = activeSeasonId; // Inject seasonId
+      data['seasonId'] = activeSeason.id; // Inject seasonId
 
       final docRef = await _expensesCollection.add(data);
       final newExpense = tempExpense.copyWith(id: docRef.id);
