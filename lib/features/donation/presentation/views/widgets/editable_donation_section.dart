@@ -767,7 +767,7 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
         final data = doc.data() as Map<String, dynamic>;
         final desc = data['mealDescription'] as String?;
         if (desc != null && desc.isNotEmpty) {
-          final items = desc.split(RegExp(r'\+|\,')).map((e) => e.trim());
+          final items = desc.split(RegExp(r'[\+,\-\n]')).map((e) => e.trim());
           for (var item in items) {
             if (item.isNotEmpty) uniqueIngredients.add(item);
           }
@@ -790,7 +790,8 @@ class _EditableDonationSectionState extends State<EditableDonationSection> {
       _mealDescriptionController.text = ingredient;
     } else {
       // Check if it's already there to avoid duplicates
-      final items = currentText.split(RegExp(r'\+|\,')).map((e) => e.trim());
+      final items =
+          currentText.split(RegExp(r'[\+,\-\n]')).map((e) => e.trim());
       if (!items.contains(ingredient)) {
         _mealDescriptionController.text = '$currentText + $ingredient';
       }

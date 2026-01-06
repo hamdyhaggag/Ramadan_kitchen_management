@@ -371,7 +371,7 @@ class _UserDonationDashboardState extends State<UserDonationDashboard> {
       String? imageUrl, String title, String description) {
     final ingredients = description.isNotEmpty
         ? description
-            .split(RegExp(r'\+|\,'))
+            .split(RegExp(r'[\+,\-\n]'))
             .map((e) => e.trim())
             .where((e) => e.isNotEmpty)
             .toList()
