@@ -83,14 +83,18 @@ class ReportsScreenState extends State<ReportsScreen>
     return grouped;
   }
 
-  Map<String, double> groupQuantitiesByProduct(List<Expense> expenses) {
-    final grouped = <String, double>{};
+  Map<String, Map<String, double>> groupQuantitiesAndAmountByProduct(List<Expense> expenses) {
+    final grouped = <String, Map<String, double>>{};
     for (var expense in expenses) {
-      grouped.update(
-        expense.product,
-        (value) => value + expense.quantity,
-        ifAbsent: () => expense.quantity,
-      );
+      if (grouped.containsKey(expense.product)) {
+         grouped[expense.product]!['quantity'] = grouped[expense.product]!['quantity']! + expense.quantity;
+         grouped[expense.product]!['amount'] = grouped[expense.product]!['amount']! + expense.amount;
+      } else {
+         grouped[expense.product] = {
+           'quantity': expense.quantity,
+           'amount': expense.amount,
+         };
+      }
     }
     return grouped;
   }
@@ -330,11 +334,11 @@ class ReportsScreenState extends State<ReportsScreen>
   }
 
   Widget _buildQuantitiesList(List<Expense> expenses) {
-    final groupedQuantities = groupQuantitiesByProduct(expenses);
+    final groupedQuantities = groupQuantitiesAndAmountByProduct(expenses);
     final sortedEntries = groupedQuantities.entries.toList()
       ..sort((a, b) => _isAscending
-          ? a.value.compareTo(b.value)
-          : b.value.compareTo(a.value));
+          ? a.value['quantity']!.compareTo(b.value['quantity']!)
+          : b.value['quantity']!.compareTo(a.value['quantity']!));
 
     if (sortedEntries.isEmpty) {
       return Center(
@@ -412,26 +416,26 @@ class ReportsScreenState extends State<ReportsScreen>
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  entry.value.toStringAsFixed(1).replaceAll('.0', ''),
+                  '${entry.value['quantity']!.toStringAsFixed(1).replaceAll('.0', '')} ${expense.unitType}',
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.w800,
                     color: AppColors.blackColor,
                     fontFamily: 'DIN',
                   ),
                 ),
                 Text(
-                  expense.unitType,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[500],
-                    fontWeight: FontWeight.w500,
+                  '${NumberFormat('#,###').format(entry.value['amount'])} ج.م',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.primaryColor,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
             onTap: () =>
-                _showQuantityDetails(context, entry.key, entry.value, expenses),
+                _showQuantityDetails(context, entry.key, entry.value['quantity']!, entry.value['amount']!, expenses),
           ),
         );
       },
@@ -844,7 +848,7 @@ void _showDetailsBottomSheet(BuildContext context, String dateKey,
 }
 
 void _showQuantityDetails(BuildContext context, String product,
-    double totalQuantity, List<Expense> allExpenses) {
+    double totalQuantity, double totalAmount, List<Expense> allExpenses) {
   final productExpenses =
       allExpenses.where((e) => e.product == product).toList();
   productExpenses.sort((a, b) =>
@@ -909,10 +913,18 @@ void _showQuantityDetails(BuildContext context, String product,
                     Text(
                       '${totalQuantity.toStringAsFixed(1).replaceAll('.0', '')} ${productExpenses.first.unitType}',
                       style: const TextStyle(
-                        fontSize: 20,
+                        fontSize: 18,
                         fontWeight: FontWeight.w800,
                         color: AppColors.primaryColor,
                         fontFamily: 'DIN',
+                      ),
+                    ),
+                    Text(
+                      '${NumberFormat('#,###').format(totalAmount)} ج.م',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
@@ -958,14 +970,27 @@ void _showQuantityDetails(BuildContext context, String product,
                         ),
                       ),
                     ),
-                    Text(
-                      '${expense.quantity} ${expense.unitType}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'DIN',
-                        color: AppColors.blackColor,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${expense.quantity} ${expense.unitType}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'DIN',
+                            color: AppColors.blackColor,
+                          ),
+                        ),
+                        Text(
+                          '${NumberFormat('#,###').format(expense.amount)} ج.م',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 );

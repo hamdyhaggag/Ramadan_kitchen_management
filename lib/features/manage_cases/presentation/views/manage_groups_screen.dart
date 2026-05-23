@@ -533,118 +533,167 @@ class _ManageGroupsScreenState extends State<ManageGroupsScreen> {
     final casesController =
         TextEditingController(text: currentCases?.join(', ') ?? '');
     final isEditing = docId != null;
+    bool isLoading = false;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(isEditing ? 'تعديل المجموعة' : 'مجموعة جديدة',
-            style: const TextStyle(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(
-                labelText: 'اسم المجموعة',
-                hintText: 'مثال: المجموعة الأولى',
-                filled: true,
-                fillColor: Colors.grey[50],
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(isEditing ? 'تعديل المجموعة' : 'مجموعة جديدة',
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                enabled: !isLoading,
+                decoration: InputDecoration(
+                  labelText: 'اسم المجموعة',
+                  hintText: 'مثال: المجموعة الأولى',
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: casesController,
-              decoration: InputDecoration(
-                labelText: 'أرقام الحالات',
-                hintText: 'مثال: 1, 2, 3 أو 1-10',
-                filled: true,
-                fillColor: Colors.grey[50],
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none),
+              const SizedBox(height: 16),
+              TextField(
+                controller: casesController,
+                enabled: !isLoading,
+                decoration: InputDecoration(
+                  labelText: 'أرقام الحالات',
+                  hintText: 'مثال: 1, 2, 3 أو 1-10',
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none),
+                ),
+                maxLines: 3,
               ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.withOpacity(0.1)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.info_outline_rounded,
-                      size: 20, color: Colors.blue),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'يمكنك كتابة نطاقات مثل (1-10) أو أرقام فردية (1, 5, 9)',
-                      style: TextStyle(fontSize: 12, color: Colors.blue[800]),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.withOpacity(0.1)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline_rounded,
+                        size: 20, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'يمكنك كتابة نطاقات مثل (1-10) أو أرقام فردية (1, 5, 9)',
+                        style: TextStyle(fontSize: 12, color: Colors.blue[800]),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+            ],
+          ),
+          actionsPadding: const EdgeInsets.all(16),
+          actions: [
+            TextButton(
+              onPressed: isLoading ? null : () => Navigator.pop(dialogContext),
+              child: const Text('إلغاء', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      if (nameController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('يرجى إدخال اسم المجموعة'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                        return;
+                      }
+
+                      setDialogState(() => isLoading = true);
+
+                      try {
+                        final newName = nameController.text.trim();
+                        final cases = _parseCases(casesController.text);
+
+                        if (isEditing) {
+                          await _groupsCollection.doc(docId).update({
+                            'name': newName,
+                            'caseNumbers': cases,
+                          });
+                        } else {
+                          // Calculate new order based on local docs to avoid composite index issue
+                          int newOrder = 0;
+                          if (_localDocs != null && _localDocs!.isNotEmpty) {
+                            for (var doc in _localDocs!) {
+                              final data = doc.data() as Map<String, dynamic>;
+                              final order = data['order'] as int? ?? 0;
+                              if (order >= newOrder) {
+                                newOrder = order + 1;
+                              }
+                            }
+                          }
+
+                          await _groupsCollection.add({
+                            'name': newName,
+                            'caseNumbers': cases,
+                            'order': newOrder,
+                            'seasonId': _activeSeason!.id,
+                          });
+                        }
+
+                        if (dialogContext.mounted) {
+                          Navigator.pop(dialogContext);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(isEditing
+                                  ? 'تم تحديث المجموعة بنجاح'
+                                  : 'تم إضافة المجموعة بنجاح'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        setDialogState(() => isLoading = false);
+                        if (dialogContext.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('حدث خطأ: ${e.toString()}'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryColor,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('حفظ التغييرات',
+                      style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
-        actionsPadding: const EdgeInsets.all(16),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.trim().isEmpty) return;
-
-              final newName = nameController.text.trim();
-              final cases = _parseCases(casesController.text);
-
-              if (isEditing) {
-                await _groupsCollection.doc(docId).update({
-                  'name': newName,
-                  'caseNumbers': cases,
-                });
-              } else {
-                Query<Map<String, dynamic>> query = _groupsCollection;
-                // Always filter by seasonId for security rules compliance
-                query = query.where('seasonId', isEqualTo: _activeSeason!.id);
-
-                final snapshot = await query
-                    .orderBy('order', descending: true)
-                    .limit(1)
-                    .get();
-
-                int newOrder = 0;
-                if (snapshot.docs.isNotEmpty) {
-                  newOrder = (snapshot.docs.first.data()['order'] ?? 0) + 1;
-                }
-
-                await _groupsCollection.add({
-                  'name': newName,
-                  'caseNumbers': cases,
-                  'order': newOrder,
-                  'seasonId': _activeSeason!.id,
-                });
-              }
-              if (context.mounted) Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryColor,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-            child: const Text('حفظ التغييرات',
-                style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }

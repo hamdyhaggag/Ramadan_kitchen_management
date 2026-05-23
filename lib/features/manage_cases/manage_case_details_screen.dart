@@ -100,85 +100,218 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
     final numberController = TextEditingController();
     final nameController = TextEditingController();
     final membersController = TextEditingController();
-    showDialog(
+    final areaController = TextEditingController();
+    final brokerController = TextEditingController();
+
+    showModalBottomSheet(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("إضافة حالة جديدة"),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: numberController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: "الرقم",
-                    hintText: "أدخل الرقم يدويًا",
-                    hintStyle: TextStyle(color: Colors.grey[600]),
-                  ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+            ),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Handle
+                    Center(
+                      child: Container(
+                        width: 40, height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Title
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(Icons.family_restroom_rounded,
+                              color: AppColors.primaryColor, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('إضافة أسرة جديدة',
+                                style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1E293B))),
+                            Text('أدخل بيانات الأسرة بالكامل',
+                                style: TextStyle(
+                                    fontSize: 13, color: Color(0xFF94A3B8))),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // ─── Row: الرقم + عدد الأفراد ───
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _SheetField(
+                            controller: numberController,
+                            label: 'الرقم',
+                            icon: Icons.tag_rounded,
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _SheetField(
+                            controller: membersController,
+                            label: 'عدد الأفراد',
+                            icon: Icons.people_rounded,
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // ─── الاسم ───
+                    _SheetField(
+                      controller: nameController,
+                      label: 'اسم الأسرة',
+                      icon: Icons.person_rounded,
+                    ),
+                    const SizedBox(height: 14),
+
+                    // ─── Row: المنطقة + الوسيط ───
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _SheetField(
+                            controller: areaController,
+                            label: 'المنطقة',
+                            icon: Icons.location_on_rounded,
+                            color: const Color(0xFF0EA5E9),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _SheetField(
+                            controller: brokerController,
+                            label: 'الوسيط',
+                            icon: Icons.handshake_rounded,
+                            color: const Color(0xFF8B5CF6),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+
+                    // ─── Buttons ───
+                    Row(
+                      children: [
+                        OutlinedButton(
+                          onPressed: () => Navigator.pop(sheetContext),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                                color: Colors.grey.withValues(alpha: 0.3)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14)),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 14),
+                          ),
+                          child: const Text('إلغاء',
+                              style: TextStyle(color: Color(0xFF64748B))),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              final number =
+                                  int.tryParse(numberController.text.trim());
+                              final members =
+                                  int.tryParse(membersController.text.trim()) ??
+                                      0;
+                              if (number == null || number <= 0) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text(
+                                            'الرجاء إدخال رقم صحيح موجب')));
+                                return;
+                              }
+                              if (currentCases
+                                  .any((c) => c['الرقم'] == number)) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content:
+                                            Text('رقم الحالة موجود مسبقًا')));
+                                return;
+                              }
+                              if (nameController.text.trim().isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content:
+                                            Text('الرجاء إدخال اسم الحالة')));
+                                return;
+                              }
+                              if (members <= 0) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text(
+                                            'الرجاء إدخال عدد أفراد صحيح')));
+                                return;
+                              }
+                              context.read<CasesCubit>().addCase({
+                                'الرقم': number,
+                                'id': number.toString(),
+                                'الاسم': nameController.text.trim(),
+                                'عدد الأفراد': members,
+                                'المنطقة': areaController.text.trim(),
+                                'الوسيط': brokerController.text.trim(),
+                                'جاهزة': false,
+                                'هنا؟': false,
+                              });
+                              Navigator.pop(sheetContext);
+                            },
+                            icon: const Icon(Icons.check_rounded,
+                                size: 18, color: Colors.white),
+                            label: const Text('حفظ الأسرة',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryColor,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    labelText: "الاسم",
-                    hintStyle: TextStyle(color: Colors.grey[600]),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: membersController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: "عدد الأفراد",
-                    hintStyle: TextStyle(color: Colors.grey[600]),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("إلغاء")),
-            TextButton(
-              onPressed: () {
-                final number = int.tryParse(numberController.text);
-                final members = int.tryParse(membersController.text) ?? 0;
-                if (number == null || number <= 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text("الرجاء إدخال رقم صحيح موجب")));
-                  return;
-                }
-                if (currentCases.any((c) => c['الرقم'] == number)) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("رقم الحالة موجود مسبقًا")));
-                  return;
-                }
-                if (nameController.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("الرجاء إدخال اسم الحالة")));
-                  return;
-                }
-                if (members <= 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text("الرجاء إدخال عدد أفراد صحيح")));
-                  return;
-                }
-                context.read<CasesCubit>().addCase({
-                  "الرقم": number,
-                  "id": number.toString(),
-                  "الاسم": nameController.text,
-                  "عدد الأفراد": members,
-                  "جاهزة": false,
-                  "هنا؟": false,
-                });
-                Navigator.pop(context);
-              },
-              child: const Text("حفظ"),
-            ),
-          ],
         );
       },
     );
@@ -186,68 +319,165 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
 
   void _editCase(Map<String, dynamic> caseData) {
     if (caseData['id'] == null) return;
-    final nameController = TextEditingController(text: caseData["الاسم"]);
+    final nameController =
+        TextEditingController(text: caseData['الاسم']);
     final membersController =
-        TextEditingController(text: caseData["عدد الأفراد"].toString());
-    showDialog(
+        TextEditingController(text: caseData['عدد الأفراد'].toString());
+    final areaController =
+        TextEditingController(text: caseData['المنطقة']?.toString() ?? '');
+    final brokerController =
+        TextEditingController(text: caseData['الوسيط']?.toString() ?? '');
+
+    showModalBottomSheet(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
-          backgroundColor: AppColors.whiteColor,
-          title: const Text("تعديل الحالة"),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  cursorColor: AppColors.primaryColor,
-                  decoration: InputDecoration(
-                    labelText: "الاسم",
-                    focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: AppColors.primaryColor)),
-                    enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: AppColors.primaryColor)),
-                  ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+            ),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40, height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.edit_rounded,
+                              color: Colors.blue, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('تعديل بيانات الأسرة',
+                                style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1E293B))),
+                            Text('رقم الحالة: ${caseData['الرقم']}',
+                                style: const TextStyle(
+                                    fontSize: 13, color: Color(0xFF94A3B8))),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    _SheetField(
+                      controller: nameController,
+                      label: 'اسم الأسرة',
+                      icon: Icons.person_rounded,
+                    ),
+                    const SizedBox(height: 14),
+                    _SheetField(
+                      controller: membersController,
+                      label: 'عدد الأفراد',
+                      icon: Icons.people_rounded,
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _SheetField(
+                            controller: areaController,
+                            label: 'المنطقة',
+                            icon: Icons.location_on_rounded,
+                            color: const Color(0xFF0EA5E9),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _SheetField(
+                            controller: brokerController,
+                            label: 'الوسيط',
+                            icon: Icons.handshake_rounded,
+                            color: const Color(0xFF8B5CF6),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+                    Row(
+                      children: [
+                        OutlinedButton(
+                          onPressed: () => Navigator.pop(sheetContext),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                                color: Colors.grey.withValues(alpha: 0.3)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14)),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 14),
+                          ),
+                          child: const Text('إلغاء',
+                              style: TextStyle(color: Color(0xFF64748B))),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              context.read<CasesCubit>().updateCase(
+                                caseData['id'],
+                                {
+                                  'الاسم': nameController.text.trim(),
+                                  'عدد الأفراد':
+                                      int.tryParse(membersController.text) ?? 1,
+                                  'المنطقة': areaController.text.trim(),
+                                  'الوسيط': brokerController.text.trim(),
+                                },
+                              );
+                              Navigator.pop(sheetContext);
+                            },
+                            icon: const Icon(Icons.check_rounded,
+                                size: 18, color: Colors.white),
+                            label: const Text('حفظ التعديلات',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: membersController,
-                  cursorColor: AppColors.primaryColor,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: "عدد الأفراد",
-                    focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: AppColors.primaryColor)),
-                    enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: AppColors.primaryColor)),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("إلغاء",
-                    style: TextStyle(color: AppColors.blackColor))),
-            TextButton(
-              onPressed: () {
-                context.read<CasesCubit>().updateCase(
-                  caseData['id'],
-                  {
-                    "الاسم": nameController.text,
-                    "عدد الأفراد": int.tryParse(membersController.text) ?? 1,
-                  },
-                );
-                Navigator.pop(context);
-              },
-              child: const Text("حفظ",
-                  style: TextStyle(color: AppColors.primaryColor)),
-            ),
-          ],
         );
       },
     );
@@ -526,6 +756,8 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
   }
 
   Widget _buildCaseCard(Map<String, dynamic> caseData) {
+    final area = caseData['المنطقة']?.toString() ?? '';
+    final broker = caseData['الوسيط']?.toString() ?? '';
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -555,75 +787,102 @@ class _ManageCaseDetailsContentState extends State<_ManageCaseDetailsContent> {
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Case Number Badge
-                Container(
-                  width: 50,
-                  height: 50,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${caseData["الرقم"]}',
-                    style: TextStyle(
-                      color: AppColors.primaryColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      fontFamily: 'DIN',
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Details
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        caseData["الاسم"],
-                        style: const TextStyle(
+                Row(
+                  children: [
+                    // Case Number Badge
+                    Container(
+                      width: 50,
+                      height: 50,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${caseData["الرقم"]}',
+                        style: TextStyle(
+                          color: AppColors.primaryColor,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Colors.black87,
+                          fontSize: 18,
+                          fontFamily: 'DIN',
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Row(
+                    ),
+                    const SizedBox(width: 16),
+                    // Details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.people_alt_outlined,
-                              size: 14, color: Colors.grey[500]),
-                          const SizedBox(width: 4),
                           Text(
-                            "${caseData["عدد الأفراد"]} أفراد",
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 13,
+                            caseData["الاسم"],
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Colors.black87,
                             ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(Icons.people_alt_outlined,
+                                  size: 14, color: Colors.grey[500]),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${caseData["عدد الأفراد"]} أفراد',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-                // Actions
-                Row(
-                  children: [
-                    _buildIconButton(
-                      icon: Icons.edit_rounded,
-                      color: Colors.blue,
-                      onTap: () => _editCase(caseData),
                     ),
-                    const SizedBox(width: 8),
-                    _buildIconButton(
-                      icon: Icons.delete_rounded,
-                      color: Colors.red,
-                      onTap: () => _confirmDelete(caseData['id']),
+                    // Actions
+                    Row(
+                      children: [
+                        _buildIconButton(
+                          icon: Icons.edit_rounded,
+                          color: Colors.blue,
+                          onTap: () => _editCase(caseData),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildIconButton(
+                          icon: Icons.delete_rounded,
+                          color: Colors.red,
+                          onTap: () => _confirmDelete(caseData['id']),
+                        ),
+                      ],
                     ),
                   ],
                 ),
+                // ─── Area & Broker badges ───
+                if (area.isNotEmpty || broker.isNotEmpty) ...
+                [
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      if (area.isNotEmpty)
+                        _InfoBadge(
+                          icon: Icons.location_on_rounded,
+                          label: area,
+                          color: const Color(0xFF0EA5E9),
+                        ),
+                      if (broker.isNotEmpty)
+                        _InfoBadge(
+                          icon: Icons.handshake_rounded,
+                          label: broker,
+                          color: const Color(0xFF8B5CF6),
+                        ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -935,5 +1194,93 @@ class _ManageCaseGroupsScreenState extends State<ManageCaseGroupsScreen> {
     }
 
     return true;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared UI components for Add / Edit bottom sheets
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SheetField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final IconData icon;
+  final TextInputType? keyboardType;
+  final Color? color;
+
+  const _SheetField({
+    required this.controller,
+    required this.label,
+    required this.icon,
+    this.keyboardType,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fieldColor = color ?? const Color(0xFF64748B);
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FE),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
+      ),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        style: const TextStyle(
+          fontSize: 15,
+          color: Color(0xFF1E293B),
+          fontWeight: FontWeight.w500,
+        ),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(color: fieldColor, fontSize: 13),
+          prefixIcon: Icon(icon, color: fieldColor, size: 20),
+          border: InputBorder.none,
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoBadge extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _InfoBadge({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
