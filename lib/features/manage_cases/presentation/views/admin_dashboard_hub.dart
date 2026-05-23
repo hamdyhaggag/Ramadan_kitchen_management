@@ -22,6 +22,7 @@ import 'package:ramadan_kitchen_management/features/donation/presentation/views/
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:ramadan_kitchen_management/features/seasons/seasons.dart';
 import 'package:ramadan_kitchen_management/features/seasons/data/services/season_service.dart';
+import 'package:ramadan_kitchen_management/features/meat_distribution/presentation/views/meat_campaigns_screen.dart';
 
 class AdminDashboardHub extends StatefulWidget {
   const AdminDashboardHub({super.key});
@@ -462,6 +463,13 @@ class _AdminDashboardHubState extends State<AdminDashboardHub> {
         color: const Color(0xFF1E3A5F), // Dark Blue
         onTap: () => Navigator.push(context,
             MaterialPageRoute(builder: (_) => const ManageSeasonsScreen())),
+      ),
+      _AdminItem(
+        title: 'مواسم الخير لحوم',
+        icon: Icons.monitor_weight_rounded,
+        color: const Color(0xFFE11D48), // Rose Primary
+        onTap: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const MeatCampaignsScreen())),
       ),
     ];
 
